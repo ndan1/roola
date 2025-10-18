@@ -16,7 +16,8 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGroupedBackground).ignoresSafeArea()
+            Color(UIColor.systemGroupedBackground)
+                .ignoresSafeArea()
             
             VStack(alignment: .center, spacing: 20) {
                 Image(systemName: "ruler.fill")
@@ -32,6 +33,7 @@ struct ContentView: View {
                 Text("Welcome to Roola")
                     .font(.largeTitle)
                     .fontWeight(.bold)
+                    .foregroundStyle(.primary)
                 
                 Text("Get your perfect size, every time.")
                     .font(.headline)
@@ -42,29 +44,24 @@ struct ContentView: View {
                 }
                 .font(.headline)
                 .padding()
-                .background(.blue)
+                .background(Color.blue)
                 .foregroundColor(.white)
                 .clipShape(Capsule())
-                .padding(.top)
+                .shadow(radius: 4)
+                .padding(.top, 10)
             }
             .padding()
         }
         .sheet(isPresented: $showingSheet) {
             if let firstClothingItem = clothes.first {
                 SheetView(clothes: firstClothingItem)
-                    .presentationDetents([.large])
-                    .background(Color(UIColor.systemRed))
-                    .padding()
-                
+                    .presentationDetents([.medium])
+                    .background(Color(UIColor.systemBackground))
             } else {
                 Text("Loading clothing data...")
                     .padding()
+                    .background(Color(UIColor.systemBackground))
             }
         }
     }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: Clothes.self, inMemory: true)
 }

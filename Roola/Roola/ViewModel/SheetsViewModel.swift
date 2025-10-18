@@ -10,23 +10,41 @@ import Combine
 
 // MARK: - Fuzzy Logic Recommendation Engine & Configuration
 
-/// Represents the desired fit preference of the user.
-enum FitPreference: String, CaseIterable {
+enum FitPreference: String, CaseIterable, Comparable {
     case skinny = "Skinny"
     case slim = "Slim"
     case regular = "Regular"
     case loose = "Loose"
+    
+    private var sortOrder: Int {
+        switch self {
+        case .skinny: return 0
+        case .slim: return 1
+        case .regular: return 2
+        case .loose: return 3
+        }
+    }
+    
+    static func < (lhs: FitPreference, rhs: FitPreference) -> Bool {
+        return lhs.sortOrder < rhs.sortOrder
+    }
+    
+    func distance(to other: FitPreference) -> Int {
+        return abs(self.sortOrder - other.sortOrder)
+    }
 }
 
-/// Defines the four points of a trapezoidal membership function [a, b, c, d] for fuzzy logic.
 fileprivate struct TrapezoidalFunction {
     let a, b, c, d: Double
 }
 
-/// A collection of fuzzy logic calculation helpers.
+fileprivate struct FitProfile {
+    let fit: FitPreference
+    let score: Double
+}
+
 fileprivate struct FuzzyEngine {
     
-    /// Defines the membership functions for each fit type based on clothing 'ease'.
     static let fitFunctions: [FitPreference: TrapezoidalFunction] = [
         .skinny:  TrapezoidalFunction(a: -2, b: 0, c: 2, d: 4),
         .slim:    TrapezoidalFunction(a: 2, b: 4, c: 7, d: 10),
@@ -34,7 +52,6 @@ fileprivate struct FuzzyEngine {
         .loose:   TrapezoidalFunction(a: 14, b: 17, c: 22, d: 25)
     ]
     
-    /// Calculates the degree of membership (0.0 to 1.0) for a value in a trapezoidal fuzzy set.
     static func interpretMembership(value: Double, in function: TrapezoidalFunction) -> Double {
         let (a, b, c, d) = (function.a, function.b, function.c, function.d)
         if value <= a || value >= d { return 0.0 }
@@ -44,65 +61,65 @@ fileprivate struct FuzzyEngine {
         return 0.0
     }
     
-    /// Calculates a fit score (0-100) based on the ease and desired fit.
-    static func calculateFuzzyFitScore(ease: Double, desiredFit: FitPreference) -> Double {
-        guard let membershipFunc = fitFunctions[desiredFit] else { return 0.0 }
-        let degree = interpretMembership(value: ease, in: membershipFunc)
-        return degree * 100
+    static func findBestFitProfile(for ease: Double) -> FitProfile {
+        var bestFit: FitPreference = .regular
+        var highestScore: Double = 0.0
+        
+        for (fit, function) in fitFunctions {
+            let score = interpretMembership(value: ease, in: function)
+            if score > highestScore {
+                highestScore = score
+                bestFit = fit
+            }
+        }
+        return FitProfile(fit: bestFit, score: highestScore * 100)
     }
 }
 
-/// Configuration for a specific clothing type.
 fileprivate struct RecommenderConfig {
     let relevantParts: [String]
     let partWeights: [String: Double]
 }
 
-/// Central configuration mapping clothing types to their recommendation settings.
 fileprivate let RECOMMENDER_CONFIG: [String: RecommenderConfig] = [
-    "T-Shirt": RecommenderConfig(relevantParts: ["bust", "waist"], partWeights: ["bust": 0.7, "waist": 0.3]),
-    "Jeans": RecommenderConfig(relevantParts: ["waist", "hip", "inseam"], partWeights: ["waist": 0.5, "hip": 0.4, "inseam": 0.1])
+    "T-Shirt": RecommenderConfig(relevantParts: ["bust", "torso"], partWeights: ["bust": 0.7, "torso": 0.3]),
 ]
-
 
 @MainActor
 class SheetViewModel: ObservableObject {
-    // MARK: - Published Properties for the View
-    
     @Published var recommendedSize: String = "Calculating..."
     @Published var selectedSize: String = ""
     @Published var desiredFit: FitPreference = .regular
     
-    // MARK: - Private Properties
+    @Published var selectedSizeFitCategory: FitPreference? = nil
+    
     private var clothes: Clothes?
     private var user: User?
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // Subscribe to changes in the 'desiredFit' property
         $desiredFit
-            .dropFirst() // Ignore the initial value
+            .dropFirst()
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 self?.calculateBestSizeWithFuzzyLogic()
             }
             .store(in: &cancellables)
+        
+        $selectedSize
+            .dropFirst()
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateSelectedSizeFitCategory()
+            }
+            .store(in: &cancellables)
     }
     
-    // MARK: - Public Methods
-    
-    /// Configures the view model with the necessary data and runs the initial calculation.
     func setup(clothes: Clothes, user: User?) {
         self.clothes = clothes
         self.user = user
         calculateBestSizeWithFuzzyLogic()
     }
-    
-    /// Updates the currently selected size.
-    func selectSize(_ size: String) {
-        self.selectedSize = size
-    }
-    
-    // MARK: - Private Calculation Logic
     
     private func calculateBestSizeWithFuzzyLogic() {
         guard let user = self.user, let clothes = self.clothes else {
@@ -110,16 +127,15 @@ class SheetViewModel: ObservableObject {
             return
         }
         
-        // TODO: Replace "T-Shirt" with a dynamic property from your `clothes` model
-        guard let config = RECOMMENDER_CONFIG["T-Shirt"] else {
+        guard let config = RECOMMENDER_CONFIG[clothes.product_type] ?? RECOMMENDER_CONFIG["T-Shirt"] else {
             recommendedSize = "Unsupported"
             return
         }
         
-        var sizeScores: [String: Double] = [:]
+        var sizeProfiles: [String: FitProfile] = [:]
 
         for sizeVariant in clothes.product_sizes {
-            var partScores: [String: Double] = [:]
+            var partEaseValues: [String: Double] = [:]
             
             for part in config.relevantParts {
                 let userMeasurement: Double?
@@ -129,38 +145,109 @@ class SheetViewModel: ObservableObject {
                 case "bust":
                     userMeasurement = Double(user.bust)
                     garmentMeasurement = Double((sizeVariant.clothes_bust_min + sizeVariant.clothes_bust_max) / 2)
-                case "waist":
+                case "torso":
                     userMeasurement = Double(user.torso)
                     garmentMeasurement = Double((sizeVariant.clothes_torso_min + sizeVariant.clothes_torso_max) / 2)
+                case "waist":
+                    userMeasurement = Double(user.waist)
+                    if let min = sizeVariant.clothes_waist_min, let max = sizeVariant.clothes_waist_max {
+                        garmentMeasurement = Double(min + max) / 2.0
+                    } else {
+                        garmentMeasurement = nil
+                    }
                 default:
                     userMeasurement = nil; garmentMeasurement = nil
                 }
                 
                 if let userM = userMeasurement, let garmentM = garmentMeasurement {
-                    let ease = garmentM - userM
-                    let score = FuzzyEngine.calculateFuzzyFitScore(ease: ease, desiredFit: desiredFit)
-                    partScores[part] = score
+                    partEaseValues[part] = garmentM - userM
                 }
             }
             
-            var overallScore: Double = 0
+            var totalWeightedEase: Double = 0
             var totalWeight: Double = 0
-            
-            for (part, score) in partScores {
+            for (part, ease) in partEaseValues {
                 if let weight = config.partWeights[part] {
-                    overallScore += score * weight
+                    totalWeightedEase += ease * weight
                     totalWeight += weight
                 }
             }
-            sizeScores[sizeVariant.size_name] = totalWeight > 0 ? (overallScore / totalWeight) : 0
+            
+            if totalWeight > 0 {
+                let averageEase = totalWeightedEase / totalWeight
+                sizeProfiles[sizeVariant.size_name] = FuzzyEngine.findBestFitProfile(for: averageEase)
+            }
+        }
+    
+        var bestMatch: (name: String, profile: FitProfile)?
+        var minDistance = Int.max
+
+        for (sizeName, profile) in sizeProfiles {
+            let distance = desiredFit.distance(to: profile.fit)
+            
+            if distance < minDistance {
+                minDistance = distance
+                bestMatch = (name: sizeName, profile: profile)
+            } else if distance == minDistance {
+                if let currentBest = bestMatch, profile.score > currentBest.profile.score {
+                    bestMatch = (name: sizeName, profile: profile)
+                }
+            }
         }
         
-        if let bestSize = sizeScores.max(by: { $0.value < $1.value }), bestSize.value > 0 {
-            recommendedSize = bestSize.key
-            selectedSize = bestSize.key
+        if let bestSize = bestMatch {
+            recommendedSize = bestSize.name
+            if selectedSize.isEmpty { selectedSize = bestSize.name }
         } else {
             recommendedSize = "No Fit"
-            selectedSize = clothes.product_sizes.map { $0.size_name }.sorted().first ?? ""
+            if selectedSize.isEmpty { selectedSize = clothes.product_sizes.map { $0.size_name }.sorted().first ?? "" }
+        }
+        
+        updateSelectedSizeFitCategory()
+    }
+    
+    private func updateSelectedSizeFitCategory() {
+        guard let user = user,
+              let clothes = clothes,
+              let config = RECOMMENDER_CONFIG[clothes.product_type] ?? RECOMMENDER_CONFIG["T-Shirt"],
+              let sizeVariant = clothes.product_sizes.first(where: { $0.size_name == selectedSize })
+        else {
+            self.selectedSizeFitCategory = nil
+            return
+        }
+        
+        var partEaseValues: [String: Double] = [:]
+        for part in config.relevantParts {
+            let userMeasurement: Double?
+            let garmentMeasurement: Double?
+            switch part {
+            case "bust":
+                userMeasurement = Double(user.bust); garmentMeasurement = Double(sizeVariant.clothes_bust_min + sizeVariant.clothes_bust_max) / 2.0
+            case "torso":
+                userMeasurement = Double(user.torso); garmentMeasurement = Double(sizeVariant.clothes_torso_min + sizeVariant.clothes_torso_max) / 2.0
+            default:
+                userMeasurement = nil; garmentMeasurement = nil
+            }
+            
+            if let userM = userMeasurement, let garmentM = garmentMeasurement {
+                partEaseValues[part] = garmentM - userM
+            }
+        }
+
+        var totalWeightedEase: Double = 0
+        var totalWeight: Double = 0
+        for (part, ease) in partEaseValues {
+            if let weight = config.partWeights[part] {
+                totalWeightedEase += ease * weight
+                totalWeight += weight
+            }
+        }
+        
+        if totalWeight > 0 {
+            let averageEase = totalWeightedEase / totalWeight
+            self.selectedSizeFitCategory = FuzzyEngine.findBestFitProfile(for: averageEase).fit
+        } else {
+            self.selectedSizeFitCategory = nil
         }
     }
 }
