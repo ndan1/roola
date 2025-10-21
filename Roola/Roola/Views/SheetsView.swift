@@ -12,21 +12,22 @@ struct SheetView: View {
     // MARK: - Properties
     
     let clothes: Clothes
+    let user: User?
+    
+    init(clothes: Clothes, user: User? = nil) {
+        self.clothes = clothes
+        self.user = user
+    }
     
     @Environment(\.dismiss) var dismiss
     @Query var users: [User]
-    private var user: User? { users.first }
     
     @StateObject private var viewModel = SheetViewModel()
     
     private var availableSizes: [String] {
-        // Define a more comprehensive master order.
         let sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
         
         return clothes.product_sizes.map { $0.size_name }.sorted {
-            // Find the index of each size in the master order.
-            // If a size is not in the master list, give it a very high index
-            // so it sorts to the end.
             let firstIndex = sizeOrder.firstIndex(of: $0) ?? Int.max
             let secondIndex = sizeOrder.firstIndex(of: $1) ?? Int.max
             
@@ -36,7 +37,6 @@ struct SheetView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-    
             HStack(alignment: .center, spacing: 20) {
                 // Recommendation and Size Picker
                 VStack(spacing: 15) {
@@ -54,7 +54,7 @@ struct SheetView: View {
                         .foregroundStyle(.blue)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 0) { // Changed spacing back to 10 for circles
+                        HStack(spacing: 0) {
                             ForEach(availableSizes, id: \.self) { size in
                                 Button(action: {
                                     viewModel.selectedSize = size
@@ -70,7 +70,6 @@ struct SheetView: View {
                     }
                 }
                 
-                // Clothing Icon
                 Image(systemName: "tshirt.fill")
                     .font(.system(size: 70))
                     .frame(width: 100, height: 140)

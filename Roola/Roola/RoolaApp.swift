@@ -1,29 +1,77 @@
 //
-//  RoolaApp.swift
-//  Roola
+//RoolaApp.swift
+//Roola
 //
 //  Created by Georgius Kenny Gunawan on 17/10/25.
-//
 
 import SwiftUI
 import SwiftData
+import Supabase
+
+let supabase = SupabaseClient(
+    supabaseURL: SupabaseConfig.url,
+    supabaseKey: SupabaseConfig.anonKey
+)
 
 @main
 struct RoolaApp: App {
+    
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([Clothes.self, User.self])
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
+        
+        do {
+            let container = try ModelContainer(
+                for: schema,
+                configurations: [modelConfiguration]
+            )
+            
+            let context = container.mainContext
+            DataSeeder.seed(context: context)
+            
+            return container
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error.localizedDescription)")
+        }
+    }()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-        }
-        // 2. Add the .modelContainer modifier
-        .modelContainer(for: [Clothes.self, User.self], isAutosaveEnabled: true) { result in
-            switch result {
-            case .success(let container):
-                // 3. This is where the seeding happens
-                let context = container.mainContext
-                DataSeeder.seed(context: context)
-            case .failure(let error):
-                fatalError("Failed to create model container: \(error.localizedDescription)")
+            #if DEBUG
+            if CommandLine.arguments.contains("-testing-product-input") {
+                ProductInputView()
+                    .modelContainer(sharedModelContainer)
+            } else {
+                // Normal development flow
+                MainTabView()
+                    .modelContainer(sharedModelContainer)
             }
+            #else
+            ContentView()
+                .modelContainer(sharedModelContainer)
+            #endif
         }
     }
 }
+
+// MARK: - Main Tab View untuk Development
+struct MainTabView: View {
+    var body: some View {
+        TabView {
+            ProductInputView()
+                .tabItem {
+                    Label("Find Size", systemImage: "magnifyingglass.circle.fill")
+                }
+            
+            ContentView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+        }
+    }
+}
+
+

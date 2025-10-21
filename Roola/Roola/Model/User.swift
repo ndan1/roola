@@ -37,11 +37,11 @@ public class User {
         self.height = 158
         self.weight = 52
         self.age = 24
-        self.bust = 84
+        self.bust = 90
         self.waist = 66
         self.hips = 89
         self.shoulder_width = 39
-        self.torso = 59
+        self.torso = 64
         self.arms_length = 60
     }
 }
