@@ -21,7 +21,7 @@ public class User {
     var torso: Int
     var arms_length: Int
     
-    init(height: Int, weight: Int, age: Int, bust: Int, waist: Int, hips: Int, shoulder_width: Int, torso: Int, arms_length: Int) {
+    init(height: Int = 0, weight: Int = 0, age: Int = 0, bust: Int = 0, waist: Int = 0, hips: Int = 0, shoulder_width: Int = 0, torso: Int = 0, arms_length: Int = 0) {
         self.height = height
         self.weight = weight
         self.age = age
@@ -31,17 +31,5 @@ public class User {
         self.shoulder_width = shoulder_width
         self.torso = torso
         self.arms_length = arms_length
-    }
-    
-    init() {
-        self.height = 158
-        self.weight = 52
-        self.age = 24
-        self.bust = 84
-        self.waist = 66
-        self.hips = 89
-        self.shoulder_width = 39
-        self.torso = 59
-        self.arms_length = 60
     }
 }

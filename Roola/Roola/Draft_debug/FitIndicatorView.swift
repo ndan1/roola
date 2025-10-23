@@ -81,7 +81,7 @@ struct FitIndicatorView: View {
                 currentPositionIndex = 3
             }
         } else {
-            currentPositionIndex = 2 // Default to the center
+            currentPositionIndex = 2
         }
     }
 }
