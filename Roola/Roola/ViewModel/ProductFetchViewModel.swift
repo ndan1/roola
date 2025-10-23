@@ -46,7 +46,6 @@ class ProductFetchViewModel: ObservableObject {
         isLoading = false
     }
     
-    /// Fetch product langsung dengan shop_id dan product_id
     func fetchProduct(shopId: String, productId: String) async {
         guard !shopId.isEmpty && !productId.isEmpty else {
             errorMessage = "Shop ID dan Product ID tidak boleh kosong"

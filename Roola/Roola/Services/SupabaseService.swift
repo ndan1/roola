@@ -32,10 +32,10 @@ class SupabaseService {
                 .execute()
                 .value
             
-            print("✅ Supabase connection successful")
+            print("Supabase connection successful")
             return true
         } catch {
-            print("❌ Supabase connection failed: \(error)")
+            print("Supabase connection failed: \(error)")
             throw error
         }
     }
@@ -58,7 +58,7 @@ class SupabaseService {
     
     // MARK: - Helper Methods
     private func extractIDs(from urlString: String) throws -> (shopId: String, productId: String) {
-        print("🔍 Extracting IDs from URL: \(urlString)")
+        print("Extracting IDs from URL: \(urlString)")
         
         let pattern = #"/product/(\d+)/(\d+)"#
         let regex = try NSRegularExpression(pattern: pattern)
@@ -67,7 +67,7 @@ class SupabaseService {
         
         guard let match = regex.firstMatch(in: urlString, range: range),
               match.numberOfRanges == 3 else {
-            print("❌ Failed to extract IDs from URL")
+            print("Failed to extract IDs from URL")
             throw NetworkError.invalidURL
         }
         
@@ -81,9 +81,6 @@ class SupabaseService {
     
     // MARK: - Data Fetching
     func getProductData(shopId: String, productId: String) async throws -> ClothesResponse {
-        
-        print("🔍 Fetching product - Shop ID: \(shopId), Product ID: \(productId)")
-        
         do {
             let response: [ProductQueryResult] = try await client
                 .from("products")
@@ -105,25 +102,23 @@ class SupabaseService {
                 .execute()
                 .value
             
-            print("✅ Query successful, found \(response.count) products")
+            print("Found \(response.count) products")
             
             guard let product = response.first else {
-                print("❌ Product not found in database")
+                print("Product not found in database")
                 throw NetworkError.productNotFound
             }
-            
-            print("✅ Converting product to ClothesResponse")
             
             return convertToClothesResponse(product)
             
         } catch let error as PostgrestError {
-            print("❌ Database error: \(error.message)")
+            print("Database error: \(error.message)")
             throw NetworkError.databaseError(error.message)
         } catch let error as DecodingError {
-            print("❌ Decoding error: \(error)")
+            print("Decoding error: \(error)")
             throw NetworkError.decodingError(error.localizedDescription)
         } catch {
-            print("❌ Unknown error: \(error)")
+            print("Unknown error: \(error)")
             throw NetworkError.decodingError(error.localizedDescription)
         }
     }
@@ -189,7 +184,7 @@ class SupabaseService {
             }
         }
         
-        print("✅ Successfully converted \(variants.count) variants")
+        print("Successfully converted \(variants.count) variants")
         
         return ClothesResponse(
             product_id: product.product_id,
@@ -223,7 +218,7 @@ private class RedirectFollower: NSObject, URLSessionTaskDelegate {
     
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
         if let finalURL = request.url?.absoluteString {
-            print("✅ Redirected to: \(finalURL)")
+            print("Redirected to: \(finalURL)")
             
             do {
                 let pattern = #"/product/(\d+)/(\d+)"#
@@ -235,14 +230,14 @@ private class RedirectFollower: NSObject, URLSessionTaskDelegate {
                    match.numberOfRanges == 3 {
                     let shopId = nsString.substring(with: match.range(at: 1))
                     let productId = nsString.substring(with: match.range(at: 2))
-                    print("✅ Extracted IDs - Shop: \(shopId), Product: \(productId)")
+                    print("Extracted IDs - Shop: \(shopId), Product: \(productId)")
                     completion(.success((shopId: shopId, productId: productId)))
                 } else {
-                    print("❌ Failed to extract IDs from redirect URL")
+                    print("Failed to extract IDs from redirect URL")
                     completion(.failure(NetworkError.invalidURL))
                 }
             } catch {
-                print("❌ Regex error: \(error)")
+                print("Regex error: \(error)")
                 completion(.failure(NetworkError.invalidURL))
             }
         }
@@ -253,7 +248,7 @@ private class RedirectFollower: NSObject, URLSessionTaskDelegate {
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error, error._code != NSURLErrorCancelled {
-            print("❌ URLSession error: \(error)")
+            print("URLSession error: \(error)")
             completion(.failure(error))
         }
     }

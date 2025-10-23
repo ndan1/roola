@@ -11,6 +11,7 @@ import SwiftData
 struct ContentView: View {
     @State private var showingSheet = false
     @State private var showingData = false
+    @State private var showingUserInput = false
     
     @Query var clothes: [Clothes]
     
@@ -49,6 +50,16 @@ struct ContentView: View {
                 .clipShape(Capsule())
                 .shadow(radius: 4)
                 .padding(.top, 10)
+                
+                Button("Enter Body Measurements") {
+                    showingUserInput.toggle()
+                }
+                .font(.subheadline)
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .clipShape(Capsule())
+                .shadow(radius: 4)
             }
             .padding()
         }
@@ -62,6 +73,9 @@ struct ContentView: View {
                     .padding()
                     .background(Color(UIColor.systemBackground))
             }
+        }
+        .sheet(isPresented: $showingUserInput) {
+            UserInputView()
         }
     }
 }

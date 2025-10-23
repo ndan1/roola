@@ -30,7 +30,6 @@ struct RoolaApp: App {
             )
             
             let context = container.mainContext
-            DataSeeder.seed(context: context)
             
             return container
         } catch {
@@ -65,6 +64,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Find Size", systemImage: "magnifyingglass.circle.fill")
                 }
+            
+            UserProfileView()
+                            .tabItem {
+                                Label("Profile", systemImage: "person.circle.fill")
+                            }
             
             ContentView()
                 .tabItem {
