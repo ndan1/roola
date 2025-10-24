@@ -55,27 +55,3 @@ struct RoolaApp: App {
         }
     }
 }
-
-// MARK: - Main Tab View untuk Development
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            ProductInputView()
-                .tabItem {
-                    Label("Find Size", systemImage: "magnifyingglass.circle.fill")
-                }
-            
-            UserProfileView()
-                            .tabItem {
-                                Label("Profile", systemImage: "person.circle.fill")
-                            }
-            
-            ContentView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-        }
-    }
-}
-
-

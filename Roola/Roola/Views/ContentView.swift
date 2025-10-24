@@ -28,7 +28,8 @@ struct ContentView: View {
                         showingData.toggle()
                     }
                     .sheet(isPresented: $showingData) {
-                        DataView()
+//                        DataView()
+                        Text("")
                     }
                 
                 Text("Welcome to Roola")
