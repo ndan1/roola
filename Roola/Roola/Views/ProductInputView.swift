@@ -13,6 +13,7 @@ struct ProductInputView: View {
     @StateObject private var viewModel = ProductFetchViewModel()
     @State private var urlInput: String = ""
     @State private var showSheet: Bool = false
+    @State private var showingSizeScanner = false
     
     var body: some View {
         NavigationView {
@@ -58,6 +59,23 @@ struct ProductInputView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                 }
+                
+                Text("OR")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                Button(action: {
+                    showingSizeScanner = true
+                }) {
+                    Label("Scan Size Chart", systemImage: "camera.viewfinder")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
             }
             .navigationTitle("Size Finder")
             .sheet(isPresented: $showSheet) {
@@ -65,6 +83,10 @@ struct ProductInputView: View {
                     SheetView(clothes: clothes, user: user)
 //                    ClothingDetailView(clothes: clothes)
                 }
+            }
+            .sheet(isPresented: $showingSizeScanner) {
+//                SizeChartScannerView()
+                OCRView()
             }
             .onDisappear {
                 viewModel.reset()
