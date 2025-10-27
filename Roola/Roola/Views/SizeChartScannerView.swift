@@ -113,7 +113,6 @@ struct SizeChartScannerView: View {
             }
             .sheet(isPresented: $showingResults) {
                 SizeDataReviewView(sizeData: extractedSizes) {
-                    // On confirm, save to database
                     dismiss()
                 }
             }

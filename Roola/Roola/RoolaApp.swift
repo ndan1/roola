@@ -66,9 +66,9 @@ struct MainTabView: View {
                 }
             
             UserProfileView()
-                            .tabItem {
-                                Label("Profile", systemImage: "person.circle.fill")
-                            }
+                .tabItem {
+                    Label("Profile", systemImage: "person.circle.fill")
+                }
             
             ContentView()
                 .tabItem {

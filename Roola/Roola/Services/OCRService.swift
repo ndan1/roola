@@ -193,6 +193,7 @@ enum OCRError: Error, LocalizedError {
     case invalidImage
     case recognitionFailed
     case noSizeDataFound
+    case noTextFound
     
     var errorDescription: String? {
         switch self {
@@ -202,6 +203,8 @@ enum OCRError: Error, LocalizedError {
             return "Failed to recognize text from image"
         case .noSizeDataFound:
             return "No size data found in the image"
+        case .noTextFound:
+            return "No text found in image"
         }
     }
 }
