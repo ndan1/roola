@@ -21,14 +21,15 @@ struct MainTabView: View {
                                 Label("Profile", systemImage: "person.circle.fill")
                             }
             
-            ContentView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
             TestView()
                 .tabItem {
-                    Label("Calcs", systemImage: "house.fill")
+                    Label("calc", systemImage: "house.fill")
+                }
+            TestOcrView()
+                .tabItem {
+                    Label("ocr/cal", systemImage: "house.fill")
                 }
         }
+        
     }
 }

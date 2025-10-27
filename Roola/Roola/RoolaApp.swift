@@ -15,7 +15,6 @@ let supabase = SupabaseClient(
 
 @main
 struct RoolaApp: App {
-    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([Clothes.self, User.self])
         let modelConfiguration = ModelConfiguration(

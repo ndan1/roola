@@ -81,11 +81,9 @@ struct ProductInputView: View {
             .sheet(isPresented: $showSheet) {
                 if let clothes = viewModel.fetchedClothes, let user = users.first {
                     SheetView(clothes: clothes, user: user)
-//                    ClothingDetailView(clothes: clothes)
                 }
             }
             .sheet(isPresented: $showingSizeScanner) {
-//                SizeChartScannerView()
                 OCRView()
             }
             .onDisappear {
