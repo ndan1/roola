@@ -43,12 +43,14 @@ struct OpenAIService {
         Rules:
         - Extract all available sizes (S, M, L, XL, XXL, S-M, L-XL, 2XL, etc.)
         - If the size 2XL, 3XL, etc, convert to XXL, XXXL
+        - If the size is a range like "S-M", "SM", or "ML", seperate the JSON entries for S and M, except size such as "XL-XXXL" and "XS" which should remain as is
+        - If there is no clear label, or there is only 1 size, use "all_size" as the namespace
         - For measurements that show ranges like "33-35", use 33 as min and 35 as max
         - For single measurements like "64", use the same value for both min and max
         - If a measurement is not available, use null
         - Common measurement names: "LINGKAR DADA" = bust, "PINGGANG" = waist, "PANJANG BAJU" = torso, "PANJANG LENGAN" = arm_length
         - All measurements should be in centimeters (cm)
-        - Return ONLY the JSON, no additional text
+        - Return ONLY the JSON, no additional text 
         
         OCR Text:
         \(ocrText)
