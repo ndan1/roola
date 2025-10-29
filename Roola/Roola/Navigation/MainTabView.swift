@@ -11,15 +11,10 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-            ProductInputView()
-                .tabItem {
-                    Label("Find Size", systemImage: "magnifyingglass.circle.fill")
-                }
-            
             UserProfileView()
-                            .tabItem {
-                                Label("Profile", systemImage: "person.circle.fill")
-                            }
+                .tabItem {
+                    Label("Profile", systemImage: "person.circle.fill")
+                }
             
             TestView()
                 .tabItem {

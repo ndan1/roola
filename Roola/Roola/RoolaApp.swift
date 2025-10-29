@@ -40,10 +40,9 @@ struct RoolaApp: App {
         WindowGroup {
             #if DEBUG
             if CommandLine.arguments.contains("-testing-product-input") {
-                ProductInputView()
+                TestView()
                     .modelContainer(sharedModelContainer)
             } else {
-                // Normal development flow
                 MainTabView()
                     .modelContainer(sharedModelContainer)
             }

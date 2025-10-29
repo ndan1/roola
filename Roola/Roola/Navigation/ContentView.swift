@@ -64,17 +64,6 @@ struct ContentView: View {
             }
             .padding()
         }
-        .sheet(isPresented: $showingSheet) {
-            if let firstClothingItem = clothes.first {
-                SheetView(clothes: firstClothingItem)
-                    .presentationDetents([.medium])
-                    .background(Color(UIColor.systemBackground))
-            } else {
-                Text("Loading clothing data...")
-                    .padding()
-                    .background(Color(UIColor.systemBackground))
-            }
-        }
         .sheet(isPresented: $showingUserInput) {
             UserInputView()
         }
