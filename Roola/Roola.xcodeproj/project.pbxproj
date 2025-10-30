@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A50723352EA6A54C00AD4C68 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A50723342EA6A54C00AD4C68 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		6AE50A042EA1EC4800756E64 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A50723352EA6A54C00AD4C68 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Roola;
 			packageProductDependencies = (
+				A50723342EA6A54C00AD4C68 /* Supabase */,
 			);
 			productName = Roola;
 			productReference = 6AE509F62EA1EC4700756E64 /* Roola.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 6AE509ED2EA1EC4700756E64;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A50723332EA6A4F500AD4C68 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6AE509F72EA1EC4700756E64 /* Products */;
 			projectDirPath = "";
@@ -397,7 +406,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = DVBG245BYT;
+				DEVELOPMENT_TEAM = 5AGMV642WQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -425,7 +434,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = DVBG245BYT;
+				DEVELOPMENT_TEAM = 5AGMV642WQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -558,6 +567,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A50723332EA6A4F500AD4C68 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A50723342EA6A54C00AD4C68 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A50723332EA6A4F500AD4C68 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6AE509EE2EA1EC4700756E64 /* Project object */;
 }
