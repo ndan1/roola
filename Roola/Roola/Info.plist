@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSCameraUsageDescription</key>
-    <string>Kami membutuhkan akses kamera untuk mengambil foto tubuh Anda dan menghitung ukuran badan secara otomatis.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>To scan your body and get measurements</string>
 </dict>
 </plist>

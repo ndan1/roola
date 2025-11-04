@@ -10,7 +10,7 @@ import UIKit
 
 struct BodyPoseCaptureView: UIViewControllerRepresentable {
     @Environment(\.dismiss) private var dismiss
-    let onCapture: (UIImage, BodyMeasurements) -> Void
+    let onCapture: (URL, BodyMeasurements) -> Void
     
     func makeUIViewController(context: Context) -> PoseCaptureViewController {
         let controller = PoseCaptureViewController()
@@ -33,8 +33,8 @@ struct BodyPoseCaptureView: UIViewControllerRepresentable {
             self.parent = parent
         }
         
-        func didCaptureValidPose(image: UIImage, measurements: BodyMeasurements) {
-            parent.onCapture(image, measurements)
+        func didCaptureVideo(videoURL: URL, measurements: BodyMeasurements) {
+            parent.onCapture(videoURL, measurements)
         }
     }
 }

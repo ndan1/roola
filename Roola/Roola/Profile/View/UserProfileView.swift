@@ -5,23 +5,22 @@
 
 import SwiftUI
 import SwiftData
+import AVKit
 
 struct UserProfileView: View {
     @Query private var users: [User]
     @State private var showingEditSheet = false
     @State private var showingPoseCapture = false // BARU
-    @State private var capturedImage: UIImage? // BARU
+    @State private var capturedVideoURL: URL?
     
     var body: some View {
         NavigationView {
             if let user = users.first {
                 Form {
-                    if let image = capturedImage {
+                    if let videoURL = capturedVideoURL {
                         Section("Captured Pose") {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 300)
+                            VideoPlayer(player: AVPlayer(url: videoURL))
+                                .frame(height: 300)
                         }
                     }
                     
@@ -62,8 +61,8 @@ struct UserProfileView: View {
                     UserInputView()
                 }
                 .fullScreenCover(isPresented: $showingPoseCapture) {
-                    BodyPoseCaptureView { image, measurements in
-                        capturedImage = image
+                    BodyPoseCaptureView { videoURL, measurements in
+                        capturedVideoURL = videoURL
                         print("Captured! Arm span: \(measurements.armSpan)")
                         showingPoseCapture = false
                     }
@@ -95,8 +94,9 @@ struct UserProfileView: View {
                     UserInputView()
                 }
                 .fullScreenCover(isPresented: $showingPoseCapture) {
-                    BodyPoseCaptureView { image, measurements in
-                        capturedImage = image
+                    BodyPoseCaptureView { videoURL, measurements in
+                        capturedVideoURL = videoURL
+                        print("Captured! Arm span: \(measurements.armSpan)")
                         showingPoseCapture = false
                     }
                     .edgesIgnoringSafeArea(.all)
