@@ -35,7 +35,10 @@ class OCRService {
         print("📸 OCR Raw Text:")
         print(recognizedText)
         
-        // Step 2: Parse text to extract size data
+        // Step 2: Validate if it's upperwear or contains size chart
+        try validateSizeChart(text: recognizedText)
+        
+        // Step 3: Parse text to extract size data
         let sizeData = parseSizeData(from: recognizedText)
         
         print("\n✅ Extracted \(sizeData.count) sizes:")
@@ -165,6 +168,61 @@ class OCRService {
         return sizeDataArray
     }
     
+    // MARK: - Validation
+    private func validateSizeChart(text: String) throws {
+        let lowercasedText = text.lowercased()
+        
+        // Check for lower body clothing keywords
+        let lowerBodyKeywords = [
+            "panjang celana",
+            "lingkar paha",
+            "panjang bawahan",
+            "celana",
+            "pants",
+            "trousers",
+            "jeans",
+            "shorts",
+            "rok",
+            "skirt",
+            "lingkar pinggul bawahan"
+        ]
+        
+        for keyword in lowerBodyKeywords {
+            if lowercasedText.contains(keyword) {
+                print("❌ Detected lower body clothing keyword: \(keyword)")
+                throw OCRError.notUpperwear
+            }
+        }
+        
+        // Check if text is too short (likely not a size chart)
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).count < 20 {
+            print("❌ Text too short, likely not a size chart")
+            throw OCRError.noSizeChartDetected
+        }
+        
+        // Check for size chart indicators
+        let sizeChartIndicators = [
+            "size", "ukuran", "lingkar dada", "bust", "panjang baju",
+            "torso", "length", "chest", "s", "m", "l", "xl"
+        ]
+        
+        let hasSizeIndicator = sizeChartIndicators.contains { indicator in
+            lowercasedText.contains(indicator)
+        }
+        
+        // Check for numeric measurements (typical in size charts)
+        let numberPattern = #"\d{2,3}"#
+        let hasNumbers = (try? NSRegularExpression(pattern: numberPattern)
+            .firstMatch(in: text, range: NSRange(text.startIndex..., in: text))) != nil
+        
+        if !hasSizeIndicator || !hasNumbers {
+            print("❌ No size chart indicators or measurements found")
+            throw OCRError.noSizeChartDetected
+        }
+        
+        print("✅ Validation passed: Text appears to be an upperwear size chart")
+    }
+    
     // MARK: - Helper Methods
     private func extractContextLines(from lines: [String], currentIndex: Int, range: Int) -> String {
         let start = max(0, currentIndex - range)
@@ -194,8 +252,19 @@ enum OCRError: Error, LocalizedError {
     case recognitionFailed
     case noSizeDataFound
     case noTextFound
+    case notUpperwear
+    case noSizeChartDetected
     
-    var errorDescription: String? {
+    var title: String {
+        switch self {
+        case .invalidImage, .noTextFound, .recognitionFailed, .noSizeDataFound:
+            return "Error"
+        case .notUpperwear, .noSizeChartDetected:
+            return "Uh Oh!"
+        }
+    }
+    
+    var message: String {
         switch self {
         case .invalidImage:
             return "Invalid image format"
@@ -205,6 +274,14 @@ enum OCRError: Error, LocalizedError {
             return "No size data found in the image"
         case .noTextFound:
             return "No text found in image"
+        case .notUpperwear:
+            return "Size chart uploaded wasn't an upperwear!"
+        case .noSizeChartDetected:
+            return "There wasn't any size chart in the screenshot"
         }
+    }
+    
+    var errorDescription: String? {
+        return message
     }
 }
