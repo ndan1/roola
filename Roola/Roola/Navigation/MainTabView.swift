@@ -20,7 +20,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("calc", systemImage: "house.fill")
                 }
-            TestOcrView()
+            RecommendationView()
                 .tabItem {
                     Label("ocr/cal", systemImage: "house.fill")
                 }

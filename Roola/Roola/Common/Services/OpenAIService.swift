@@ -66,7 +66,8 @@ struct OpenAIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let requestBody: [String: Any] = [
-            "model": "gpt-5-nano-2025-08-07",
+            "model": "gpt-5-mini",
+            "response_format": [ "type": "json_object" ],
             "messages": [
                 [
                     "role": "system",
@@ -77,8 +78,6 @@ struct OpenAIService {
                     "content": prompt
                 ]
             ],
-            "verbosity": "low",
-            "reasoning_effort": "minimal"
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
