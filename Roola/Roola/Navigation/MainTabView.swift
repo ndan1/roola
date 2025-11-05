@@ -15,16 +15,10 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Profile", systemImage: "person.circle.fill")
                 }
-            
-            TestView()
-                .tabItem {
-                    Label("calc", systemImage: "house.fill")
-                }
             RecommendationView()
                 .tabItem {
                     Label("ocr/cal", systemImage: "house.fill")
                 }
         }
-        
     }
 }

@@ -11,10 +11,7 @@ import PhotosUI
 
 struct RecommendationView: View {
     
-    // 1. Ganti semua @State dengan @StateObject ViewModel
     @StateObject private var viewModel = RecommendationViewModel()
-    
-    // 2. Hanya sisakan @State untuk PhotosPicker
     @State private var selectedPhoto: PhotosPickerItem?
     
     var body: some View {
@@ -24,11 +21,10 @@ struct RecommendationView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                // 3. Panggil sub-view yang membaca dari ViewModel
                 imageDisplayView
                 
                 PhotosPicker(
-                    selection: $selectedPhoto, // Tetap pakai @State
+                    selection: $selectedPhoto,
                     matching: .images,
                     photoLibrary: .shared()
                 ) {
@@ -40,7 +36,6 @@ struct RecommendationView: View {
                         .cornerRadius(10)
                 }
                 .onChange(of: selectedPhoto) { oldValue, newValue in
-                    // 4. Panggil fungsi ViewModel
                     viewModel.handlePhotoSelection(newValue)
                 }
                 
@@ -54,9 +49,7 @@ struct RecommendationView: View {
             .padding()
             .alert(viewModel.currentError?.title ?? "Error", isPresented: $viewModel.showErrorAlert) {
                 Button("Retry", role: .cancel) {
-                    // 5. Panggil fungsi ViewModel
                     viewModel.resetAllStates()
-                    // Juga reset image picker
                     selectedPhoto = nil
                     viewModel.selectedImage = nil
                 }
@@ -66,11 +59,10 @@ struct RecommendationView: View {
         }
     }
     
-    // MARK: - Sub-Views (Sekarang membaca dari viewModel)
+    // MARK: - Sub-Views
     
     @ViewBuilder
     private var imageDisplayView: some View {
-        // 6. Baca dari viewModel.selectedImage
         if let image = viewModel.selectedImage {
             Image(uiImage: image)
                 .resizable()
@@ -99,7 +91,6 @@ struct RecommendationView: View {
     private var processButtonView: some View {
         VStack {
             Button {
-                // 7. Panggil viewModel.processImage()
                 viewModel.processImage()
             } label: {
                 Label("1. Process Image (OCR + AI)", systemImage: "wand.and.stars")
@@ -109,7 +100,6 @@ struct RecommendationView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            // 8. Baca state dari viewModel
             .disabled(viewModel.selectedImage == nil || viewModel.isProcessing)
             
             if viewModel.isProcessing {
@@ -126,7 +116,6 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var ocrResultView: some View {
-        // 9. Baca dari viewModel.recognizedText
         if !viewModel.recognizedText.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("OCR Raw Text:")
@@ -142,7 +131,6 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var apiSectionView: some View {
-        // 10. Baca dari viewModel.extractedJSON
         if !viewModel.extractedJSON.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("AI Extracted JSON:")
@@ -168,17 +156,14 @@ struct RecommendationView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                // 11. Bind ke viewModel.clothingType
                 TextField("Enter Clothing Type (e.g., blouse)", text: $viewModel.clothingType)
                     .textFieldStyle(.roundedBorder)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                 
                 Button {
-                    Task {
-                        // 12. Panggil viewModel.getRecommendation()
-                        await viewModel.getRecommendation()
-                    }
+                    // Panggil getRecommendation (sekarang menjalankan fuzzy lokal)
+                    viewModel.getRecommendation()
                 } label: {
                     Label("2. Get Recommendation", systemImage: "arrow.down.circle.dotted")
                         .frame(maxWidth: .infinity)
@@ -190,11 +175,12 @@ struct RecommendationView: View {
                 .disabled(viewModel.clothingType.isEmpty || viewModel.isCallingAPI)
                 
                 if viewModel.isCallingAPI {
-                    ProgressView("Getting recommendation...")
+                    ProgressView("Calculating Recommendations...") // Ubah teks
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding()
                 }
                 
+                // Tampilan hasil API (Sekarang menampilkan 5 hasil fuzzy)
                 apiResultView
             }
         }
@@ -202,31 +188,25 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var apiResultView: some View {
-        // 13. Baca dari viewModel.serverResponse dan viewModel.apiError
-        if let serverResponse = viewModel.serverResponse {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("API Recommendation Result:")
-                    .font(.headline)
-                    .padding(.bottom, 5)
+        // Tampilkan 5 rekomendasi
+        if let recommendations = viewModel.serverResponse?.recommendations {
+            VStack(alignment: .leading, spacing: 15) {
+                Text("Local Fuzzy Recommendations:")
+                    .font(.title2)
+                    .fontWeight(.semibold)
                 
-                let regularRec = serverResponse.recommendations.regular
-                Text("Regular Fit: \(regularRec.bestSize)")
-                    .font(.body)
-                Text("Score: \(String(format: "%.1f", regularRec.bestScore))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                let looseRec = serverResponse.recommendations.loose
-                Text("Loose Fit: \(looseRec.bestSize)")
-                    .font(.body)
-                    .padding(.top, 5)
-                Text("Score: \(String(format: "%.1f", looseRec.bestScore))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                RecommendationRow(fit: "Regular", recommendation: recommendations.regular)
+                Divider()
+                RecommendationRow(fit: "Loose", recommendation: recommendations.loose)
+                Divider()
+                RecommendationRow(fit: "Slightly Loose", recommendation: recommendations.slightlyLoose)
+                Divider()
+                RecommendationRow(fit: "Slightly Tight", recommendation: recommendations.slightlyTight)
+                Divider()
+                RecommendationRow(fit: "Tight", recommendation: recommendations.tight)
             }
             .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.green.opacity(0.1))
+            .background(Color.gray.opacity(0.1))
             .cornerRadius(10)
             
         } else if let apiError = viewModel.apiError {
@@ -237,6 +217,61 @@ struct RecommendationView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .background(Color.red.opacity(0.1))
                 .cornerRadius(10)
+        }
+    }
+}
+
+/// Helper view dari RecView.swift, dipindahkan ke sini
+private struct RecommendationRow: View {
+    let fit: String
+    let recommendation: FitRecommendation
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(fit)
+                .font(.headline)
+                .foregroundColor(Color.blue)
+            
+            HStack {
+                Text("Best Size:")
+                    .fontWeight(.medium)
+                Spacer()
+                Text(recommendation.bestSize)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(5)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(5)
+            }
+            
+            HStack {
+                Text("Score:")
+                    .fontWeight(.medium)
+                Spacer()
+                Text(String(format: "%.1f%%", recommendation.bestScore))
+            }
+            
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Part Fits:")
+                    .fontWeight(.medium)
+                
+                if recommendation.partFits.isEmpty {
+                    Text("N/A")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    // Sortir keys agar urutan konsisten
+                    ForEach(recommendation.partFits.sorted(by: { $0.key < $1.key }), id: \.key) { part, fit in
+                        HStack {
+                            Text("  • \(part.capitalized):")
+                                .font(.caption)
+                            Text(fit)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 2)
         }
     }
 }
