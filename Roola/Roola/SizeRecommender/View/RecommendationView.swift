@@ -8,11 +8,13 @@
 import SwiftUI
 import Vision
 import PhotosUI
+import SwiftData
 
 struct RecommendationView: View {
     
     @StateObject private var viewModel = RecommendationViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
+    @Query private var users: [User]
     
     var body: some View {
         ScrollView {
@@ -55,6 +57,11 @@ struct RecommendationView: View {
                 }
             } message: {
                 Text(viewModel.currentError?.message ?? "")
+            }
+            .onAppear{
+                if let user = users.first{
+                    viewModel.loadUserMeasurements(user: user)
+                }
             }
         }
     }

@@ -29,14 +29,7 @@ class RecommendationViewModel: ObservableObject {
     
     // MARK: - User Data
     // TODO: Ganti data mock ini dengan data user dari SwiftData/User Model Anda
-    @Published var userMeasurements = UserMeasurements(
-        bust: 91.0,
-        waist: 73.0,
-        hips: 100.0,
-        shoulderWidth: 37.0,
-        torso: 58.0,
-        armLength: 55.0
-    )
+    @Published var userMeasurements: UserMeasurements?
     
     // MARK: - Services
     private let ocrService: LocalOCRService
@@ -50,6 +43,17 @@ class RecommendationViewModel: ObservableObject {
         
         // Di sini Anda bisa memuat self.userMeasurements dari SwiftData
         // loadUserData()
+    }
+    
+    func loadUserMeasurements(user: User) {
+        self.userMeasurements = UserMeasurements(
+            bust: Double(user.bust),
+            waist: Double(user.waist),
+            hips: Double(user.hips),
+            shoulderWidth: Double(user.shoulder_width),
+            torso: Double(user.torso),
+            armLength: Double(user.arms_length)
+        )
     }
     
     // MARK: - Public Functions (Dipanggil oleh View)
@@ -120,6 +124,12 @@ class RecommendationViewModel: ObservableObject {
     
     /// 2. Mendapatkan rekomendasi (Sekarang menggunakan FUZZY LOKAL)
     func getRecommendation() {
+        guard let userMeasurements = userMeasurements else {
+            apiError = "User measurements not available."
+            isCallingAPI = false
+            return
+        }
+        
         isCallingAPI = true // Ganti nama state ini nanti jika mau
         apiError = nil
         serverResponse = nil
@@ -149,7 +159,7 @@ class RecommendationViewModel: ObservableObject {
         
         // 3. Panggil kalkulasi FUZZY LOKAL (menggantikan panggilan API)
         calculateLocalRecommendations(
-            userMeasurements: self.userMeasurements, // Menggunakan data user dari property
+            userMeasurements: userMeasurements, // Menggunakan data user dari property
             clothesData: clothesData
         )
     }
