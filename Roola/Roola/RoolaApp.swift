@@ -40,7 +40,7 @@ struct RoolaApp: App {
         WindowGroup {
             #if DEBUG
             if CommandLine.arguments.contains("-testing-product-input") {
-                TestView()
+                UserProfileView()
                     .modelContainer(sharedModelContainer)
             } else {
                 MainTabView()

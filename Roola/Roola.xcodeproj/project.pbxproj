@@ -33,9 +33,22 @@
 		6AE50A0D2EA1EC4800756E64 /* RoolaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoolaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A515509E2EBA4D8900954A69 /* Exceptions for "Roola" folder in "Roola" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6AE509F52EA1EC4700756E64 /* Roola */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6AE509F82EA1EC4700756E64 /* Roola */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A515509E2EBA4D8900954A69 /* Exceptions for "Roola" folder in "Roola" target */,
+			);
 			path = Roola;
 			sourceTree = "<group>";
 		};
