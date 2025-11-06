@@ -48,6 +48,7 @@ struct OpenAIService {
         - For measurements that show ranges like "33-35", use 33 as min and 35 as max
         - For single measurements like "64", use the same value for both min and max
         - If a measurement is not available, use null
+        - Don't insert INT as size label, it's just column header
         - Common measurement names: "LINGKAR DADA" = bust, "PINGGANG" = waist, "PANJANG BAJU" = torso, "PANJANG LENGAN" = arm_length
         - All measurements should be in centimeters (cm)
         - Return ONLY the JSON, no additional text 

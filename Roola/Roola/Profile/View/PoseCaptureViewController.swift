@@ -93,7 +93,7 @@ class PoseCaptureViewController: UIViewController {
             previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
             previewLayer.frame = view.bounds
             previewLayer.videoGravity = .resizeAspect
-            previewLayer.connection?.videoRotationAngle = .pi / 2
+            previewLayer.connection?.videoRotationAngle = 90
             view.layer.insertSublayer(previewLayer, at: 0)
             
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -305,8 +305,6 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             let rightWrist = try observation.recognizedPoint(.rightWrist)
             let leftShoulder = try observation.recognizedPoint(.leftShoulder)
             let rightShoulder = try observation.recognizedPoint(.rightShoulder)
-            let leftElbow = try observation.recognizedPoint(.leftElbow)
-            let rightElbow = try observation.recognizedPoint(.rightElbow)
             let leftHip = try observation.recognizedPoint(.leftHip)
             let rightHip = try observation.recognizedPoint(.rightHip)
             let neck = try observation.recognizedPoint(.neck)

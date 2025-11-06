@@ -163,10 +163,17 @@ struct RecommendationView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                TextField("Enter Clothing Type (e.g., blouse)", text: $viewModel.clothingType)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
+                Picker("Clothing Type", selection: $viewModel.clothingType) {
+                    Text("Select clothing type").tag("")
+                    Text("T-Shirt").tag("t_shirt")
+                    Text("Blouse").tag("blouse")
+                    Text("Long Sleeved Shirt").tag("long_sleeved_shirt")
+                    Text("Short Sleeved Shirt").tag("short_sleeved_shirt")
+                }
+                .pickerStyle(.menu)
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
                 
                 Button {
                     // Panggil getRecommendation (sekarang menjalankan fuzzy lokal)
@@ -198,7 +205,7 @@ struct RecommendationView: View {
         // Tampilkan 5 rekomendasi
         if let recommendations = viewModel.serverResponse?.recommendations {
             VStack(alignment: .leading, spacing: 15) {
-                Text("Local Fuzzy Recommendations:")
+                Text("Size Recommendations:")
                     .font(.title2)
                     .fontWeight(.semibold)
                 

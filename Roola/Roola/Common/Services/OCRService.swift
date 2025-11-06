@@ -37,6 +37,10 @@ struct LocalOCRService {
                 continuation.resume(returning: resultText)
             }
             
+            recognizeRequest.recognitionLanguages = ["id", "en"]
+            
+            recognizeRequest.usesLanguageCorrection = true
+            
             recognizeRequest.recognitionLevel = .accurate
             
             do {

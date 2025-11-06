@@ -25,15 +25,3 @@ struct Recommendations: Codable {
         case tight
     }
 }
-
-struct FitRecommendation: Codable {
-    let bestScore: Double
-    let bestSize: String
-    let partFits: [String: String]
-    
-    enum CodingKeys: String, CodingKey {
-        case bestScore = "best_score"
-        case bestSize = "best_size"
-        case partFits = "part_fits"
-    }
-}
