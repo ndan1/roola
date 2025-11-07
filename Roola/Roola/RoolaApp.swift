@@ -6,12 +6,6 @@
 
 import SwiftUI
 import SwiftData
-import Supabase
-
-let supabase = SupabaseClient(
-    supabaseURL: SupabaseConfig.url,
-    supabaseKey: SupabaseConfig.anonKey
-)
 
 @main
 struct RoolaApp: App {
