@@ -15,18 +15,25 @@ struct RoolaButton: View {
     
     
     var body: some View {
-            Button(action: action) {
-                Text(buttonTitle)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundColor(buttonColor == AppColors.primaryPurple ? .white : .black)
-            }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(buttonColor)
+        Button(action: action) {
+            Text(buttonTitle)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .font(.title3)
+                .fontWeight(.medium)
+                .foregroundColor(buttonColor == AppColors.primaryPurple ? .white : .black)
         }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .overlay {
+            if buttonColor != AppColors.primaryPurple {
+                Capsule()
+                    .stroke(Color.gray, lineWidth: 2)
+            }
+        }
+        .tint(buttonColor)
+    }
+
 }
 
 #Preview {
