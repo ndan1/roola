@@ -33,6 +33,7 @@ class RecommendationViewModel: ObservableObject {
     // MARK: - Services
     private let ocrService: LocalOCRService
     private let openAIService: OpenAIService
+    private let geminiService: GeminiService
     
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
     
@@ -42,6 +43,7 @@ class RecommendationViewModel: ObservableObject {
     init() {
         self.ocrService = LocalOCRService()
         self.openAIService = OpenAIService()
+        self.geminiService = GeminiService()
     }
     
     // load user data
@@ -101,9 +103,9 @@ class RecommendationViewModel: ObservableObject {
                 
                 try await ocrService.validateOCRText(ocrResult)
                 
-                self.currentStep = "Sending to OpenAI API..."
+                self.currentStep = "Sending to Gemini API..."
                 
-                let jsonResult = try await openAIService.extractSizeChart(from: ocrResult)
+                let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 
                 self.extractedJSON = jsonResult
                 self.currentStep = ""
