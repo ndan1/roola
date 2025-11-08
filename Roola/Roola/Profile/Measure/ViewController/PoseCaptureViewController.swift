@@ -40,6 +40,9 @@ class PoseCaptureViewController: UIViewController {
     private var validPoseCount = 0
     private let requiredValidFrames = 15
     
+    private lazy var stencilImageA: UIImage? = UIImage(named: "red_stencil")
+    private lazy var stencilImageB: UIImage? = UIImage(named: "green_stencil")
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -60,7 +63,6 @@ class PoseCaptureViewController: UIViewController {
         overlayView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(overlayView)
         
-        overlayView.showFeedback("Posisikan tubuh Anda\nLengan melentang 45° ke bawah", color: .systemBlue)
     }
     
     private func setupCamera() {
@@ -70,7 +72,7 @@ class PoseCaptureViewController: UIViewController {
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera,
                                                    for: .video,
                                                    position: .front) else {
-            showFeedback("Kamera tidak tersedia", color: .systemRed)
+//            showFeedback("Kamera tidak tersedia", color: .systemRed)\
             return
         }
         
@@ -92,7 +94,7 @@ class PoseCaptureViewController: UIViewController {
             
             previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
             previewLayer.frame = view.bounds
-            previewLayer.videoGravity = .resizeAspect
+            previewLayer.videoGravity = .resizeAspectFill
             previewLayer.connection?.videoRotationAngle = 90
             view.layer.insertSublayer(previewLayer, at: 0)
             
@@ -116,6 +118,12 @@ class PoseCaptureViewController: UIViewController {
         
         let progress = Float(validPoseCount) / Float(requiredValidFrames)
         overlayView.updateProgress(show ? progress : 0.0)
+        
+        if show {
+            overlayView.setStencil(image: stencilImageB)
+        } else {
+            overlayView.setStencil(image: stencilImageA)
+        }
     }
 }
 
@@ -222,11 +230,21 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                     print("✅ Video berhasil disimpan di: \(url)")
                     self.delegate?.didCaptureVideo(videoURL: url, measurements: measurements)
                     self.dismiss(animated: true)
+                    if let sizeFormatted = self.getVideoSize(at: url)?.formatted {
+                        print("📊 Video ready: \(sizeFormatted)")
+                    }
+                    
+                    // Optional: Encode to Base64 now (e.g., for immediate upload/debug)
+                    if let base64 = self.encodeVideoToBase64(at: url) {
+                        print("✅ Base64 ready: \(base64.prefix(50))...")  // Log first 50 chars
+                        // TODO: Send base64 to server, e.g., via API call
+                    }
                 } else {
                     print("❌ Gagal menyimpan video: \(writer.error?.localizedDescription ?? "unknown error")")
                     self.showFeedback("Gagal menyimpan video", color: .systemRed)
                     try? FileManager.default.removeItem(at: url)
                 }
+                self.overlayView.hideStencil()
             }
         }
     }

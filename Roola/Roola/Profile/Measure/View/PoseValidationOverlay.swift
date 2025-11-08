@@ -42,6 +42,15 @@ class PoseValidationOverlay: UIView {
         return progress
     }()
     
+    private let stencilImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.backgroundColor = UIColor.clear
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        iv.alpha = 0
+        return iv
+    }()
+    
     // MARK: - Initialization
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -56,42 +65,44 @@ class PoseValidationOverlay: UIView {
     private func setupViews() {
         backgroundColor = .clear
         isUserInteractionEnabled = false
-        
-        // Border indicator (full screen)
+
+        // 1. Add image stencil first (bottom-most)
+        addSubview(stencilImageView)
+
+        // 2. Existing UI
         addSubview(borderIndicator)
-        
-        // Feedback label (top)
         addSubview(feedbackLabel)
-        
-        // Progress bar (bottom)
         addSubview(progressBar)
-        
+
         NSLayoutConstraint.activate([
-            // Border indicator
+            // ----- Image stencil – full screen -----
+            stencilImageView.topAnchor.constraint(equalTo: topAnchor),
+            stencilImageView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stencilImageView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stencilImageView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            // -------------------------------------
+
+            // border, label, progress … (unchanged)
             borderIndicator.topAnchor.constraint(equalTo: topAnchor),
             borderIndicator.leadingAnchor.constraint(equalTo: leadingAnchor),
             borderIndicator.trailingAnchor.constraint(equalTo: trailingAnchor),
             borderIndicator.bottomAnchor.constraint(equalTo: bottomAnchor),
-            
-            // Feedback label
+
             feedbackLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 20),
             feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.9),
             feedbackLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 70),
-            
-            // Progress bar
+
             progressBar.centerXAnchor.constraint(equalTo: centerXAnchor),
             progressBar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -100),
             progressBar.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.7),
             progressBar.heightAnchor.constraint(equalToConstant: 8)
         ])
-        
-        // Initial state
+
         progressBar.alpha = 0
     }
     
     // MARK: - Public Methods
-    
     /// Update feedback message dengan warna background
     func showFeedback(_ message: String, color: UIColor = .systemOrange) {
         DispatchQueue.main.async { [weak self] in
@@ -149,4 +160,23 @@ class PoseValidationOverlay: UIView {
             }
         }
     }
+    
+    func setStencil(image: UIImage?, animated: Bool = true) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            let work = {
+                self.stencilImageView.image = image
+                self.stencilImageView.alpha = image == nil ? 0 : 0.75
+            }
+
+            if animated {
+                UIView.animate(withDuration: 0.25, animations: work)
+            } else {
+                work()
+            }
+        }
+    }
+
+    func hideStencil(animated: Bool = true) { setStencil(image: nil, animated: animated) }
 }
