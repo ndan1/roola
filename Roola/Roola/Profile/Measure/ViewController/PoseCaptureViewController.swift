@@ -30,6 +30,7 @@ class PoseCaptureViewController: UIViewController {
     
     private var overlayView: PoseValidationOverlay!
     private var isRecording = false
+    private var isCountingDown = false // <-- NEW: Prevent multiple triggers
     private var videoWriter: AVAssetWriter?
     private var videoWriterInput: AVAssetWriterInput?
     private var recordingTimer: Timer?
@@ -118,10 +119,8 @@ class PoseCaptureViewController: UIViewController {
     
     private func showValidPoseIndicator(_ show: Bool) {
         overlayView.showValidPoseIndicator(show)
-        
-        let progress = Float(validPoseCount) / Float(requiredValidFrames)
-        overlayView.updateProgress(show ? progress : 0.0)
-        
+
+        // Keep stencil only
         if show {
             overlayView.setStencil(image: stencilImageB)
         } else {
@@ -132,8 +131,9 @@ class PoseCaptureViewController: UIViewController {
     @objc private func handleBackButton() {
         print("Tapped")
         // Cancel any recording
-        if isRecording {
+        if isRecording || isCountingDown {
             isRecording = false
+            isCountingDown = false
             recordingTimer?.invalidate()
             recordingTimer = nil
             
@@ -149,8 +149,6 @@ class PoseCaptureViewController: UIViewController {
         
         // Clean up
         validPoseCount = 0
-        overlayView.hideStencil()
-        overlayView.updateProgress(0)
         
         // Dismiss
         dismiss(animated: true)
@@ -222,16 +220,18 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
     }
 
     @objc private func stopRecording() {
-        guard isRecording else { return }
-        
-        isRecording = false
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        
         guard let writer = videoWriter,
               let url = videoURLToSave,
               let measurements = measurementsToSave else {
             print("Batal merekam: writer, url, atau data pengukuran nil")
+            isRecording = false // Ensure state is reset
+            isCountingDown = false
+            return
+        }
+        
+        // Ensure we only run this once
+        guard isRecording == false && isCountingDown == false else {
+            print("Stop recording already called or in progress.")
             return
         }
         
@@ -257,28 +257,40 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             
             DispatchQueue.main.async {
                 if writer.status == .completed {
-                    print("✅ Video berhasil disimpan di: \(url)")
-                    self.delegate?.didCaptureVideo(videoURL: url, measurements: measurements)
-                    self.dismiss(animated: true)
-                    if let sizeFormatted = self.getVideoSize(at: url)?.formatted {
-                        print("📊 Video ready: \(sizeFormatted)")
-                    }
-                    
-                    // Optional: Encode to Base64 now (e.g., for immediate upload/debug)
-                    // Inside stopRecording() – after the video is saved
-                    if let base64 = self.encodeVideoToBase64(at: url) {
-                        print("Base64 ready: \(base64.prefix(50))...")
-
-                        let viewModel = MeasureViewModel()          // <-- new instance
-                        Task {
-                            await viewModel.sendMeasurement(videoBase64: base64)
+                    print("Video saved at: \(url)")
+                        
+                    // Add delay for file flush (0.1-0.5s)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        // This is the verification step
+                        if let sizeInfo = self.getVideoSize(at: url) {
+                            print("Video size: \(sizeInfo.formatted)")
                             
-                            if let result = viewModel.result {
-                                print("Measurement result: \(result)")
-                                self.showFeedback("Measurement completed!", color: UIColor(AppColors.primaryPurple))
-                            } else if let error = viewModel.errorMessage {
-                                self.showFeedback("\(error)", color: .systemRed)
+                            // Verification: Check if file is not empty
+                            if sizeInfo.bytes > 0 {
+                                // Optional: Log Base64 for debugging, but don't block
+                                if let base64 = self.encodeVideoToBase64(at: url) {
+                                    print("Base64 ready: \(base64.prefix(50))...")
+                                } else {
+                                    print("Encoding failed, but file exists.")
+                                }
+
+                                // 1. Call delegate (to "new view" for API call)
+                                self.delegate?.didCaptureVideo(videoURL: url, measurements: measurements)
+                                
+                                // 2. Show success and dismiss this view
+                                self.overlayView.showSuccessCloseAnimation {
+                                    self.dismiss(animated: true)
+                                }
+                                
+                            } else {
+                                print("Encoding failed: File empty or invalid")
+                                self.showFeedback("Gagal menyimpan video", color: .systemRed)
+                                try? FileManager.default.removeItem(at: url)
                             }
+                        } else {
+                            print("File size check failed")
+                            self.showFeedback("Gagal verifikasi video", color: .systemRed)
+                            try? FileManager.default.removeItem(at: url)
                         }
                     }
                 } else {
@@ -286,34 +298,34 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                     self.showFeedback("Gagal menyimpan video", color: .systemRed)
                     try? FileManager.default.removeItem(at: url)
                 }
-                self.overlayView.hideStencil()
             }
         }
     }
     
-    func captureOutput(_ output: AVCaptureOutput,
-                      didOutput sampleBuffer: CMSampleBuffer,
-                      from connection: AVCaptureConnection) {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         if isRecording {
-            // Jika writer belum di-setup, setup sekarang
+            // Check if writer needs setup
             if videoWriter == nil && !isSettingUpWriter {
-                isSettingUpWriter = true
+                isSettingUpWriter = true // Set flag
+                // Must setup writer on the same queue
                 setupVideoWriter(with: sampleBuffer)
-                isSettingUpWriter = false
             }
-            
-            // Pastikan writer sudah siap dan dalam status writing
+
             guard let writerInput = videoWriterInput,
-                    let writer = videoWriter,
-                    writer.status == .writing,
-                    writerInput.isReadyForMoreMediaData else {
+                  let writer = videoWriter,
+                  writer.status == .writing,
+                  writerInput.isReadyForMoreMediaData else {
                 return
             }
-            
+
+            // Append the buffer
             writerInput.append(sampleBuffer)
             return
         }
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        
+        // --- Pose detection logic (only if not recording) ---
+        guard !isCountingDown, // Don't process poses if countdown is active
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
         
         let request = VNDetectHumanBodyPoseRequest { [weak self] request, error in
@@ -466,29 +478,71 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             validPoseCount += 1
             showValidPoseIndicator(true)
             
-//            let progressPercent = Int((Float(validPoseCount) / Float(requiredValidFrames)) * 100)
-//            showFeedback("✅ Pose sempurna! (\(progressPercent)%)\nTahan posisi...", color: .systemGreen)
             showFeedback("Hold Still", color: UIColor(AppColors.primaryPurple))
             
             if validPoseCount >= requiredValidFrames {
+                guard !isRecording && !isCountingDown else { return }
                 
-                guard !isRecording else { return }
-                            
-                isRecording = true
-                
+                isCountingDown = true
+
+                // Save measurements immediately
                 measurementsToSave = BodyMeasurements(
                     armSpan: armSpanX * previewLayer.bounds.width,
                     shoulderWidth: abs(leftShoulder.x - rightShoulder.x) * previewLayer.bounds.width,
                     torsoLength: bodyHeight * previewLayer.bounds.height
                 )
-                
-                DispatchQueue.main.async {
+
+                // =================================================================
+                // MARK: - UPDATED CAPTURE LOGIC
+                // =================================================================
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
                     self.showFeedback("Hold Still", color: UIColor(AppColors.primaryPurple))
-                    self.recordingTimer?.invalidate()
-                    self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                        self?.stopRecording()
+
+                    // 1. Start the countdown UI.
+                    // The completion block from the overlay runs *after* the "Recording..." text fades.
+                    // We will not use it to stop recording.
+                    self.overlayView.startCountdown {
+                        // This block is called when the overlay's full animation is done.
+                        // By this time, stopRecording() will have already been called by our timer.
+                        print("Overlay countdown animation finished.")
+                    }
+
+                    // 2. Schedule START recording
+                    // "3" (pose confirm) shows for 0.4s.
+                    // Then "2" appears. We start recording *exactly* then.
+                    let startTime = 0.4
+                    Timer.scheduledTimer(withTimeInterval: startTime, repeats: false) { [weak self] _ in
+                        guard let self = self, self.isCountingDown else { return }
+                        print("TIMER: STARTING RECORDING (at '2')")
+                        self.isRecording = true
+                        // self.isSettingUpWriter is set to false initially
+                        // The captureOutput delegate will now see isRecording=true
+                        // and will trigger setupVideoWriter on the next available frame.
+                    }
+                    
+                    // 3. Schedule STOP recording
+                    // "2" shows for 1.35s (0.35s anim + 1.0s pause)
+                    // "1" shows for 1.35s (0.35s anim + 1.0s pause)
+                    // Total recording time for "2" and "1" = 2.7s
+                    // Stop time = 0.4s (for "3") + 2.7s (for "2" & "1") = 3.1s
+                    // This is exactly when "Recording..." text appears.
+                    let stopTime = 3.1
+                    Timer.scheduledTimer(withTimeInterval: stopTime, repeats: false) { [weak self] _ in
+                        guard let self = self, self.isCountingDown else { return }
+                        print("TIMER: STOPPING RECORDING (at 'Recording...' text)")
+                        
+                        // Set flags to stop processing
+                        self.isRecording = false
+                        self.isCountingDown = false
+                        self.isSettingUpWriter = false // Prevent setup if it hasn't happened
+                        
+                        // Call stopRecording, which handles verification, delegate call, and dismiss
+                        self.stopRecording()
                     }
                 }
+                return
+                // =================================================================
             }
             
         } catch {
@@ -509,5 +563,11 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
 
         return angleDegrees
     }
-
+    
+    private func setupVideoWriterAndStart() {
+        // This function is no longer needed, logic is moved to captureOutput
+        // We just set isRecording = true, and captureOutput handles the rest.
+        // We do need to reset the isSettingUpWriter flag
+        isSettingUpWriter = false
+    }
 }

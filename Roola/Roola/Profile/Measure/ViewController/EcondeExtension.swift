@@ -1,5 +1,5 @@
 //
-//  PoseCaptureViewController.swift
+//  EcondeExtension.swift
 //  Roola
 //
 //  Created by Lin Dan Christiano on 29/10/25.
@@ -7,14 +7,13 @@
 
 import UIKit
 import AVFoundation
-import Foundation
 
 extension PoseCaptureViewController {
     
     /// Get video file size in bytes (and human-readable format)
     func getVideoSize(at url: URL) -> (bytes: Int64, formatted: String)? {
         guard FileManager.default.fileExists(atPath: url.path) else {
-            print("❌ Video file not found at \(url.path)")
+            print("Video file not found at \(url.path)")
             return nil
         }
         
@@ -27,11 +26,10 @@ extension PoseCaptureViewController {
             formatter.countStyle = .file
             
             let formatted = formatter.string(fromByteCount: fileSize)
-            
-            print("📁 Video size: \(fileSize) bytes (\(formatted))")
+            print("Video size: \(fileSize) bytes (\(formatted))")
             return (fileSize, formatted)
         } catch {
-            print("❌ Error getting video size: \(error)")
+            print("Error getting video size: \(error)")
             return nil
         }
     }
@@ -42,9 +40,7 @@ extension PoseCaptureViewController {
             return nil
         }
         
-        // Only valid option: .lineLength64Characters
         let base64String = data.base64EncodedString(options: .lineLength64Characters)
-        
         let encodedSize = base64String.count
         let formattedSize = ByteCountFormatter.string(fromByteCount: Int64(encodedSize), countStyle: .file)
         print("Base64 encoded: \(formattedSize) (\(encodedSize) characters)")
@@ -58,5 +54,4 @@ extension PoseCaptureViewController {
         let base64 = encodeVideoToBase64(at: url)
         return (sizeInfo.formatted, base64)
     }
-    
 }
