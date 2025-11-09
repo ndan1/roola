@@ -81,44 +81,15 @@ struct UserProfileView: View {
                 .navigationTitle("My Profile")
             }
         }
-        // Move modifiers OUTSIDE NavigationView to apply to entire view hierarchy
         .sheet(isPresented: $viewModel.showingEditSheet) {
             UserInputView()
         }
-        .fullScreenCover(item: $viewModel.cameraFlowStep) { step in
-            buildView(for: step, user: users.first)
-        }
-    }
-    
-    @ViewBuilder
-        private func buildView(for step: CameraFlowStep, user: User?) -> some View {
-            switch step {
-            case .terms:
-                CameraTermsView(onContinue: {
-                    viewModel.didFinishTerms()
-                })
-                
-            case .tutorial:
-                CameraTutorialView(onContinue: {
-                    viewModel.didFinishTutorial()
-                })
-                
-            case .capture:
-                BodyPoseCaptureView { videoURL, measurements in
-                    viewModel.didFinishCapture(videoURL: videoURL, measurements: measurements)
-                    // Jika Anda perlu menyimpan 'measurements' ke 'user', lakukan di sini
-                    // atau idealnya, buat fungsi di ViewModel:
-                    // viewModel.saveMeasurementsToUser(user, measurements: measurements)
-                }
-                .edgesIgnoringSafeArea(.all)
-                
-            case .permissionDenied:
-                CameraPermissionDeniedView(
-                    onCancel: { viewModel.didCancelPermissionView() },
-                    onOpenSettings: { viewModel.openSettings() }
-                )
+        .fullScreenCover(isPresented: $viewModel.showingCameraFlow) {
+            CameraFlowContainerView { videoURL, measurements in
+                viewModel.handleCaptureComplete(videoURL: videoURL, measurements: measurements)
             }
         }
+    }
 }
 
 #Preview {

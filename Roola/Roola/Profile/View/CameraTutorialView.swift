@@ -60,7 +60,7 @@ struct CameraTutorialView: View {
                             .font(.subheadline)
                     }
                     .padding()
-                    Spacer()
+//                    Spacer()
                     RoolaButton(buttonTitle: "Continue", buttonColor: AppColors.primaryButton, action: onContinue)
                         .padding(.bottom, UIScreen.main.bounds.height * 0.1)
                 }
