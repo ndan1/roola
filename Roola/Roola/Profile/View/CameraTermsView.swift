@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct CameraTermsView: View {
+    let onContinue: () -> Void
+    
     var body: some View {
         ZStack {
             SecondGradientBackground()
@@ -17,6 +19,7 @@ struct CameraTermsView: View {
                     .font(.title)
                     .fontWeight(.medium)
                     .padding(.bottom, 32)
+                    .padding(.top, UIScreen.main.bounds.height * 0.25)
                 
                 VStack (alignment: .leading, spacing: 24){
                     HStack (alignment: .top, spacing: 16){
@@ -54,19 +57,21 @@ struct CameraTermsView: View {
                         Text("To calculate your size recommendations based on your body shape. No images or videos are stored or shared.")
                             .font(.subheadline)
                         }
-                        
                     }
-                        
                 }
+                Spacer()
+                RoolaButton(buttonTitle: "Continue", buttonColor: AppColors.primaryButton, action: onContinue)
+                    .padding(.bottom, UIScreen.main.bounds.height * 0.1)
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, UIScreen.main.bounds.height * 0.05)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            
         }
         .edgesIgnoringSafeArea(.all)
     }
 }
 
 #Preview {
-    CameraTermsView()
+    CameraTermsView(onContinue: {})
 }

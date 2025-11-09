@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct CameraTutorialView: View {
+    let onContinue: () -> Void
+    
     var body: some View {
         ZStack{
             FirstGradientBackground()
@@ -15,6 +17,7 @@ struct CameraTutorialView: View {
                 Text("Do's and Don'ts")
                     .font(.largeTitle)
                     .fontWeight(.medium)
+                    .padding(.top, UIScreen.main.bounds.height * 0.1)
             
                 VStack {
                     Group {
@@ -54,24 +57,19 @@ struct CameraTutorialView: View {
                         Image(systemName: "speaker.wave.2.fill")
                             .foregroundStyle(Color(AppColors.primaryPurple))
                         Text("Turn your volume on for better experience")
-                            .font(.caption)
+                            .font(.subheadline)
                     }
                     .padding()
-                    Button(action: {
-                        // Action to start scanning
-                    }) {
-                        Text("Start Scanning")
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .background(Color(AppColors.primaryPurple))
-                            .padding()
-                    }
+                    Spacer()
+                    RoolaButton(buttonTitle: "Continue", buttonColor: AppColors.primaryButton, action: onContinue)
+                        .padding(.bottom, UIScreen.main.bounds.height * 0.1)
                 }
             }
+            .padding(.horizontal, 16)
         }
     }
 }
 
 #Preview {
-    CameraTutorialView()
+    CameraTutorialView(onContinue: {})
 }
