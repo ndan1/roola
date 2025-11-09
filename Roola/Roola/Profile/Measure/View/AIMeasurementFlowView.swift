@@ -32,7 +32,7 @@ struct AIMeasurementFlowView: View {
     }
 
     
-    @State private var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/dev/null"))
+    @State private var flowState: FlowState = .capturing
     
     private let service = MeasureService()
 
@@ -82,7 +82,7 @@ struct AIMeasurementFlowView: View {
         }
         .padding()
         .task {
-//            await startMeasurementTask(url: videoURL)
+            await startMeasurementTask(url: videoURL)
         }
     }
     
@@ -153,34 +153,6 @@ struct AIMeasurementFlowView: View {
         
         // Clean up the captured video file from the temp directory
         try? FileManager.default.removeItem(at: url)
-    }
-}
-
-struct GradientCircularLoader: View {
-    @State private var isAnimating = false
-    
-    var lineWidth: CGFloat = 10
-    var size: CGFloat = 100
-    
-    var body: some View {
-        Circle()
-            .stroke(
-                AngularGradient(
-                    gradient: Gradient(colors: [
-                        AppColors.primaryPurple.opacity(0.8),
-                        AppColors.primaryPurple.opacity(0.4),
-                        AppColors.primaryPurple.opacity(0.2)
-                    ]),
-                    center: .center
-                ),
-                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-            )
-            // Rotate to start from top center
-            .rotationEffect(.degrees(isAnimating ? 360 : 0))
-            .frame(width: size, height: size)
-            .opacity(0.9)
-            .animation(.linear(duration: 1.2).repeatForever(autoreverses: false), value: isAnimating)
-            .onAppear { isAnimating = true }
     }
 }
 
