@@ -279,7 +279,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                                 
                                 // 2. Show success and dismiss this view
                                 self.overlayView.showSuccessCloseAnimation {
-                                    self.dismiss(animated: true)
+//                                    self.dismiss(animated: true)
                                 }
                                 
                             } else {
