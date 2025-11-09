@@ -63,16 +63,19 @@ class PoseCaptureViewController: UIViewController {
         overlayView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(overlayView)
         
+        overlayView.onBackTapped = { [weak self] in
+            self?.handleBackButton()
+        }
+        
     }
     
     private func setupCamera() {
         captureSession = AVCaptureSession()
-        captureSession.sessionPreset = .high
+        captureSession.sessionPreset = .medium
         
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera,
                                                    for: .video,
                                                    position: .front) else {
-//            showFeedback("Kamera tidak tersedia", color: .systemRed)\
             return
         }
         
@@ -124,6 +127,33 @@ class PoseCaptureViewController: UIViewController {
         } else {
             overlayView.setStencil(image: stencilImageA)
         }
+    }
+    
+    @objc private func handleBackButton() {
+        print("Tapped")
+        // Cancel any recording
+        if isRecording {
+            isRecording = false
+            recordingTimer?.invalidate()
+            recordingTimer = nil
+            
+            videoWriterInput?.markAsFinished()
+            videoWriter?.cancelWriting()
+            videoWriter = nil
+            videoWriterInput = nil
+            
+            if let url = videoURLToSave {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+        
+        // Clean up
+        validPoseCount = 0
+        overlayView.hideStencil()
+        overlayView.updateProgress(0)
+        
+        // Dismiss
+        dismiss(animated: true)
     }
 }
 
@@ -235,9 +265,21 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                     }
                     
                     // Optional: Encode to Base64 now (e.g., for immediate upload/debug)
+                    // Inside stopRecording() – after the video is saved
                     if let base64 = self.encodeVideoToBase64(at: url) {
-                        print("✅ Base64 ready: \(base64.prefix(50))...")  // Log first 50 chars
-                        // TODO: Send base64 to server, e.g., via API call
+                        print("Base64 ready: \(base64.prefix(50))...")
+
+                        let viewModel = MeasureViewModel()          // <-- new instance
+                        Task {
+                            await viewModel.sendMeasurement(videoBase64: base64)
+                            
+                            if let result = viewModel.result {
+                                print("Measurement result: \(result)")
+                                self.showFeedback("Measurement completed!", color: UIColor(AppColors.primaryPurple))
+                            } else if let error = viewModel.errorMessage {
+                                self.showFeedback("\(error)", color: .systemRed)
+                            }
+                        }
                     }
                 } else {
                     print("❌ Gagal menyimpan video: \(writer.error?.localizedDescription ?? "unknown error")")
@@ -278,7 +320,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             guard let observations = request.results as? [VNHumanBodyPoseObservation],
                   let observation = observations.first else {
                 self?.validPoseCount = 0
-                self?.showFeedback("Pastikan tubuh terlihat jelas", color: .systemRed)
+//                self?.showFeedback("Pastikan tubuh terlihat jelas", color: .systemRed)
                 self?.showValidPoseIndicator(false)
                 return
             }
@@ -338,7 +380,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                   leftAnkle.confidence > 0.3,
                   rightAnkle.confidence > 0.3 else {
                 validPoseCount = 0
-                showFeedback("Pastikan seluruh tubuh terlihat", color: .systemOrange)
+//                showFeedback("Pastikan seluruh tubuh terlihat", color: .systemOrange)
                 showValidPoseIndicator(false)
                 return
             }
@@ -348,16 +390,16 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             
             print("🔍 DEBUG - Body Height: \(String(format: "%.3f", bodyHeight))")
             
-            if bodyHeight < 0.2 {
+            if bodyHeight < 0.16 {
                 validPoseCount = 0
-                showFeedback("📏 Maju sedikit agar Posisi lebih pas", color: .systemYellow)
+//                showFeedback("📏 Maju sedikit agar Posisi lebih pas", color: .systemYellow)
                 showValidPoseIndicator(false)
                 return
             }
             
-            if bodyHeight > 0.24 {
+            if bodyHeight > 0.20 {
                 validPoseCount = 0
-                showFeedback("📏 Mundur sedikit agar seluruh tubuh terlihat", color: .systemBlue)
+//                showFeedback("📏 Mundur sedikit agar seluruh tubuh terlihat", color: .systemBlue)
                 showValidPoseIndicator(false)
                 return
             }
@@ -371,18 +413,18 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             print("DEBUG - Right Wrist X: \(String(format: "%.3f", rightWrist.x))")
             print("DEBUG - Shoulder Width X: \(String(format: "%.3f", abs(leftShoulder.x - rightShoulder.x)))")
             
-            // REQUIREMENT: Arm span minimal 50% dari lebar layar
-            let minArmSpanX: CGFloat = 0.50
+            // REQUIREMENT: Arm span minimal
+            let minArmSpanX: CGFloat = 0.40
             let maxArmSpanX: CGFloat = 0.90
             
             if armSpanX < minArmSpanX {
                 validPoseCount = 0
-                showFeedback("🙆‍♂️ Rentangkan kedua lengan lebih lebar ke samping\n(Jarak: \(Int(armSpanX * 100))% dari lebar)", color: .systemYellow)
+//                showFeedback("🙆‍♂️ Rentangkan kedua lengan lebih lebar ke samping\n(Jarak: \(Int(armSpanX * 100))% dari lebar)", color: .systemYellow)
                 showValidPoseIndicator(false)
                 return
             } else if armSpanX > maxArmSpanX {
                 validPoseCount = 0
-                showFeedback("📏 Terlalu lebar, rapatkan sedikit", color: .systemYellow)
+//                showFeedback("📏 Terlalu lebar, rapatkan sedikit", color: .systemYellow)
                 showValidPoseIndicator(false)
                 return
             }
@@ -403,7 +445,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
 
             if !leftAngleValid || !rightAngleValid {
                 validPoseCount = 0
-                showFeedback("⬇️ Posisikan lengan 45° ke bawah\n(Bentuk 'A')", color: .systemOrange)
+//                showFeedback("⬇️ Posisikan lengan 45° ke bawah\n(Bentuk 'A')", color: .systemOrange)
                 showValidPoseIndicator(false)
                 return
             }
@@ -416,7 +458,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             
             if ySymmetry > maxYAsymmetry {
                 validPoseCount = 0
-                showFeedback("⚖️ Sejajarkan tinggi kedua tangan", color: .systemOrange)
+//                showFeedback("⚖️ Sejajarkan tinggi kedua tangan", color: .systemOrange)
                 showValidPoseIndicator(false)
                 return
             }
@@ -424,8 +466,9 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             validPoseCount += 1
             showValidPoseIndicator(true)
             
-            let progressPercent = Int((Float(validPoseCount) / Float(requiredValidFrames)) * 100)
-            showFeedback("✅ Pose sempurna! (\(progressPercent)%)\nTahan posisi...", color: .systemGreen)
+//            let progressPercent = Int((Float(validPoseCount) / Float(requiredValidFrames)) * 100)
+//            showFeedback("✅ Pose sempurna! (\(progressPercent)%)\nTahan posisi...", color: .systemGreen)
+            showFeedback("Hold Still", color: UIColor(AppColors.primaryPurple))
             
             if validPoseCount >= requiredValidFrames {
                 
@@ -440,7 +483,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                 )
                 
                 DispatchQueue.main.async {
-                    self.showFeedback("✅ TAHAN POSISI...\nMerekam 2 detik", color: .systemGreen)
+                    self.showFeedback("Hold Still", color: UIColor(AppColors.primaryPurple))
                     self.recordingTimer?.invalidate()
                     self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
                         self?.stopRecording()

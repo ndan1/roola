@@ -36,9 +36,6 @@ extension PoseCaptureViewController {
         }
     }
     
-    /// Prepare Base64 encoder: Returns the encoded string (or nil on error)
-    /// - Note: Call this *after* `stopRecording()` completes (video is finalized)
-    /// - Warning: Loads entire file into memory – fine for <50MB videos
     func encodeVideoToBase64(at url: URL) -> String? {
         guard let data = try? Data(contentsOf: url) else {
             print("Failed to read video data from \(url)")
@@ -61,4 +58,5 @@ extension PoseCaptureViewController {
         let base64 = encodeVideoToBase64(at: url)
         return (sizeInfo.formatted, base64)
     }
+    
 }

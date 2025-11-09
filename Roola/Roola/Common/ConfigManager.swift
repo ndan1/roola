@@ -17,4 +17,13 @@ struct ConfigManager {
         }
         return apiKey
     }
+    static func getMeasureKey() -> String? {
+        guard let path = Bundle.main.path(forResource: "secrets", ofType: "plist"),
+              let config = NSDictionary(contentsOfFile: path),
+              let apiKey = config["MEASUREMENT_KEY"] as? String else {
+            print("Failed to load API key from Config.plist")
+            return nil
+        }
+        return apiKey
+    }
 }

@@ -28,8 +28,10 @@ struct ContentView: View {
                         showingData.toggle()
                     }
                     .sheet(isPresented: $showingData) {
-//                        DataView()
-                        Text("")
+                        BodyPoseCaptureView { videoURL, measurements in
+                            // Handle capture if needed, but dismissal is handled internally
+                            print("Captured")
+                        }
                     }
                 
                 Text("Welcome to Roola")

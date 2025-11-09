@@ -12,12 +12,12 @@ class PoseValidationOverlay: UIView {
     // MARK: - UI Components
     private let feedbackLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.boldSystemFont(ofSize: 18)
+        label.font = UIFont.boldSystemFont(ofSize: 32)
         label.textColor = .white
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        label.backgroundColor = UIColor(AppColors.primaryPurple).withAlphaComponent(0)
         label.textAlignment = .center
         label.numberOfLines = 0
-        label.layer.cornerRadius = 10
+        label.layer.cornerRadius = 30
         label.clipsToBounds = true
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -51,6 +51,24 @@ class PoseValidationOverlay: UIView {
         return iv
     }()
     
+    var onBackTapped: (() -> Void)?
+    private lazy var backButton: UIButton = {
+        let button = UIButton(type: .system)
+
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+        let image = UIImage(systemName: "chevron.left.circle.fill", withConfiguration: config)
+
+        button.setImage(image, for: .normal)
+        button.tintColor = .white
+        button.translatesAutoresizingMaskIntoConstraints = false
+
+        // Touch-down animation (optional but nice)
+        button.addTarget(self, action: #selector(buttonTouchDown), for: .touchDown)
+        button.addTarget(self, action: #selector(buttonTouchUp),   for: [.touchUpInside, .touchUpOutside, .touchCancel])
+
+        return button
+    }()
+    
     // MARK: - Initialization
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -64,16 +82,15 @@ class PoseValidationOverlay: UIView {
     
     private func setupViews() {
         backgroundColor = .clear
-        isUserInteractionEnabled = false
+        isUserInteractionEnabled = true
 
-        // 1. Add image stencil first (bottom-most)
         addSubview(stencilImageView)
-
-        // 2. Existing UI
-        addSubview(borderIndicator)
+        addSubview(backButton)
         addSubview(feedbackLabel)
+        
+        addSubview(borderIndicator)
         addSubview(progressBar)
-
+        
         NSLayoutConstraint.activate([
             // ----- Image stencil – full screen -----
             stencilImageView.topAnchor.constraint(equalTo: topAnchor),
@@ -89,29 +106,49 @@ class PoseValidationOverlay: UIView {
             borderIndicator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             feedbackLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 20),
-            feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.9),
-            feedbackLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 70),
+            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 0),
+            feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.65),
+            feedbackLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 50),
 
             progressBar.centerXAnchor.constraint(equalTo: centerXAnchor),
             progressBar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -100),
             progressBar.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.7),
-            progressBar.heightAnchor.constraint(equalToConstant: 8)
+            progressBar.heightAnchor.constraint(equalToConstant: 8),
+            
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 16),
+            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44)
         ])
 
         progressBar.alpha = 0
+        
+        // Ensure other subviews don't intercept touches
+        stencilImageView.isUserInteractionEnabled = false
+        feedbackLabel.isUserInteractionEnabled = false
+        borderIndicator.isUserInteractionEnabled = false
+        progressBar.isUserInteractionEnabled = false
+    }
+    
+    // MARK: - Hit Test Override (to pass through touches except for button)
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let buttonPoint = convert(point, to: backButton)
+        if backButton.bounds.contains(buttonPoint) {
+            return backButton.hitTest(buttonPoint, with: event)
+        }
+        return nil
     }
     
     // MARK: - Public Methods
     /// Update feedback message dengan warna background
-    func showFeedback(_ message: String, color: UIColor = .systemOrange) {
+    func showFeedback(_ message: String, color: UIColor = UIColor(AppColors.primaryPurple)) {
         DispatchQueue.main.async { [weak self] in
             UIView.transition(with: self?.feedbackLabel ?? UIView(),
                             duration: 0.2,
                             options: .transitionCrossDissolve,
                             animations: {
                 self?.feedbackLabel.text = message
-                self?.feedbackLabel.backgroundColor = color.withAlphaComponent(0.8)
+                self?.feedbackLabel.backgroundColor = color
             })
         }
     }
@@ -120,7 +157,7 @@ class PoseValidationOverlay: UIView {
     func showValidPoseIndicator(_ isValid: Bool) {
         DispatchQueue.main.async { [weak self] in
             UIView.animate(withDuration: 0.3) {
-                self?.borderIndicator.layer.borderColor = isValid ? 
+                self?.borderIndicator.layer.borderColor = isValid ?
                     UIColor.systemGreen.cgColor : UIColor.clear.cgColor
             }
         }
@@ -167,7 +204,7 @@ class PoseValidationOverlay: UIView {
 
             let work = {
                 self.stencilImageView.image = image
-                self.stencilImageView.alpha = image == nil ? 0 : 0.75
+                self.stencilImageView.alpha = image == nil ? 0 : 1
             }
 
             if animated {
@@ -179,4 +216,18 @@ class PoseValidationOverlay: UIView {
     }
 
     func hideStencil(animated: Bool = true) { setStencil(image: nil, animated: animated) }
+    
+    @objc private func buttonTouchDown() {
+        UIView.animate(withDuration: 0.1) {
+            self.backButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        }
+    }
+
+    @objc private func buttonTouchUp() {
+        UIView.animate(withDuration: 0.1) {
+            self.backButton.transform = .identity
+        }
+        print("BACK BUTTON TAPPED!")          // <-- you will see this
+        onBackTapped?()
+    }
 }
