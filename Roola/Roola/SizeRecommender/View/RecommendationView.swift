@@ -15,40 +15,205 @@ struct RecommendationView: View {
     @StateObject private var viewModel = RecommendationViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
     @Query private var users: [User]
+    @State private var showResults = false
+    @State private var fitPreference: String = ""
+    @State private var showFitGuide = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text("OCR + AI Size Extractor")
-                    .font(.title)
-                    .fontWeight(.bold)
+        ZStack {
+            FirstGradientBackground()
+            VStack(spacing: 0) {
+                // Header
+                Spacer().frame(height: 20)
+                HStack {
+                    Text("Find your fit")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        showFitGuide = true
+                    }) {
+                        Image(systemName: "info.circle")
+                            .font(.title2)
+                            .foregroundColor(AppColors.primaryPurple)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 60)
+                .padding(.bottom, 8)
                 
-                imageDisplayView
+                Text("Fill your product details to get your best match")
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
                 
-                PhotosPicker(
-                    selection: $selectedPhoto,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ) {
-                    Label("Select from Gallery", systemImage: "photo.on.rectangle")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
+                // Form Section
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Clothes type")
+                            .foregroundColor(AppColors.grayScale400)
+                        
+                        Spacer()
+                        
+                        Menu {
+                            Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
+                            Button("Blouse") { viewModel.clothingType = "blouse" }
+                            Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
+                            Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(displayClothingType)
+                                    .foregroundColor(viewModel.clothingType.isEmpty ? .gray : .primary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.primaryPurple)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    
+                    Rectangle()
+                        .fill(AppColors.grayScale400.opacity(0.36))
+                        .frame(height: 0.5)
+                    
+                    HStack {
+                        Text("Fit preference")
+                            .foregroundColor(AppColors.grayScale400)
+                        
+                        Spacer()
+                        
+                        Menu {
+                            Button("Tight") { fitPreference = "tight" }
+                            Button("Slim") { fitPreference = "slim" }
+                            Button("Standard") { fitPreference = "standard" }
+                            Button("Relaxed") { fitPreference = "relaxed" }
+                            Button("Loose") { fitPreference = "loose" }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(displayFitPreference)
+                                    .foregroundColor(fitPreference.isEmpty ? .gray : .primary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.primaryPurple)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                }
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
+                .padding(.horizontal, 24)
+                
+                // Upload section
+                VStack(spacing: 16) {
+                    Text("Upload size chart screenshot")
+                        .font(.body)
+                        .foregroundColor(AppColors.grayScale400)
+                    
+                    // Upload button only when no image selected
+                    if viewModel.selectedImage == nil {
+                        PhotosPicker(
+                            selection: $selectedPhoto,
+                            matching: .images,
+                            photoLibrary: .shared()
+                        ) {
+                            HStack {
+                                Text("Upload")
+                                    .fontWeight(.medium)
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            .foregroundColor(AppColors.primaryPurple)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 12)
+                            .background(AppColors.primaryWhite.opacity(0.5))
+                            .cornerRadius(25)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+                            )
+                        }
+                        .onChange(of: selectedPhoto) { oldValue, newValue in
+                            viewModel.handlePhotoSelection(newValue)
+                        }
+                    }
+                    
+                    // Image preview with X button
+                    if let image = viewModel.selectedImage {
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()            // fill the square
+                                .frame(width: 180, height: 180)   // square preview size
+                                .clipped()                 // crop overflow
+                                .cornerRadius(12)
+                            
+                            Button {
+                                viewModel.selectedImage = nil
+                                selectedPhoto = nil
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(AppColors.primaryWhite)
+                                    .padding(10)
+                                    .background(AppColors.grayScale400.opacity(0.6))
+                                    .clipShape(Circle())
+                            }
+                            .padding(6)
+
+                        }
+                    }
+
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .padding(.horizontal, 24)
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                
+                Spacer()
+                
+                // Bottom Button
+                Button {
+                    if viewModel.selectedImage != nil {
+                        viewModel.processImage()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            if !viewModel.extractedJSON.isEmpty {
+                                viewModel.getRecommendation()
+                                showResults = true
+                            }
+                        }
+                    }
+                } label: {
+                    Text("Find your fit")
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(AppColors.primaryPurple)
+                        .cornerRadius(30)
                 }
-                .onChange(of: selectedPhoto) { oldValue, newValue in
-                    viewModel.handlePhotoSelection(newValue)
-                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 110)
                 
-                processButtonView
-                
-                ocrResultView
-                
-                apiSectionView
-                
+                Color.clear.frame(height: 0)
             }
-            .padding()
+            .ignoresSafeArea(edges: .bottom)
             .alert(viewModel.currentError?.title ?? "Error", isPresented: $viewModel.showErrorAlert) {
                 Button("Retry", role: .cancel) {
                     viewModel.resetAllStates()
@@ -58,234 +223,302 @@ struct RecommendationView: View {
             } message: {
                 Text(viewModel.currentError?.message ?? "")
             }
-            .onAppear{
-                if let user = users.first{
+            .onAppear {
+                if let user = users.first {
                     viewModel.loadUserMeasurements(user: user)
                 }
             }
-        }
-    }
-    
-    // MARK: - Sub-Views
-    
-    @ViewBuilder
-    private var imageDisplayView: some View {
-        if let image = viewModel.selectedImage {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxHeight: 300)
-                .cornerRadius(12)
-                .shadow(radius: 5)
-        } else {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(height: 300)
-                .cornerRadius(12)
-                .overlay(
-                    VStack {
-                        Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        Text("No image selected")
-                            .foregroundColor(.gray)
-                            .font(.headline)
-                    }
-                )
-        }
-    }
-    
-    private var processButtonView: some View {
-        VStack {
-            Button {
-                viewModel.processImage()
-            } label: {
-                Label("1. Process Image (OCR + AI)", systemImage: "wand.and.stars")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(viewModel.selectedImage == nil ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+            .sheet(isPresented: $showResults) {
+                ResultsView(viewModel: viewModel, showResults: $showResults)
             }
-            .disabled(viewModel.selectedImage == nil || viewModel.isProcessing)
-            
-            if viewModel.isProcessing {
-                VStack {
-                    ProgressView()
-                    Text(viewModel.currentStep)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
+            .sheet(isPresented: $showFitGuide) {
+                FitGuideView(showFitGuide: $showFitGuide)
             }
         }
     }
     
-    @ViewBuilder
-    private var ocrResultView: some View {
-        if !viewModel.recognizedText.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("OCR Raw Text:")
-                    .font(.headline)
-                
-                TextEditor(text: .constant(viewModel.recognizedText))
-                    .frame(minHeight: 150)
-                    .border(Color.gray, width: 1)
-                    .cornerRadius(8)
-            }
+    private var displayClothingType: String {
+        switch viewModel.clothingType {
+        case "t_shirt": return "T-Shirt"
+        case "blouse": return "Blouse"
+        case "long_sleeved_shirt": return "Long Sleeved Shirt"
+        case "short_sleeved_shirt": return "Short Sleeved Shirt"
+        default: return "Select clothing type"
         }
     }
     
-    @ViewBuilder
-    private var apiSectionView: some View {
-        if !viewModel.extractedJSON.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("AI Extracted JSON:")
-                    .font(.headline)
-                
-                TextEditor(text: .constant(viewModel.extractedJSON))
-                    .frame(minHeight: 200)
-                    .border(Color.green, width: 2)
-                    .cornerRadius(8)
-                Button {
-                    UIPasteboard.general.string = viewModel.extractedJSON
-                } label: {
-                    Label("Copy JSON", systemImage: "doc.on.doc")
-                        .font(.caption)
-                }
-            }
-            .padding(.bottom)
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Get Recommendation")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Picker("Clothing Type", selection: $viewModel.clothingType) {
-                    Text("Select clothing type").tag("")
-                    Text("T-Shirt").tag("t_shirt")
-                    Text("Blouse").tag("blouse")
-                    Text("Long Sleeved Shirt").tag("long_sleeved_shirt")
-                    Text("Short Sleeved Shirt").tag("short_sleeved_shirt")
-                }
-                .pickerStyle(.menu)
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
-                
-                Button {
-                    // Panggil getRecommendation (sekarang menjalankan fuzzy lokal)
-                    viewModel.getRecommendation()
-                } label: {
-                    Label("2. Get Recommendation", systemImage: "arrow.down.circle.dotted")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(viewModel.clothingType.isEmpty ? Color.gray : Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .disabled(viewModel.clothingType.isEmpty || viewModel.isCallingAPI)
-                
-                if viewModel.isCallingAPI {
-                    ProgressView("Calculating Recommendations...") // Ubah teks
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                }
-                
-                // Tampilan hasil API (Sekarang menampilkan 5 hasil fuzzy)
-                apiResultView
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var apiResultView: some View {
-        // Tampilkan 5 rekomendasi
-        if let recommendations = viewModel.serverResponse?.recommendations {
-            VStack(alignment: .leading, spacing: 15) {
-                Text("Size Recommendations:")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                RecommendationRow(fit: "Regular", recommendation: recommendations.regular)
-                Divider()
-                RecommendationRow(fit: "Loose", recommendation: recommendations.loose)
-                Divider()
-                RecommendationRow(fit: "Slightly Loose", recommendation: recommendations.slightlyLoose)
-                Divider()
-                RecommendationRow(fit: "Slightly Tight", recommendation: recommendations.slightlyTight)
-                Divider()
-                RecommendationRow(fit: "Tight", recommendation: recommendations.tight)
-            }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
-            
-        } else if let apiError = viewModel.apiError {
-            Text(apiError)
-                .foregroundColor(.red)
-                .multilineTextAlignment(.center)
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(10)
+    private var displayFitPreference: String {
+        switch fitPreference {
+        case "tight": return "Tight"
+        case "slim": return "Slim"
+        case "standard": return "Standard"
+        case "relaxed": return "Relaxed"
+        case "loose": return "Loose"
+        default: return "Select fit preference"
         }
     }
 }
 
-/// Helper view dari RecView.swift, dipindahkan ke sini
-private struct RecommendationRow: View {
+// Results Sheet View
+struct ResultsView: View {
+    @ObservedObject var viewModel: RecommendationViewModel
+    @Binding var showResults: Bool
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    if let recommendations = viewModel.serverResponse?.recommendations {
+                        Text("Size Recommendations")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .padding(.horizontal)
+                            .padding(.top)
+                        
+                        // Map the 5 fit types to new names
+                        RecommendationCard(
+                            fit: "Tight",
+                            recommendation: recommendations.tight
+                        )
+                        
+                        RecommendationCard(
+                            fit: "Slim",
+                            recommendation: recommendations.slightlyTight
+                        )
+                        
+                        RecommendationCard(
+                            fit: "Standard",
+                            recommendation: recommendations.regular
+                        )
+                        
+                        RecommendationCard(
+                            fit: "Relaxed",
+                            recommendation: recommendations.slightlyLoose
+                        )
+                        
+                        RecommendationCard(
+                            fit: "Loose",
+                            recommendation: recommendations.loose
+                        )
+                        
+                    } else if viewModel.isCallingAPI {
+                        ProgressView("Calculating Recommendations...")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else if let apiError = viewModel.apiError {
+                        Text(apiError)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
+                }
+                .padding(.bottom)
+            }
+            .navigationTitle("Your Results")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        showResults = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct RecommendationCard: View {
     let fit: String
     let recommendation: FitRecommendation
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(fit)
-                .font(.headline)
-                .foregroundColor(Color.blue)
-            
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Best Size:")
-                    .fontWeight(.medium)
+                Text(fit)
+                    .font(.headline)
+                    .foregroundColor(.purple)
+                
                 Spacer()
+                
                 Text(recommendation.bestSize)
-                    .font(.system(.body, design: .monospaced))
-                    .padding(5)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(5)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.1))
+                    .cornerRadius(8)
             }
             
             HStack {
-                Text("Score:")
-                    .fontWeight(.medium)
+                Text("Match Score:")
+                    .foregroundColor(.secondary)
                 Spacer()
                 Text(String(format: "%.1f%%", recommendation.bestScore))
+                    .fontWeight(.semibold)
             }
             
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Part Fits:")
-                    .fontWeight(.medium)
+            if !recommendation.partFits.isEmpty {
+                Divider()
                 
-                if recommendation.partFits.isEmpty {
-                    Text("N/A")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    // Sortir keys agar urutan konsisten
+                Text("Part Fits:")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .padding(.top, 4)
+                
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(recommendation.partFits.sorted(by: { $0.key < $1.key }), id: \.key) { part, fit in
                         HStack {
-                            Text("  • \(part.capitalized):")
-                                .font(.caption)
+                            Text(part.capitalized)
+                                .foregroundColor(.secondary)
+                            Spacer()
                             Text(fit)
-                                .font(.caption)
                                 .fontWeight(.medium)
                         }
+                        .font(.caption)
                     }
                 }
             }
-            .padding(.top, 2)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
+    }
+}
+
+// Fit Guide Modal
+struct FitGuideView: View {
+    @Binding var showFitGuide: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Drag indicator
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.gray.opacity(0.4))
+                .frame(width: 36, height: 5)
+                .padding(.top, 12)
+            
+            // Header
+            HStack {
+                Spacer()
+                Text("Fit guide")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Spacer()
+            }
+            .overlay(
+                Button(action: {
+                    showFitGuide = false
+                }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 16, weight: .medium))
+                }
+                    .padding(.trailing, 20),
+                alignment: .trailing
+            )
+            .padding(.top, 16)
+            .padding(.bottom, 20)
+            
+            // Content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    GuideStepView(
+                        number: "1",
+                        title: "Choose your type of clothes"
+                    )
+                    
+                    GuideStepView(
+                        number: "2",
+                        title: "Choose your fit preference",
+                        subtitle: "Standard is how we think is best for you"
+                    )
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        GuideStepView(
+                            number: "3",
+                            title: "Upload screenshot of your product's size chart"
+                        )
+                        
+                        HStack(spacing: 12) {
+                            // Placeholder for left image
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 200)
+                                .overlay(
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 30))
+                                            .foregroundColor(.gray)
+                                        Text("Size Chart")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                            
+                            // Placeholder for right image
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 200)
+                                .overlay(
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "doc.text")
+                                            .font(.system(size: 30))
+                                            .foregroundColor(.gray)
+                                        Text("Product Description")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                        }
+                        .padding(.top, 8)
+                    }
+                    
+                    GuideStepView(
+                        number: "4",
+                        title: "Find the best size for your outfit"
+                    )
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.hidden)
+    }
+}
+
+struct GuideStepView: View {
+    let number: String
+    let title: String
+    var subtitle: String? = nil
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 8) {
+                Text("\(number).")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         }
     }
+}
+
+// MARK: - Preview
+#Preview {
+    RecommendationView()
+        .modelContainer(for: User.self, inMemory: true)
 }

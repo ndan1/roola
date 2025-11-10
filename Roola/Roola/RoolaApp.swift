@@ -44,7 +44,9 @@ struct RoolaApp: App {
 //            ContentView()
 //                .modelContainer(sharedModelContainer)
 //            #endif
-            CameraTermsView()
+//            CameraTermsView()
+            MainTabView()
+        
         }
     }
 }
