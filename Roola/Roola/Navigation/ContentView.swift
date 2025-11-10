@@ -9,65 +9,20 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var showingSheet = false
-    @State private var showingData = false
-    @State private var showingUserInput = false
-    
-    @Query var clothes: [Clothes]
+    // 1. Add a @State variable to track presentation
+    @State private var isShowingMeasurement = false
     
     var body: some View {
-        ZStack {
-            Color(UIColor.systemGroupedBackground)
-                .ignoresSafeArea()
-            
-            VStack(alignment: .center, spacing: 20) {
-                Image(systemName: "ruler.fill")
-                    .font(.system(size: 50))
-                    .foregroundStyle(.blue)
-                    .onTapGesture {
-                        showingData.toggle()
-                    }
-                    .sheet(isPresented: $showingData) {
-                        BodyPoseCaptureView { videoURL, measurements in
-                            // Handle capture if needed, but dismissal is handled internally
-                            print("Captured")
-                        }
-                    }
-                
-                Text("Welcome to Roola")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-                
-                Text("Get your perfect size, every time.")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                
-                Button("Get Started Now") {
-                    showingSheet.toggle()
-                }
-                .font(.headline)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
-                .shadow(radius: 4)
-                .padding(.top, 10)
-                
-                Button("Enter Body Measurements") {
-                    showingUserInput.toggle()
-                }
-                .font(.subheadline)
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
-                .shadow(radius: 4)
+        RoolaButton(
+            buttonTitle: "Measure with AI",
+            buttonColor: AppColors.primaryPurple,
+            action: {
+                isShowingMeasurement = true
+                print("Measurement Flow")
             }
-            .padding()
-        }
-        .sheet(isPresented: $showingUserInput) {
-            UserInputView()
+        )
+        .fullScreenCover(isPresented: $isShowingMeasurement) {
+            MeasurementFlowView()
         }
     }
 }

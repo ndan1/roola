@@ -7,34 +7,38 @@
 
 import SwiftUI
 
-struct AIMeasurementFlowView: View {
+struct MeasurementFlowView: View {
+    @State private var pendingMeasurementData: MeasurementData?
     
     enum FlowState: Equatable {
         case capturing
         case loading(videoURL: URL)
+        case successAnimation
         case success(data: MeasurementData)
         case error(message: String)
         
         static func == (lhs: FlowState, rhs: FlowState) -> Bool {
             switch (lhs, rhs) {
-            case (.capturing, .capturing):
-                return true
-            case (.loading, .loading):
-                return true
-            case (.success, .success):
-                return true
-            case (.error, .error):
+            case (.capturing, .capturing),
+                 (.loading, .loading),
+                 (.successAnimation, .successAnimation),
+                 (.success, .success),
+                 (.error, .error):
                 return true
             default:
                 return false
             }
         }
     }
-
     
-    @State private var flowState: FlowState = .capturing
+    @State private var flowState: FlowState = .success(data: MeasurementData(
+        armsLength: 49.21,
+        chestCircumference: 92,
+        height: 169,
+        torsoLength: 54,
+        waistCircumference: 82)
+    )
 //    @State private var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/Users/hcarlo/Desktop/test.mp4"))
-    
     
     private let service = MeasureService()
 
@@ -51,11 +55,12 @@ struct AIMeasurementFlowView: View {
                 loadingView(videoURL: videoURL)
             case .success(let data):
                 MeasurementResultView(data: data) {
-                    // "Done" button action
                     flowState = .capturing
                 }
             case .error(let message):
                 errorView(message: message)
+            case .successAnimation:
+                successAnimationView()
             }
         }
     }
@@ -79,8 +84,7 @@ struct AIMeasurementFlowView: View {
             
             Text("Getting your measurements...")
                 .font(.body18Medium)
-                            .bold()
-                            .padding(.top, 10)                .bold()
+                .bold()
                 .padding(.top, 10)
         }
         .padding()
@@ -91,31 +95,35 @@ struct AIMeasurementFlowView: View {
     
     /// The view to show if the API call fails
     private func errorView(message: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "xmark.circle")
-                .font(.system(size: 97))
-                .foregroundColor(AppColors.grayScale300)
+        ZStack(alignment: .bottom) {
+            VStack {
+                Spacer()
+                FailedState(label: message)
+                Spacer(minLength: 120)
+            }
 
-            Text("Measurement Failed")
-                .font(.title)
-                .bold()
+            VStack(spacing: 10) {
+                RoolaButton(
+                    buttonTitle: "Retake",
+                    buttonColor: AppColors.primaryPurple,
+                    action: {
+                        flowState = .capturing
+                    }
+                )
+                .frame(width: UIScreen.main.bounds.width * 0.8)
 
-            Text(message)
-                .font(.callout)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .lineLimit(2)
+                RoolaButton(
+                    buttonTitle: "Input Manually",
+                    buttonColor: AppColors.primaryWhite,
+                    action: { }
+                )
+                .frame(width: UIScreen.main.bounds.width * 0.8)
+            }
+            .padding(.bottom, 25)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaInset(edge: .bottom) {
-            Button("Try Again") {
-                flowState = .capturing
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.bottom, 40)
-        }
+        .background(Color(.systemBackground))
     }
-
     
     /// The async function that calls the MeasureService
     private func startMeasurementTask(url: URL) async {
@@ -131,24 +139,32 @@ struct AIMeasurementFlowView: View {
             
             // 4. Check the API's internal status
             if response.output.status == "success" {
-                // 5. Success! Update the flow state to show the results
                 await MainActor.run {
-                    flowState = .success(data: response.output.measurements)
+                    pendingMeasurementData = response.output.measurements
+                    flowState = .successAnimation
                 }
-            } else {
-                // 5a. API returned a non-success status
+            }
+            // Check for a specific maintenance status
+            else if response.output.status == "maintenance" {
+                // 5a. API returned a maintenance status
+                await MainActor.run {
+                    flowState = .error(message: "Server is under maintenance. Please try again later.")
+                }
+            }
+            else {
+                // 5b. API returned a different non-success status
                 await MainActor.run {
                     flowState = .error(message: "API processing failed. Status: \(response.output.status)")
                 }
             }
             
         } catch let error as MeasureServiceError {
-            // 5b. The service itself threw an error (e.g., timeout)
+            // 5c. The service itself threw an error (e.g., timeout)
             await MainActor.run {
                 flowState = .error(message: "Service Error: \(error.localizedDescription)")
             }
         } catch {
-            // 5c. Any other error (e.g., JSON parsing)
+            // 5d. Any other error (e.g., JSON parsing)
             await MainActor.run {
                 flowState = .error(message: "An unknown error occurred: \(error.localizedDescription)")
             }
@@ -157,8 +173,27 @@ struct AIMeasurementFlowView: View {
         // Clean up the captured video file from the temp directory
         try? FileManager.default.removeItem(at: url)
     }
+    
+    private func successAnimationView() -> some View {
+        VStack(spacing: 20) {
+            SuccesState(label: "Your measurement result is ready")
+            
+            // Optional: subtle fade-in/out
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+        .task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if let data = pendingMeasurementData {
+                await MainActor.run {
+                    flowState = .success(data: data)
+                    pendingMeasurementData = nil
+                }
+            }
+        }
+    }
 }
 
 #Preview {
-    AIMeasurementFlowView()
+    MeasurementFlowView()
 }

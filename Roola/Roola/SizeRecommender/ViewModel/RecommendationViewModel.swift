@@ -51,8 +51,8 @@ class RecommendationViewModel: ObservableObject {
         self.userMeasurements = UserMeasurements(
             bust: Double(user.bust),
             waist: Double(user.waist),
-            hips: Double(user.hips),
-            shoulderWidth: Double(user.shoulder_width),
+//            hips: Double(user.hips),
+//            shoulderWidth: Double(user.shoulder_width),
             torso: Double(user.torso),
             armLength: Double(user.arms_length)
         )
@@ -598,8 +598,8 @@ class RecommendationViewModel: ObservableObject {
         return [
             "bust": measurements.bust,
             "waist": measurements.waist,
-            "hips": measurements.hips,
-            "shoulder_width": measurements.shoulderWidth,
+//            "hips": measurements.hips,
+//            "shoulder_width": measurements.shoulderWidth,
             "torso": measurements.torso,
             "arm_length": measurements.armLength
         ].compactMapValues { $0 }

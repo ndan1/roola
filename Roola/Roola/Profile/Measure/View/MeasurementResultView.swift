@@ -25,7 +25,6 @@ struct MeasurementResultView: View {
                 .bold()
 
             VStack(alignment: .leading, spacing: 15) {
-                ResultRow(label: "Height", value: data.height)
                 ResultRow(label: "Waist Circumference", value: data.waistCircumference)
                 ResultRow(label: "Chest Circumference", value: data.chestCircumference)
                 ResultRow(label: "Torso Length", value: data.torsoLength)

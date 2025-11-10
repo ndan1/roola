@@ -18,17 +18,17 @@ struct RoolaButton: View {
         Button(action: action) {
             Text(buttonTitle)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .font(.title3)
+                .padding(.vertical, 10)
+                .font(.title3_16Medium)
                 .fontWeight(.medium)
-                .foregroundColor(buttonColor == AppColors.primaryPurple ? .white : .black)
+                .foregroundColor(buttonColor == AppColors.primaryPurple ? AppColors.primaryWhite : AppColors.grayScale400)
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.capsule)
         .overlay {
             if buttonColor != AppColors.primaryPurple {
                 Capsule()
-                    .stroke(Color.gray, lineWidth: 2)
+                    .stroke(AppColors.borderButton, lineWidth: 1)
             }
         }
         .tint(buttonColor)
@@ -38,4 +38,5 @@ struct RoolaButton: View {
 
 #Preview {
     RoolaButton(buttonTitle: "Measure with AI", buttonColor: AppColors.primaryPurple, action: { })
+    RoolaButton(buttonTitle: "Measure with AI", buttonColor: AppColors.primaryWhite, action: { })
 }
