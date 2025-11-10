@@ -43,7 +43,7 @@ struct MeasurementRow: View {
         .background(Color.white)
         .overlay(
             Rectangle()
-                .stroke(isError ? Color.red : Color.red.opacity(0.2), lineWidth: 1)
+                .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
         )
     }
 }
@@ -118,7 +118,6 @@ struct BottomMeasurementRow: View {
             HStack(spacing: 4) {
                 Text(label)
                     .font(.body)
-                    .foregroundColor(isError ? .red : .primary)
                 
                 if isError {
                     Image(systemName: "exclamationmark.circle.fill")
@@ -133,7 +132,6 @@ struct BottomMeasurementRow: View {
                 .font(.body)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .foregroundColor(isError ? .red : .primary)
                 .frame(width: 80)
             
             Text(unit)
