@@ -11,7 +11,7 @@ struct GradientCircularLoader: View {
     @State private var isAnimating = false
     
     var lineWidth: CGFloat = 10
-    var size: CGFloat = 100
+    var size: CGFloat = 80
     
     var body: some View {
         Circle()

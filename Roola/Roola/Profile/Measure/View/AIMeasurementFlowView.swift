@@ -33,6 +33,8 @@ struct AIMeasurementFlowView: View {
 
     
     @State private var flowState: FlowState = .capturing
+//    @State private var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/Users/hcarlo/Desktop/test.mp4"))
+    
     
     private let service = MeasureService()
 
@@ -76,8 +78,9 @@ struct AIMeasurementFlowView: View {
             GradientCircularLoader()
             
             Text("Getting your measurements...")
-                .font(.title2)
-                .bold()
+                .font(.body18Medium)
+                            .bold()
+                            .padding(.top, 10)                .bold()
                 .padding(.top, 10)
         }
         .padding()
