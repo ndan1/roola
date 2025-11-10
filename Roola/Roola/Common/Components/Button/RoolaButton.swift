@@ -18,7 +18,7 @@ struct RoolaButton: View {
         Button(action: action) {
             Text(buttonTitle)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, UIScreen.main.bounds.height * 0.01)
                 .font(.title3)
                 .fontWeight(.medium)
                 .foregroundColor(buttonColor == AppColors.primaryPurple ? .white : .black)
@@ -37,5 +37,5 @@ struct RoolaButton: View {
 }
 
 #Preview {
-    RoolaButton(buttonTitle: "Measure with AI", buttonColor: AppColors.primaryPurple, action: { })
+    RoolaButton(buttonTitle: "Measure with AI", buttonColor: AppColors.primaryWhite, action: { })
 }
