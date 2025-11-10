@@ -12,6 +12,9 @@ import SwiftUI
 struct MeasurementFlowView: View {
     // 1. Create and observe the ViewModel
     @StateObject private var viewModel = MeasurementFlowViewModel()
+    @Environment(\.modelContext) private var modelContext
+    
+    @State private var showSuccessPopup = false
 
     var body: some View {
         ZStack {
@@ -28,10 +31,7 @@ struct MeasurementFlowView: View {
                 loadingView(videoURL: videoURL)
                 
             case .success(let data):
-                MeasurementResultView(data: data) {
-                    // 3. Call the ViewModel method
-                    viewModel.measurementDidFinish()
-                }
+                successResultView(data: data)
                 
             case .error(let message):
                 errorView(message: message)
@@ -107,8 +107,37 @@ struct MeasurementFlowView: View {
             await viewModel.successAnimationDidFinish()
         }
     }
+    
+    
+    private func successResultView(data: MeasurementData) -> some View {
+        MeasurementResultView(
+            data: data,
+            onDone: { withAnimation { showSuccessPopup = true } },
+            onBack: { viewModel.retryMeasurement() }
+        )
+        .overlay {
+            if showSuccessPopup {
+                SuccessPopupView {
+                    // called after the 2‑second delay
+                    withAnimation { showSuccessPopup = false }
+                }
+                .task {
+                    // 1. Save immediately
+                    await viewModel.measurementDidFinish(data: data, modelContext: modelContext)
+                    
+                    // 2. Wait 2 seconds → then auto‑dismiss
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    await MainActor.run {
+                        withAnimation { showSuccessPopup = false }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #Preview {
     MeasurementFlowView()
+        // 9. Add the model container for the preview to work
+        .modelContainer(for: User.self, inMemory: true)
 }

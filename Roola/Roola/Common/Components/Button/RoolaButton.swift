@@ -19,7 +19,7 @@ struct RoolaButton: View {
             Text(buttonTitle)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .font(.title3_16Medium)
+                .font(.button16Bold)
                 .fontWeight(.medium)
                 .foregroundColor(buttonColor == AppColors.primaryPurple ? AppColors.primaryWhite : AppColors.grayScale400)
         }

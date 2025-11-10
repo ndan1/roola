@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 
 @MainActor
 class MeasurementFlowViewModel: ObservableObject {
@@ -15,7 +16,13 @@ class MeasurementFlowViewModel: ObservableObject {
     // MARK: - State
     
     // The View will listen to this property for all UI changes
-    @Published var flowState: FlowState = .capturing
+//    @Published var flowState: FlowState = .capturing
+    @Published var flowState: FlowState = .success(data: MeasurementData(
+                    armsLength: 49.21,
+                    chestCircumference: 92,
+                    height: 169,
+                    torsoLength: 54,
+                    waistCircumference: 82))
     
     // This enum now lives inside the ViewModel for encapsulation
     enum FlowState: Equatable {
@@ -40,16 +47,12 @@ class MeasurementFlowViewModel: ObservableObject {
     }
     
     // MARK: - Properties
-    
-    // Internal state to hold data between animation and result
+
     private var pendingMeasurementData: MeasurementData?
-    
-    // The service dependency is now owned by the ViewModel
     private let service: MeasureService
     
     // MARK: - Init
     
-    // We can inject the service, or just default it
     init(service: MeasureService = MeasureService()) {
         self.service = service
         
@@ -72,11 +75,6 @@ class MeasurementFlowViewModel: ObservableObject {
     
     /// Called by the View's "Try Again" button
     func retryMeasurement() {
-        self.flowState = .capturing
-    }
-    
-    /// Called by the View's "Done" button on the result screen
-    func measurementDidFinish() {
         self.flowState = .capturing
     }
 
@@ -132,5 +130,51 @@ class MeasurementFlowViewModel: ObservableObject {
         
         // Clean up the captured video file from the temp directory
         try? FileManager.default.removeItem(at: url)
+    }
+
+    private func saveOrUpdateUser(with data: MeasurementData, in context: ModelContext) {
+        let descriptor = FetchDescriptor<User>()
+        
+        do {
+            if let userToUpdate = try context.fetch(descriptor).first {
+                // --- CASE 2: UPDATE EXISTING USER ---
+                print("Updating existing user...")
+                
+                userToUpdate.height = Int(data.height.rounded())
+                userToUpdate.bust = Int(data.chestCircumference.rounded())
+                userToUpdate.waist = Int(data.waistCircumference.rounded())
+                userToUpdate.torso = Int(data.torsoLength.rounded())
+                userToUpdate.arms_length = Int(data.armsLength.rounded())
+            } else {
+                // --- CASE 1: NO PREVIOUS DATA (CREATE NEW) ---
+                print("Creating new user...")
+                
+                let newUser = User(
+                    height: Int(data.height.rounded()),
+                    bust: Int(data.chestCircumference.rounded()),
+                    waist: Int(data.waistCircumference.rounded()),
+                    torso: Int(data.torsoLength.rounded()),
+                    arms_length: Int(data.armsLength.rounded())
+                )
+                // Insert the new object into the context
+                context.insert(newUser)
+            }
+            
+            // Explicitly save for reliability on real devices
+            try context.save()
+            print("Save successful")
+            
+        } catch {
+            print("Failed to fetch or save user: \(error)")
+        }
+    }
+
+    func measurementDidFinish(data: MeasurementData, modelContext: ModelContext) async {
+        saveOrUpdateUser(with: data, in: modelContext)
+        
+        // Sleep here to give the popup time to show before resetting state
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        
+        self.flowState = .capturing
     }
 }

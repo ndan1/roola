@@ -16,8 +16,12 @@ extension Font {
         .custom("HelveticaNeue-Medium", size: 32, relativeTo: .largeTitle)
     }
     
-    static var heading2_32Bold: Font {
+    static var heading_32Bold: Font {
         .custom("HelveticaNeue-Bold", size: 32, relativeTo: .largeTitle)
+    }
+    
+    static var heading24Medium: Font {
+        .custom("HelveticaNeue-Medium", size: 24, relativeTo: .largeTitle)
     }
     
     // MARK: Titles

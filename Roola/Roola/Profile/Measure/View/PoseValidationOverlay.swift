@@ -57,7 +57,7 @@ class PoseValidationOverlay: UIView {
         let b = UIButton(type: .system)
         let cfg = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
         b.setImage(UIImage(systemName: "chevron.left.circle.fill", withConfiguration: cfg), for: .normal)
-        b.tintColor = .white
+        b.tintColor = UIColor(AppColors.primaryWhite)
         b.translatesAutoresizingMaskIntoConstraints = false
         b.addTarget(self, action: #selector(btnTouchDown), for: .touchDown)
         b.addTarget(self, action: #selector(btnTouchUp),   for: [.touchUpInside, .touchUpOutside, .touchCancel])
