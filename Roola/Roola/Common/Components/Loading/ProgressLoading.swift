@@ -16,12 +16,14 @@ struct ProgressLoading: View {
     
     var body: some View {
         ZStack {
-//            Color(.blue)
+            Image("GradientLoading")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .ignoresSafeArea(edges: .all)
             
             VStack(spacing: 16) {
                 Text(title)
                     .font(.title1_22Medium)
-                    .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryBlack)
                 
                 Text(subtitle)
@@ -75,7 +77,7 @@ struct ProgressLoading: View {
 }
 
 #Preview {
-    ProgressLoading(title: "Hang Tight", subtitle: "We're tailoring your outfit...", duration: 5.0)
+    ProgressLoading(title: "Hang Tight", subtitle: "We're tailoring this for you.", duration: 5.0)
 }
 
 //.task {

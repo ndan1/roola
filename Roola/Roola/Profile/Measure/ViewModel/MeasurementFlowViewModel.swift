@@ -16,13 +16,13 @@ class MeasurementFlowViewModel: ObservableObject {
     // MARK: - State
     
     // The View will listen to this property for all UI changes
-//    @Published var flowState: FlowState = .capturing
-    @Published var flowState: FlowState = .success(data: MeasurementData(
-                    armsLength: 49.21,
-                    chestCircumference: 92,
-                    height: 169,
-                    torsoLength: 54,
-                    waistCircumference: 82))
+    @Published var flowState: FlowState = .capturing
+//    @Published var flowState: FlowState = .success(data: MeasurementData(
+//                    armsLength: 49.21,
+//                    chestCircumference: 92,
+//                    height: 169,
+//                    torsoLength: 54,
+//                    waistCircumference: 82))
     
     // This enum now lives inside the ViewModel for encapsulation
     enum FlowState: Equatable {

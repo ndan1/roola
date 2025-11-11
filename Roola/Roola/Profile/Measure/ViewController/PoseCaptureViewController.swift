@@ -23,6 +23,7 @@ class PoseCaptureViewController: UIViewController {
     
     // MARK: - Properties
     weak var delegate: PoseCaptureDelegate?
+    var onBackButtonTapped: (() -> Void)?
     
     private var captureSession: AVCaptureSession!
     private var previewLayer: AVCaptureVideoPreviewLayer!
@@ -123,7 +124,8 @@ class PoseCaptureViewController: UIViewController {
         print("Back tapped")
         cancelRecording()
         validPoseCount = 0
-        dismiss(animated: true)
+        
+        onBackButtonTapped?()
     }
     
     private func cancelRecording() {

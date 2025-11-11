@@ -28,9 +28,6 @@ struct MeasurementResultView: View {
         self.onDone = onDone
         self.onBack = onBack
         self.onInfo = onInfo
-        
-        // We’ll initialize _chest, _waist, etc. in .onAppear instead of here
-        // since @State can’t be initialized directly from init with optional
     }
     
     // MARK: - Error Checks
@@ -72,7 +69,6 @@ struct MeasurementResultView: View {
         )
     }
 
-    // MARK: - Body
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
@@ -152,35 +148,9 @@ struct MeasurementResultView: View {
     }
 }
 
-
-struct ResultRow: View {
-    let label: String
-    let value: Double
-    
-    // Formatter to show one decimal place
-    private var formatter: NumberFormatter {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 1
-        return f
-    }
-    
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.body)
-            Spacer()
-            Text("\(formatter.string(from: NSNumber(value: value)) ?? "0.0") cm")
-                .font(.headline)
-                .bold()
-        }
-    }
-}
-
-// 6. The Preview must be updated to provide a mock SwiftData container
 #Preview {
     MeasurementResultView(
-        data: MeasurementData(  // Pass dummy for preview
+        data: MeasurementData(
             armsLength: 49.21,
             chestCircumference: 92,
             height: 169,

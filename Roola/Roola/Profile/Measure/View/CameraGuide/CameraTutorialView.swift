@@ -29,7 +29,6 @@ struct CameraTutorialView: View {
 
     var body: some View {
         let width = UIScreen.main.bounds.width
-        let height = UIScreen.main.bounds.height
 
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
@@ -37,7 +36,6 @@ struct CameraTutorialView: View {
                 onBack: { dismiss() },
                 isLargeTitle: true
             )
-//            Spacer()
 
             VStack {
                 ForEach(tutorialSteps) { step in

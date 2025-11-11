@@ -55,7 +55,7 @@ class PoseValidationOverlay: UIView {
     var onBackTapped: (() -> Void)?
     private lazy var backButton: UIButton = {
         let b = UIButton(type: .system)
-        let cfg = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 24, weight: .semibold)
         b.setImage(UIImage(systemName: "chevron.left.circle.fill", withConfiguration: cfg), for: .normal)
         b.tintColor = UIColor(AppColors.primaryWhite)
         b.translatesAutoresizingMaskIntoConstraints = false

@@ -10,7 +10,7 @@ import AVFoundation
 
 struct CameraFlowContainerView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var path = NavigationPath()   // <-- navigation stack
+    @State private var path = NavigationPath()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -28,7 +28,7 @@ struct CameraFlowContainerView: View {
                 switch step {
                 case .capture:
                     MeasurementFlowView()
-                        .navigationBarHidden(true)   // keep your custom header
+                        .navigationBarHidden(true)
                 case .permissionDenied:
                     CameraPermissionDeniedView(
                         onCancel: { dismiss() },

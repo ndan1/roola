@@ -37,11 +37,6 @@ struct MainTabView: View {
 
     var body: some View {
         TabView {
-//            UserProfileView()
-//                .tabItem {
-//                    Label("Profile", systemImage: "person.circle.fill")
-//                }
-//            UserProfileView()
             MeasurementFlowView()
                 .tabItem {
                     VStack {
