@@ -47,7 +47,7 @@ struct RecommendationView: View {
                 }
             }
             .fullScreenCover(isPresented: $showResults) {
-                ResultsView()
+                ResultsView(viewModel: viewModel, showResults: $showResults)
             }
             .sheet(isPresented: $showFitGuide) {
                 FitGuideView(showFitGuide: $showFitGuide)

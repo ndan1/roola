@@ -10,7 +10,7 @@ import SwiftUI
 //struct ResultsView: View {
 //    @ObservedObject var viewModel: RecommendationViewModel
 //    @Binding var showResults: Bool
-//    
+//
 //    var body: some View {
 //        NavigationView {
 //            ScrollView {
@@ -21,33 +21,33 @@ import SwiftUI
 //                            .fontWeight(.bold)
 //                            .padding(.horizontal)
 //                            .padding(.top)
-//                        
+//
 //                        // Map the 5 fit types to new names
 //                        RecommendationCard(
 //                            fit: "Tight",
 //                            recommendation: recommendations.tight
 //                        )
-//                        
+//
 //                        RecommendationCard(
 //                            fit: "Slim",
 //                            recommendation: recommendations.slightlyTight
 //                        )
-//                        
+//
 //                        RecommendationCard(
 //                            fit: "Standard",
 //                            recommendation: recommendations.regular
 //                        )
-//                        
+//
 //                        RecommendationCard(
 //                            fit: "Relaxed",
 //                            recommendation: recommendations.slightlyLoose
 //                        )
-//                        
+//
 //                        RecommendationCard(
 //                            fit: "Loose",
 //                            recommendation: recommendations.loose
 //                        )
-//                        
+//
 //                    } else if viewModel.isCallingAPI {
 //                        ProgressView("Calculating Recommendations...")
 //                            .frame(maxWidth: .infinity)
@@ -74,95 +74,391 @@ import SwiftUI
 //}
 
 struct ResultsView: View {
-    @State private var notAvailableStatus: Bool = true
-    @State var sliderValue : Float = 0.0
+    @ObservedObject var viewModel: RecommendationViewModel
+    @Binding var showResults: Bool
+    
+    @State private var sliderValue: Float = 2.0 // Default to "Standard" (index 2)
+    
+    // Computed property untuk mapping fit preference
+    private var currentFitPreference: String {
+        let fitMap = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
+        let index = Int(round(sliderValue))
+        return fitMap[min(max(index, 0), 4)]
+    }
+    
+    // Get recommendation for current slider position
+    private var currentRecommendation: FitRecommendation? {
+        guard let recommendations = viewModel.serverResponse?.recommendations else { return nil }
+        
+        switch currentFitPreference {
+        case "tight": return recommendations.tight
+        case "slightly-tight": return recommendations.slightlyTight
+        case "regular": return recommendations.regular
+        case "slightly-loose": return recommendations.slightlyLoose
+        case "loose": return recommendations.loose
+        default: return recommendations.regular
+        }
+    }
+    
     var body: some View {
         ZStack {
             FirstGradientBackground()
-            VStack (alignment: .leading){
-                Text("Recommended Size")
-                    .font(.heading32Medium)
-                    .fontWeight(.medium)
-//                    .padding(.top)
-                
-                VStack(alignment: .center) {
-                    ZStack {
-                        Circle()
-                            .frame(width: UIScreen.main.bounds.width * 0.2, height: UIScreen.main.bounds.width * 0.2)
-                            .foregroundColor(Color(AppColors.primaryPurple))
-                            .overlay(
-                                Text("XL")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 48))
-                                    .fontWeight(.bold)
-                            )
+            
+            if viewModel.isCallingAPI {
+                ProgressView("Calculating Recommendations...")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else if let apiError = viewModel.apiError {
+                VStack(spacing: 16) {
+                    Text("Error")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    Text(apiError)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    Button("Try Again") {
+                        showResults = false
                     }
-                    .padding(.bottom, -48)
-                    .padding(.top, -8)
-                    .zIndex(1)
-                    VStack (alignment: .leading, spacing: 8){
-                        Text("Fit Preference")
-                            .font(.body16Regular)
-                            
-                        Text("Looser fit may not be available for this item")
-                            .font(.caption14Italic)
-                            .foregroundStyle(notAvailableStatus ? Color.black.opacity(0.5) : Color.black.opacity(0))
-                        SliderWithLabels()
-                            .padding(.horizontal, -16)
-                        
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(AppColors.primaryPurple)
+                    .foregroundColor(.white)
+                    .cornerRadius(25)
+                }
+                .padding()
+            } else if let recommendation = currentRecommendation {
+                resultContent(recommendation: recommendation)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func resultContent(recommendation: FitRecommendation) -> some View {
+        ZStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Recommended Size")
+                        .font(.heading32Medium)
+                        .fontWeight(.medium)
+                        .padding(.top, 42)
+                    
+                    VStack(alignment: .center) {
+                        // Size Badge
                         ZStack {
-                            Image("chest_yellow")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.width * 0.7)
-                            Image("arm_length_green")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.width * 0.7)
+                            Circle()
+                                .frame(width: UIScreen.main.bounds.width * 0.2, height: UIScreen.main.bounds.width * 0.2)
+                                .foregroundColor(Color(AppColors.primaryPurple))
+                                .overlay(
+                                    Text(recommendation.bestSize)
+                                        .foregroundColor(.white)
+                                        .font(.system(size: (recommendation.bestSize == "XXL" || recommendation.bestSize == "XXXL") ? 32 : 48))
+                                        .fontWeight(.bold)
+                                )
                         }
-                        .padding(.bottom, -42)
-                        .padding(.leading, UIScreen.main.bounds.width * 0.05)
-                        HStack {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.black, Color(hex: "FEC901").opacity(0.5))
-                                .font(.system(size: 24))
-                            Text("Chest area slightly tight")
-                                .font(.caption14Italic)
-                                .foregroundStyle(Color(hex: "838383"))
+                        .padding(.bottom, -48)
+                        .padding(.top, -8)
+                        .zIndex(1)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Fit Preference")
+                                .font(.body16Regular)
+                            
+                            // Warning jika score rendah
+                            if recommendation.bestScore < 30 {
+                                Text("This fit preference may not be ideal for your measurements")
+                                    .font(.caption14Italic)
+                            }
+                            
+                            SliderWithLabels(sliderValue: $sliderValue)
+                                .padding(.horizontal, -16)
+                            
+                            // Mannequin Visualization
+                            bodyVisualization(recommendation: recommendation)
+                                .padding(.bottom, -42)
+                                .padding(.leading, UIScreen.main.bounds.width * 0.05)
+                            
+                            // Status indicators
+                            statusIndicators(recommendation: recommendation)
                         }
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, AppColors.successGreen)
-                                .font(.system(size: 24))
-                            Text("Arm is just right")
-                                .font(.caption14Italic)
-                                .foregroundStyle(Color(hex: "838383"))
-                        }
+                        .padding(8)
+                        .padding(.top, 38)
+                        .padding(.horizontal, 16)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        
+                        Text("Note : Measurements can differ by ± 1 – 2 cm due to material variation.")
+                            .font(.caption14Italic)
+                            .foregroundStyle(Color(hex: "838383"))
+                            .padding(.vertical, 4)
                     }
-                    .padding(8)
-                    .padding(.top, 38)
-                    .padding(.horizontal, 16)
-                    .background(Color.white)
-                    Text("Note : Measurements can differ by ± 1 – 2 cm due to material variation.")
+                    
+                    // Spacer untuk memberi ruang agar content tidak tertutup button
+                    Spacer()
+                        .frame(height: 140)
+                }
+                .padding(.horizontal, 16)
+            }
+            
+            // Buttons fixed di bawah screen
+            VStack {
+                Spacer()
+                
+                VStack(spacing: 12) {
+                    RoolaButton(buttonTitle: "Save Result", buttonColor: AppColors.primaryPurple, action: {
+                        // TODO: Implement save logic
+                        
+                    })
+                    RoolaButton(buttonTitle: "Try Again", buttonColor: AppColors.primaryWhite, action: {
+                        showResults = false
+                    })
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, UIScreen.main.bounds.height * 0.05)
+            }
+        }
+    }
+    
+    // MARK: - Body Visualization
+    
+    @ViewBuilder
+    private func bodyVisualization(recommendation: FitRecommendation) -> some View {
+        ZStack {
+            // Bust/Chest visualization
+            Image(getBustImageName(recommendation: recommendation))
+                .resizable()
+                .scaledToFit()
+                .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.width * 0.7)
+            
+            // Arm length visualization (if used in calculation)
+            Image(getArmImageName(recommendation: recommendation))
+                .resizable()
+                .scaledToFit()
+                .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.width * 0.7)
+        }
+    }
+    
+    private func getBustImageName(recommendation: FitRecommendation) -> String {
+        // Check if there's a fit issue for bust
+        if let bustIssue = recommendation.fitIssues?["bust"] {
+            switch bustIssue.issue {
+            case .tooTight:
+                return "chest_red" // Too tight = red
+            case .tooLoose:
+                return "chest_blue" // Too loose = blue
+            }
+        }
+        
+        // Check partFits for bust (normal classification)
+        if let bustFit = recommendation.partFits["bust"] {
+            // If the fit matches the current preference, it's green (perfect)
+            if bustFit == currentFitPreference {
+                return "chest_green"
+            }
+            
+            // If fit is tighter than preference
+            let fitOrder = ["loose", "slightly-loose", "regular", "slightly-tight", "tight"]
+            let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
+            let actualIndex = fitOrder.firstIndex(of: bustFit) ?? 2
+            
+            if actualIndex > currentIndex {
+                // Actual fit is tighter than preference → yellow warning
+                return "chest_yellow"
+            } else if actualIndex < currentIndex {
+                // Actual fit is looser than preference → blue
+                return "chest_blue"
+            }
+        }
+        
+        // Default: green (just right)
+        return "chest_green"
+    }
+    
+    private func getArmImageName(recommendation: FitRecommendation) -> String {
+        // Check if arm_length is used in this clothing type
+        let hasArmLength = recommendation.partFits["arm_length"] != nil ||
+                          recommendation.fitIssues?["arm_length"] != nil
+        
+        if !hasArmLength {
+            return "arm_length_empty"
+        }
+        
+        // Check if there's a fit issue for arm_length
+        if let armIssue = recommendation.fitIssues?["arm_length"] {
+            switch armIssue.issue {
+            case .tooTight:
+                return "arm_length_red"
+            case .tooLoose:
+                return "arm_length_blue"
+            }
+        }
+        
+        // Check partFits for arm_length
+        if let armFit = recommendation.partFits["arm_length"] {
+            if armFit == currentFitPreference {
+                return "arm_length_green"
+            }
+            
+            let fitOrder = ["loose", "slightly-loose", "regular", "slightly-tight", "tight"]
+            let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
+            let actualIndex = fitOrder.firstIndex(of: armFit) ?? 2
+            
+            if actualIndex > currentIndex {
+                return "arm_length_yellow"
+            } else if actualIndex < currentIndex {
+                return "arm_length_blue"
+            }
+        }
+        
+        return "arm_length_green"
+    }
+    
+    // MARK: - Status Indicators
+    
+    @ViewBuilder
+    private func statusIndicators(recommendation: FitRecommendation) -> some View {
+        let status = getOverallStatus(recommendation: recommendation)
+        
+        VStack(alignment: .leading, spacing: 8) {
+            if status.isAllGood {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, AppColors.successGreen)
+                        .font(.system(size: 24))
+                    Text("All parts just right")
                         .font(.caption14Italic)
                         .foregroundStyle(Color(hex: "838383"))
-                        .padding(.vertical, 4)
                 }
-                VStack {
-                    RoolaButton(buttonTitle: "Save Result", buttonColor: AppColors.primaryPurple, action: {})
-                    RoolaButton(buttonTitle: "Try Again", buttonColor: AppColors.primaryWhite, action: {})
+            } else {
+                // Show issues
+                ForEach(status.issues, id: \.part) { issue in
+                    HStack {
+                        Image(systemName: issue.icon)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(issue.iconForeground, issue.iconBackground)
+                            .font(.system(size: 24))
+                        Text(issue.message)
+                            .font(.caption14Italic)
+                            .foregroundStyle(Color(hex: "838383"))
+                    }
                 }
             }
-            .padding(.horizontal, 16)
+        }
+    }
+    
+    private func getOverallStatus(recommendation: FitRecommendation) -> (isAllGood: Bool, issues: [StatusIssue]) {
+        // Group issues by type and severity
+        var tooTightParts: [String] = []
+        var tooLooseParts: [String] = []
+        var slightlyOffParts: [(part: String, fit: String)] = []
+        
+        let parts = ["bust", "torso", "arm_length"]
+        
+        for part in parts {
+            // Skip if part not used
+            if recommendation.partFits[part] == nil && recommendation.fitIssues?[part] == nil {
+                continue
+            }
+            
+            let displayName = part == "bust" ? "Chest" : part.replacingOccurrences(of: "_", with: " ").capitalized
+            
+            // Check fit issues first (too tight/too loose)
+            if let fitIssue = recommendation.fitIssues?[part] {
+                if fitIssue.issue == .tooTight {
+                    tooTightParts.append(displayName)
+                } else {
+                    tooLooseParts.append(displayName)
+                }
+            }
+            // Check if fit doesn't match preference (slightly off)
+            else if let partFit = recommendation.partFits[part], partFit != currentFitPreference {
+                let fitDisplay = partFit.replacingOccurrences(of: "-", with: " ").capitalized
+                slightlyOffParts.append((part: displayName, fit: fitDisplay))
+            }
+        }
+        
+        var issues: [StatusIssue] = []
+        
+        // Combine too tight parts into one message
+        if !tooTightParts.isEmpty {
+            let partsText = formatPartsList(tooTightParts)
+            issues.append(StatusIssue(
+                part: "tight",
+                message: "\(partsText) will be too tight for this fit preference",
+                icon: "xmark.circle.fill",
+                iconForeground: .white,
+                iconBackground: Color.red
+            ))
+        }
+        
+        // Combine too loose parts into one message
+        if !tooLooseParts.isEmpty {
+            let partsText = formatPartsList(tooLooseParts)
+            issues.append(StatusIssue(
+                part: "loose",
+                message: "\(partsText) will be too loose for this fit preference",
+                icon: "exclamationmark.circle.fill",
+                iconForeground: .black,
+                iconBackground: Color(hex: "FEC901").opacity(0.5)
+            ))
+        }
+        
+        // Combine slightly off parts by fit type
+        if !slightlyOffParts.isEmpty {
+            // Group by fit type
+            var groupedByFit: [String: [String]] = [:]
+            for item in slightlyOffParts {
+                if groupedByFit[item.fit] == nil {
+                    groupedByFit[item.fit] = []
+                }
+                groupedByFit[item.fit]?.append(item.part)
+            }
+            
+            // Create message for each fit type
+            for (fitType, parts) in groupedByFit {
+                let partsText = formatPartsList(parts)
+                let othersText = parts.count < 3 ? ", but others are just right" : ""
+                issues.append(StatusIssue(
+                    part: "slightly-off",
+                    message: "\(partsText) will be \(fitType)\(othersText)",
+                    icon: "exclamationmark.circle.fill",
+                    iconForeground: .black,
+                    iconBackground: Color(hex: "FEC901").opacity(0.5)
+                ))
+            }
+        }
+        
+        return (isAllGood: issues.isEmpty, issues: issues)
+    }
+    
+    // Helper function to format parts list like "Chest and Torso" or "Chest, Torso and Arm Length"
+    private func formatPartsList(_ parts: [String]) -> String {
+        guard !parts.isEmpty else { return "" }
+        
+        if parts.count == 1 {
+            return parts[0]
+        } else if parts.count == 2 {
+            return "\(parts[0]) and \(parts[1])"
+        } else {
+            let lastPart = parts.last!
+            let otherParts = parts.dropLast().joined(separator: ", ")
+            return "\(otherParts) and \(lastPart)"
         }
     }
 }
 
+struct StatusIssue {
+    let part: String
+    let message: String
+    let icon: String
+    let iconForeground: Color
+    let iconBackground: Color
+}
+
 struct SliderWithLabels: View {
     
-    @State var sliderValue: Float = 0.0
+    @Binding var sliderValue: Float
 
     let labels = ["Tight", "Slim", "Standard", "Relaxed", "Loose"]
 
@@ -192,8 +488,8 @@ struct SliderWithLabels: View {
                         
                         Text(labels[index])
                             .font(.caption)
-                            .foregroundColor(.black)
-                            .fontWeight(.regular)
+                            .foregroundColor(isSelected ? AppColors.primaryPurple : .black)
+                            .fontWeight(isSelected ? .bold : .regular)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -203,6 +499,5 @@ struct SliderWithLabels: View {
 }
 
 #Preview {
-//    ResultsView(viewModel: RecommendationViewModel(), showResults: .constant(true))
-    ResultsView()
+    ResultsView(viewModel: RecommendationViewModel(), showResults: .constant(true))
 }
