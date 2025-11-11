@@ -16,8 +16,8 @@ class MeasurementFlowViewModel: ObservableObject {
     // MARK: - State
     
     // The View will listen to this property for all UI changes
-//    @Published var flowState: FlowState = .capturing
-    @Published var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/path/to/video.mp4"))
+    @Published var flowState: FlowState = .capturing
+//    @Published var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/path/to/video.mp4"))
 //    @Published var flowState: FlowState = .success(data: MeasurementData(
 //                    armsLength: 49.21,
 //                    chestCircumference: 92,

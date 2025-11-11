@@ -16,6 +16,9 @@ struct UserInputView: View {
     @State private var isEditing = false
     @State private var showMeasureGuide = false
     
+    // --- ADD STATE FOR MODAL ---
+    @State private var isShowingAIMeasurement = false
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if existingUsers.isEmpty {
@@ -43,12 +46,20 @@ struct UserInputView: View {
                 .presentationDetents([.fraction(0.75)])
                 .presentationDragIndicator(.visible)
         }
+        // --- ADD FULL SCREEN COVER MODIFIER ---
+        .fullScreenCover(isPresented: $isShowingAIMeasurement) {
+            // This presents the entire AI flow.
+            // When it's dismissed, the user will be
+            // right back on this screen.
+            CameraFlowContainerView()
+        }
     }
 }
 
 // MARK: - Create / Update UI
 private extension UserInputView {
     var createUserView: some View {
+        // ... This view remains unchanged ...
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
                 title: "Your Measurements",
@@ -75,12 +86,13 @@ private extension UserInputView {
                             buttonColor: AppColors.primaryPurple,
                             action: saveUser)
                     .frame(width: UIScreen.main.bounds.width * 0.8)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 40)
             }
             .padding(.horizontal, 30)
             .padding(.top, 10)
         }
     }
+    
     var updateUserView: some View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
@@ -91,6 +103,7 @@ private extension UserInputView {
 
             VStack(spacing: 30) {
                 if isEditing {
+                    // ... This part is unchanged ...
                     MeasurementsCard(
                         chest: $viewModel.bust,
                         waist: $viewModel.waist,
@@ -111,7 +124,7 @@ private extension UserInputView {
                                 buttonColor: AppColors.primaryPurple,
                                 action: saveUser)
                         .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 50)
+                        .padding(.bottom, 40)
                 } else {
                     MeasurementListView(
                         items: [
@@ -127,7 +140,10 @@ private extension UserInputView {
                         RoolaButton(
                             buttonTitle: "Measure with AI",
                             buttonColor: AppColors.primaryPurple,
-                            action: saveUser
+                            // --- UPDATE THE ACTION HERE ---
+                            action: {
+                                isShowingAIMeasurement = true
+                            }
                         )
                         RoolaButton(
                             buttonTitle: "Edit",
@@ -141,13 +157,15 @@ private extension UserInputView {
                         )
                     }
                     .frame(width: UIScreen.main.bounds.width * 0.8)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 40)
                 }
             }
             .padding(.horizontal, 30)
             .padding(.top, 10)
         }
     }
+    
+    // ... This function is unchanged ...
     func contentView(title: String, button: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(title: title, onInfo: {}, isLargeTitle: true)
@@ -172,7 +190,7 @@ private extension UserInputView {
                                 buttonColor: AppColors.primaryPurple,
                                 action: saveUser)
                         .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 50)
+                        .padding(.bottom, 40)
                 }
                 .padding(.horizontal, 30)
                 .padding(.top, 10)
@@ -183,6 +201,7 @@ private extension UserInputView {
 
 // MARK: - Validation UI
 private extension UserInputView {
+    // ... This is unchanged ...
     var validationErrors: some View {
         VStack(alignment: .leading, spacing: 4) {
             if viewModel.hasEmptyError {
@@ -204,6 +223,7 @@ private extension UserInputView {
 
 // MARK: - Load existing data
 private extension UserInputView {
+    // ... This is unchanged ...
     func loadExistingUserData() {
         if let user = existingUsers.first {
             viewModel.loadData(from: user)
@@ -213,6 +233,7 @@ private extension UserInputView {
 
 // MARK: - SAVE LOGIC (fixed!)
 private extension UserInputView {
+    // ... This is unchanged ...
     func saveUser() {
         guard viewModel.validateInputs() else { return }
 
@@ -233,6 +254,7 @@ private extension UserInputView {
         } catch {
             viewModel.showSaveError(error)
         }
+        isEditing.toggle()
     }
 }
 
