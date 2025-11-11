@@ -7,17 +7,34 @@
 
 import SwiftUI
 
-// MARK: - Main Tab View untuk Development
 struct MainTabView: View {
-    
+
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.white
+        appearance.backgroundColor = UIColor(AppColors.primaryWhite)
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(AppColors.primaryPurple)
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: UIColor(AppColors.primaryPurple)
+        ]
+        
+        appearance.inlineLayoutAppearance = appearance.stackedLayoutAppearance
+        appearance.compactInlineLayoutAppearance = appearance.stackedLayoutAppearance
+        
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().tintColor = UIColor(AppColors.primaryPurple)
     }
-    
+
+    // helper to create a smaller SF symbol as UIImage -> Image
+    func smallSymbol(_ name: String, size: CGFloat, weight: UIImage.SymbolWeight = .regular) -> Image {
+        let cfg = UIImage.SymbolConfiguration(pointSize: size, weight: weight)
+        if let ui = UIImage(systemName: name, withConfiguration: cfg) {
+            return Image(uiImage: ui)
+        }
+        return Image(systemName: name)
+    }
+
     var body: some View {
         TabView {
 //            UserProfileView()
@@ -28,31 +45,27 @@ struct MainTabView: View {
             MeasurementFlowView()
                 .tabItem {
                     VStack {
-                        Image(systemName: "pencil.and.ruler")
-                            .font(.system(size: 14))
+                        smallSymbol("pencil.and.ruler", size: 14)
                         Text("Measurements")
                     }
                 }
-            
+
             RecommendationView()
                 .tabItem {
                     VStack {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
+                        smallSymbol("sparkles", size: 14)
                         Text("Recommendation")
                     }
                 }
-            
+
             HistoryView()
                 .tabItem {
                     VStack {
-                        Image(systemName: "clock.arrow.2.circlepath")
-                            .font(.system(size: 14))
+                        smallSymbol("clock.arrow.2.circlepath", size: 14)
                         Text("History")
                     }
                 }
         }
-        
     }
 }
 
