@@ -27,7 +27,7 @@ struct CameraFlowContainerView: View {
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
                 case .capture:
-                    MeasurementFlowView()
+                    MeasurementFlowView(onSwitchToManual: {})
                         .navigationBarHidden(true)
                 case .permissionDenied:
                     CameraPermissionDeniedView(

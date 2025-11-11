@@ -57,8 +57,11 @@ struct OnboardingFlowView: View {
                     .navigationDestination(for: FlowStep.self) { step in
                         switch step {
                         case .capture:
-                            MeasurementFlowView()
-                                .navigationBarHidden(true) // <-- 4. Hide on Capture
+                            MeasurementFlowView(onSwitchToManual: {
+                                path.removeLast(path.count)
+                                path.append(OnboardingStep.manual)
+                            })
+                            .navigationBarHidden(true)
                         case .permissionDenied:
                             CameraPermissionDeniedView(
                                 onCancel: {

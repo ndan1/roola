@@ -15,6 +15,8 @@ struct MeasurementFlowView: View {
     @Environment(\.modelContext) private var modelContext
     
     @State private var showSuccessPopup = false
+    
+    var onSwitchToManual: () -> Void
 
     var body: some View {
         ZStack {
@@ -87,6 +89,7 @@ struct MeasurementFlowView: View {
                     action: {
                         // TODO: You would add a new method to the ViewModel
                         // e.g., viewModel.switchToManualInput()
+                        onSwitchToManual()
                     }
                 )
                 .frame(width: UIScreen.main.bounds.width * 0.8)
@@ -140,7 +143,7 @@ struct MeasurementFlowView: View {
 }
 
 #Preview {
-    MeasurementFlowView()
+    MeasurementFlowView(onSwitchToManual: {})
         // 9. Add the model container for the preview to work
         .modelContainer(for: User.self, inMemory: true)
 }

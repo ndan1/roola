@@ -30,7 +30,8 @@ struct UserInputView: View {
             Alert(
                 title: Text(viewModel.alertTitle),
                 message: Text(viewModel.alertMessage),
-                dismissButton: .default(Text("OK")) {
+                dismissButton: .default(
+                    Text("OK")) {
                     if viewModel.shouldDismiss { dismiss() }
                 })
         }
