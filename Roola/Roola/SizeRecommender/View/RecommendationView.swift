@@ -37,6 +37,18 @@ struct RecommendationView: View {
                     viewModel.loadUserMeasurements(user: user)
                 }
             }
+            .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
+                // Auto-trigger recommendation ketika OCR extraction selesai
+                if !newValue.isEmpty && !viewModel.isCallingAPI {
+                    viewModel.getRecommendation()
+                }
+            }
+            .onChange(of: viewModel.serverResponse) { oldValue, newValue in
+                // Auto-show results ketika recommendation selesai
+                if newValue != nil && !viewModel.isCallingAPI {
+                    showResults = true
+                }
+            }
             .fullScreenCover(isPresented: $showResults) {
                 ResultsView(viewModel: viewModel, showResults: $showResults)
             }
@@ -246,22 +258,20 @@ struct RecommendationView: View {
         Button {
             if viewModel.selectedImage != nil {
                 viewModel.processImage()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    if !viewModel.extractedJSON.isEmpty {
-                        viewModel.getRecommendation()
-                        showResults = true
-                    }
-                }
+                // onChange observers akan handle sisanya:
+                // 1. onChange(extractedJSON) → auto call getRecommendation()
+                // 2. onChange(serverResponse) → auto set showResults = true
             }
         } label: {
-            Text("Find your fit")
+            Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background(AppColors.primaryPurple)
+                .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
                 .cornerRadius(30)
         }
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
     }

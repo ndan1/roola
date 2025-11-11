@@ -815,7 +815,7 @@ fileprivate func roundToDecimalPlaces(_ value: Double, places: Int = 2) -> Doubl
 
 // MARK: - Helper Structs & Extensions
 
-struct FitRecommendation: Codable {
+struct FitRecommendation: Codable, Equatable {
     var bestScore: Double
     var bestSize: String
     var partFits: [String: String]
@@ -832,7 +832,7 @@ struct FitRecommendation: Codable {
     }
 }
 
-struct FitIssue: Codable {
+struct FitIssue: Codable, Equatable {
     let part: String
     let issue: IssueType
     let easeValue: Double
