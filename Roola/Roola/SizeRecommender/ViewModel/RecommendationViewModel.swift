@@ -32,7 +32,7 @@ class RecommendationViewModel: ObservableObject {
     
     // MARK: - Services
     private let ocrService: LocalOCRService
-    private let openAIService: OpenAIService
+//    private let openAIService: OpenAIService
     private let geminiService: GeminiService
     
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
@@ -42,7 +42,7 @@ class RecommendationViewModel: ObservableObject {
 
     init() {
         self.ocrService = LocalOCRService()
-        self.openAIService = OpenAIService()
+//        self.openAIService = OpenAIService()
         self.geminiService = GeminiService()
     }
     
