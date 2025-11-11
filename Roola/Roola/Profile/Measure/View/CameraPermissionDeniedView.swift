@@ -13,8 +13,6 @@ struct CameraPermissionDeniedView: View {
     
     var body: some View {
         ZStack {
-            SecondGradientBackground()
-                
             VStack(spacing: 20) {
                 
                 Text("Roola needs access to your camera")
@@ -35,9 +33,9 @@ struct CameraPermissionDeniedView: View {
                 }
                 .padding(.bottom, UIScreen.main.bounds.height * 0.1)
             }
-            .padding(.top, UIScreen.main.bounds.height * 0.35)
+            .padding(.top, UIScreen.main.bounds.height * 0.3)
             .padding(.horizontal, 16)
-        }
+        }.background(SecondGradientBackground().ignoresSafeArea())
     }
 }
 

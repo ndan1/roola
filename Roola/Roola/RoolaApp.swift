@@ -45,7 +45,25 @@ struct RoolaApp: App {
                 .modelContainer(sharedModelContainer)
                 .preferredColorScheme(.light)
 //            #endif
-//            AIMeasurementFlowView()
+
+//            MeasurementResultView(
+//                data: MeasurementData(  // Pass dummy for preview
+//                    armsLength: 49.21,
+//                    chestCircumference: 92,
+//                    height: 169,
+//                    torsoLength: 54,
+//                    waistCircumference: 82
+//                ),
+//                onDone: {
+//                    print("Done tapped")
+//                },
+//                onBack: {
+//                    print("Test")
+//                },
+//                onInfo: {
+//                    print("Modal")
+//                }
+//            )
         }
     }
 }

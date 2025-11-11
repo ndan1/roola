@@ -1,12 +1,9 @@
 //
-//  YourMeasurementView.swift
+//  MeasurementCard.swift
 //  Roola
 //
+//  Created by Hendrik Nicolas Carlo on 11/11/25.
 //  Created by Georgius Kenny Gunawan on 10/11/25.
-//
-
-import SwiftUI
-
 
 import SwiftUI
 
@@ -66,44 +63,43 @@ struct YourMeasurementView: View {
             
             VStack(spacing: 0){
                 
-                YourBodyMeasureNavbar(title: "Your Measurement") {
-                    print("Back Tapped")
-                } infoAction: {
-                    print("Info Tapped")
+                RoolaHeader(title: "") {
+                    print("test")
+                } onInfo: {
+                    print("test")
                 }
-                .padding(.top, UIScreen.main.bounds.height * 0.06)
-                .padding(.bottom, 31)
+
+                Group{
+                    MeasurementsCard(
+                        chest: $chest,
+                        waist: $waist,
+                        armLength: $armLength,
+                        torsoLength: $torsoLength,
+                        isChestError: isChestError,
+                        isWaistError: isWaistError,
+                        isArmLengthError: isArmLengthError,
+                        isTorsoLengthError: isTorsoLengthError,
+                        hasAnyError: hasError
+                    )
                     
-                
-                MeasurementsCard(
-                    chest: $chest,
-                    waist: $waist,
-                    armLength: $armLength,
-                    torsoLength: $torsoLength,
-                    isChestError: isChestError,
-                    isWaistError: isWaistError,
-                    isArmLengthError: isArmLengthError,
-                    isTorsoLengthError: isTorsoLengthError,
-                    hasAnyError: hasError
-                )
-                
-                // --- 3. STACKED ERROR MESSAGES ---
-                // By removing 'else', both messages can appear.
-                VStack(alignment: .leading, spacing: 4) {
-                    if hasEmptyError {
-                        Text("• Please fill in all fields")
-                            .font(.body)
-                            .foregroundColor(.red)
+                    // --- 3. STACKED ERROR MESSAGES ---
+                    // By removing 'else', both messages can appear.
+                    VStack(alignment: .leading, spacing: 4) {
+                        if hasEmptyError {
+                            Text("Please fill in all fields")
+                                .font(.body)
+                                .foregroundColor(.red)
+                        }
+                        
+                        if isOver250Error {
+                            Text("Number must be below 250 cm")
+                                .font(.body)
+                                .foregroundColor(.red)
+                        }
                     }
-                    
-                    if isOver250Error {
-                        Text("• Number must be below 250 cm")
-                            .font(.body)
-                            .foregroundColor(.red)
-                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8) // Give the error block some space
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 8) // Give the error block some space
                 
                 Spacer() // Pushes the button to the bottom
                 
@@ -169,4 +165,3 @@ struct MeasurementsCard: View {
 #Preview {
     YourMeasurementView()
 }
-

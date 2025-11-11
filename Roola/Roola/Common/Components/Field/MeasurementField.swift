@@ -23,7 +23,6 @@ struct MeasurementField: View {
             
             TextField("", text: $inputText)
                 .font(.body)
-                .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .foregroundColor(.primary)
                         

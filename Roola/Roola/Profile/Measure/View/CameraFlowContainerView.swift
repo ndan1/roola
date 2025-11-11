@@ -8,78 +8,67 @@
 import SwiftUI
 import AVFoundation
 
-enum CameraFlowStep {
-    case tutorial
+struct CameraFlowContainerView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var path = NavigationPath()   // <-- navigation stack
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            CameraTutorialView {
+                // User tapped Continue → check permission then push capture
+                checkCameraPermission { granted in
+                    if granted {
+                        path.append(FlowStep.capture)
+                    } else {
+                        path.append(FlowStep.permissionDenied)
+                    }
+                }
+            }
+            .navigationDestination(for: FlowStep.self) { step in
+                switch step {
+                case .capture:
+                    MeasurementFlowView()
+                        .navigationBarHidden(true)   // keep your custom header
+                case .permissionDenied:
+                    CameraPermissionDeniedView(
+                        onCancel: { dismiss() },
+                        onOpenSettings: openSettings
+                    )
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            Color.clear.frame(height: 0)
+        }
+        .background(FirstGradientBackground().ignoresSafeArea())
+    }
+
+    private func checkCameraPermission(completion: @escaping (Bool) -> Void) {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            completion(true)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async { completion(granted) }
+            }
+        default:
+            completion(false)
+        }
+    }
+
+    private func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Navigation payload
+private enum FlowStep: Hashable {
     case capture
     case permissionDenied
 }
 
-struct CameraFlowContainerView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var currentStep: CameraFlowStep = .tutorial
-    
-    let onComplete: (URL, BodyMeasurements) -> Void
-    
-    var body: some View {
-        ZStack {
-            switch currentStep {
-                
-            case .tutorial:
-                CameraTutorialView(onContinue: {
-                    checkCameraPermissionAndProceed()
-                })
-                .transition(.move(edge: .trailing))
-                
-            case .capture:
-                BodyPoseCaptureView { videoURL, measurements in
-                    onComplete(videoURL, measurements)
-                    dismiss()
-                }
-                .transition(.move(edge: .trailing))
-                
-            case .permissionDenied:
-                CameraPermissionDeniedView(
-                    onCancel: {
-                        dismiss()
-                    },
-                    onOpenSettings: {
-                        openSettings()
-                    }
-                )
-                .transition(.move(edge: .trailing))
-            }
-        }
-        .edgesIgnoringSafeArea(.all)
-    }
-    
-    private func checkCameraPermissionAndProceed() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            withAnimation {
-                currentStep = .capture
-            }
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    withAnimation {
-                        currentStep = granted ? .capture : .permissionDenied
-                    }
-                }
-            }
-        case .denied, .restricted:
-            withAnimation {
-                currentStep = .permissionDenied
-            }
-        @unknown default:
-            withAnimation {
-                currentStep = .permissionDenied
-            }
-        }
-    }
-    
-    private func openSettings() {
-        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(settingsURL)
-        }
-    }
+#Preview {
+    CameraFlowContainerView()
 }

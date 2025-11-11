@@ -19,7 +19,7 @@ struct MeasurementRow: View {
                 Text(label)
                     .font(.body)
                 if isError {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image(systemName: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundColor(.red)
                 } else {
@@ -62,7 +62,7 @@ struct TopMeasurementRow: View {
                     .font(.body)
                 
                 if isError {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image(systemName: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundColor(.red)
                 }
@@ -120,7 +120,7 @@ struct BottomMeasurementRow: View {
                     .font(.body)
                 
                 if isError {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image(systemName: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundColor(.red)
                 }

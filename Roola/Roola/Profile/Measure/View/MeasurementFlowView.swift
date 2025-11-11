@@ -39,6 +39,8 @@ struct MeasurementFlowView: View {
             case .successAnimation:
                 successAnimationView()
             }
+        }.safeAreaInset(edge: .top) {
+            Color.clear.frame(height: 0)
         }
     }
     
@@ -113,7 +115,8 @@ struct MeasurementFlowView: View {
         MeasurementResultView(
             data: data,
             onDone: { withAnimation { showSuccessPopup = true } },
-            onBack: { viewModel.retryMeasurement() }
+            onBack: { viewModel.retryMeasurement() },
+            onInfo: { print("info")}
         )
         .overlay {
             if showSuccessPopup {
