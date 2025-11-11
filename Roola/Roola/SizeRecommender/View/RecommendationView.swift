@@ -50,10 +50,15 @@ struct RecommendationView: View {
                 }
             }
             .fullScreenCover(isPresented: $showResults) {
-                ResultsView(viewModel: viewModel, showResults: $showResults, onTryAgain: {
-                    // Reset semua fields ketika Try Again diklik
-                    resetAllFields()
-                })
+                ResultsView(
+                    viewModel: viewModel,
+                    showResults: $showResults,
+                    onTryAgain: {
+                        // Reset semua fields ketika Try Again diklik
+                        resetAllFields()
+                    },
+                    initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
+                )
             }
             .sheet(isPresented: $showFitGuide) {
                 FitGuideView(showFitGuide: $showFitGuide)

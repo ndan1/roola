@@ -77,6 +77,7 @@ struct ResultsView: View {
     @ObservedObject var viewModel: RecommendationViewModel
     @Binding var showResults: Bool
     var onTryAgain: (() -> Void)?  // Callback untuk reset fields di parent
+    var initialFitPreference: String = "standard"  // Preference yang dipilih di RecommendationView
     
     @State private var sliderValue: Float = 2.0 // Default to "Standard" (index 2)
     
@@ -132,6 +133,27 @@ struct ResultsView: View {
                 resultContent(recommendation: recommendation)
             }
         }
+        .onAppear {
+            // Set slider position based on initial fit preference
+            setInitialSliderPosition()
+        }
+    }
+    
+    // Function to map fit preference string to slider index
+    private func setInitialSliderPosition() {
+        let preferenceMap: [String: Float] = [
+            "tight": 0.0,
+            "slim": 1.0,
+            "slightly-tight": 1.0,  // Alias untuk slim
+            "standard": 2.0,
+            "regular": 2.0,  // Alias untuk standard
+            "relaxed": 3.0,
+            "slightly-loose": 3.0,  // Alias untuk relaxed
+            "loose": 4.0
+        ]
+        
+        sliderValue = preferenceMap[initialFitPreference.lowercased()] ?? 2.0
+        print("🎚️ Slider initialized to: \(sliderValue) for preference: \(initialFitPreference)")
     }
     
     @ViewBuilder
