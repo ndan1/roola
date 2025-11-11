@@ -9,7 +9,6 @@ import SwiftUI
 import AVFoundation
 
 enum CameraFlowStep {
-    case terms
     case tutorial
     case capture
     case permissionDenied
@@ -17,20 +16,13 @@ enum CameraFlowStep {
 
 struct CameraFlowContainerView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var currentStep: CameraFlowStep = .terms
+    @State private var currentStep: CameraFlowStep = .tutorial
     
     let onComplete: (URL, BodyMeasurements) -> Void
     
     var body: some View {
         ZStack {
             switch currentStep {
-            case .terms:
-                CameraTermsView(onContinue: {
-                    withAnimation {
-                        currentStep = .tutorial
-                    }
-                })
-                .transition(.move(edge: .trailing))
                 
             case .tutorial:
                 CameraTutorialView(onContinue: {
