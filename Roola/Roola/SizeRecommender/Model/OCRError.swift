@@ -19,8 +19,10 @@ enum OCRError: Error, LocalizedError {
         switch self {
         case .invalidImage, .noTextFound, .recognitionFailed, .noSizeDataFound:
             return "Error"
-        case .notUpperwear, .noSizeChartDetected:
-            return "Uh Oh!"
+        case .notUpperwear:
+            return "Uh oh! Size chart uploaded wasn’t an upperwear"
+        case .noSizeChartDetected:
+            return "Uh oh! There wasn't any size chart in the screenshot"
         }
     }
     
@@ -35,9 +37,9 @@ enum OCRError: Error, LocalizedError {
         case .noTextFound:
             return "No text found in image"
         case .notUpperwear:
-            return "Size chart uploaded wasn't an upperwear!"
+            return "Roola only can get your upperwear sizes for now :("
         case .noSizeChartDetected:
-            return "There wasn't any size chart in the screenshot"
+            return "Try another one?"
         }
     }
     

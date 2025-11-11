@@ -32,15 +32,6 @@ struct RecommendationView: View {
                 Color.clear.frame(height: 0)
             }
             .ignoresSafeArea(edges: .bottom)
-            .alert(viewModel.currentError?.title ?? "Error", isPresented: $viewModel.showErrorAlert) {
-                Button("Retry", role: .cancel) {
-                    viewModel.resetAllStates()
-                    selectedPhoto = nil
-                    viewModel.selectedImage = nil
-                }
-            } message: {
-                Text(viewModel.currentError?.message ?? "")
-            }
             .onAppear {
                 if let user = users.first {
                     viewModel.loadUserMeasurements(user: user)
@@ -51,6 +42,20 @@ struct RecommendationView: View {
             }
             .sheet(isPresented: $showFitGuide) {
                 FitGuideView(showFitGuide: $showFitGuide)
+            }
+            
+            if viewModel.showErrorAlert, let error = viewModel.currentError {
+                OCRErrorModal(
+                    error: error,
+                    onRetry: {
+                        viewModel.resetAllStates()
+                        selectedPhoto = nil
+                        viewModel.selectedImage = nil
+                    },
+                    isPresented: $viewModel.showErrorAlert
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
             }
         }
     }
