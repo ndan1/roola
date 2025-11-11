@@ -9,98 +9,55 @@ import SwiftUI
 import SwiftData
 
 struct MeasurementResultView: View {
-    let data: MeasurementData?
     
-    @State private var chest: Int?
-    @State private var waist: Int?
-    @State private var armLength: Int?
-    @State private var torsoLength: Int?
+    // The View now only has one source of truth: the ViewModel.
+    @StateObject private var viewModel: MeasurementResultViewModel
     
-    @State private var hasAttemptedSave: Bool = false
-    
-    var onDone: () -> Void
-    var onBack: () -> Void
-    var onInfo: () -> Void
-    
-    // MARK: - Init temporary state
+    // MARK: - Init
     init(data: MeasurementData?, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
-        self.data = data
-        self.onDone = onDone
-        self.onBack = onBack
-        self.onInfo = onInfo
+        _viewModel = StateObject(wrappedValue: MeasurementResultViewModel(
+            data: data,
+            onDone: onDone,
+            onBack: onBack,
+            onInfo: onInfo
+        ))
     }
     
-    // MARK: - Error Checks
-    private var isChestError: Bool {
-        hasAttemptedSave && ((chest ?? 0) > 250 || chest == nil)
-    }
-    
-    private var isWaistError: Bool {
-        hasAttemptedSave && ((waist ?? 0) > 250 || waist == nil)
-    }
-    
-    private var isArmLengthError: Bool {
-        hasAttemptedSave && ((armLength ?? 0) > 250 || armLength == nil)
-    }
-    
-    private var isTorsoLengthError: Bool {
-        hasAttemptedSave && ((torsoLength ?? 0) > 250 || torsoLength == nil)
-    }
-    
-    private var hasError: Bool {
-        isChestError || isWaistError || isArmLengthError || isTorsoLengthError
-    }
-    
-    private var isOver250Error: Bool {
-        hasAttemptedSave && (
-            (chest ?? 0) > 250 ||
-            (waist ?? 0) > 250 ||
-            (armLength ?? 0) > 250 ||
-            (torsoLength ?? 0) > 250
-        )
-    }
-    
-    private var hasEmptyError: Bool {
-        hasAttemptedSave && (
-            chest == nil ||
-            waist == nil ||
-            armLength == nil ||
-            torsoLength == nil
-        )
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
                 title: "Your measurement",
-                onBack: onBack,
-                onInfo: onInfo
+                onInfo: viewModel.onInfo, // Get action from VM
+                isLargeTitle: true
             )
 
             Group {
-                if data != nil {
+                // The View checks the VM's data property
+                if viewModel.data != nil {
                     VStack(spacing: 30) {
                         Group {
                             MeasurementsCard(
-                                chest: $chest,
-                                waist: $waist,
-                                armLength: $armLength,
-                                torsoLength: $torsoLength,
-                                isChestError: isChestError,
-                                isWaistError: isWaistError,
-                                isArmLengthError: isArmLengthError,
-                                isTorsoLengthError: isTorsoLengthError,
-                                hasAnyError: hasError
+                                chest: $viewModel.chest,
+                                waist: $viewModel.waist,
+                                armLength: $viewModel.armLength,
+                                torsoLength: $viewModel.torsoLength,
+                                
+                                isChestError: viewModel.isChestError,
+                                isWaistError: viewModel.isWaistError,
+                                isArmLengthError: viewModel.isArmLengthError,
+                                isTorsoLengthError: viewModel.isTorsoLengthError,
+                                hasAnyError: viewModel.hasError
                             )
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                if hasEmptyError {
+                                // Read error states from VM
+                                if viewModel.hasEmptyError {
                                     Text("Please fill in all fields")
                                         .font(.body15Regular)
                                         .foregroundColor(AppColors.errorRed)
                                 }
                                 
-                                if isOver250Error {
+                                if viewModel.isOver250Error {
                                     Text("Number must be below 250 cm")
                                         .font(.body15Regular)
                                         .foregroundColor(AppColors.errorRed)
@@ -112,27 +69,27 @@ struct MeasurementResultView: View {
                         
                         Spacer()
                         
-                        RoolaButton(
-                            buttonTitle: "Save",
-                            buttonColor: AppColors.primaryPurple,
-                            action: {
-                                hasAttemptedSave = true
-                                if !hasError {
-                                    onDone()
-                                }
-                            }
-                        )
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
+                        VStack{
+                            RoolaButton(
+                                buttonTitle: "Save",
+                                buttonColor: AppColors.primaryPurple,
+                                action: viewModel.saveTapped // Call the VM's function
+                            )
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
+                            
+                            RoolaButton(
+                                buttonTitle: "Retake",
+                                buttonColor: AppColors.primaryWhite,
+                                action: viewModel.retakeTapped // Call the VM's function
+                            )
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
+                        }
                         .padding(.bottom, 50)
                     }
                     .padding(.horizontal, 30)
                     .padding(.top,10)
-                    .onAppear {
-                        chest = Int(data?.chestCircumference ?? 0)
-                        waist = Int(data?.waistCircumference  ?? 0)
-                        armLength = Int(data?.armsLength  ?? 0)
-                        torsoLength = Int(data?.torsoLength  ?? 0)
-                    }
+                    // The .onAppear block is no longer needed here!
+                    // Its logic is now in the ViewModel's init.
                 } else {
                     VStack(spacing: 10) {
                         Text("Measurement Data Not Found")
@@ -148,6 +105,7 @@ struct MeasurementResultView: View {
     }
 }
 
+// The Preview remains unchanged and works perfectly.
 #Preview {
     MeasurementResultView(
         data: MeasurementData(

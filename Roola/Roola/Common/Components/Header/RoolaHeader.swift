@@ -15,43 +15,40 @@ struct RoolaHeader: View {
     var isLargeTitle: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 20) {
-                if onBack != nil {
-                    Button(action: onBack ?? { }) {
-                        Image(systemName: "chevron.left.circle.fill")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(AppColors.primaryWhite)
-                            .background(
-                                Circle()
-                                    .fill(AppColors.primaryPurple)
-                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                            )
-                    }
-                }
-
-                Text(title)
-                    .font(isLargeTitle ? .heading32Medium : .heading24Medium)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-                
-                if onInfo != nil {
-                    Button(action: onInfo ?? { }) {
-                        Image(systemName: "info.circle")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(AppColors.primaryPurple)
-                    }
-                }else{
-                    Spacer()
+        HStack(spacing: 20) {
+            if onBack != nil {
+                Button(action: onBack ?? { }) {
+                    Image(systemName: "chevron.left.circle.fill")
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                        .foregroundColor(AppColors.primaryWhite)
+                        .background(
+                            Circle()
+                                .fill(AppColors.primaryPurple)
+                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        )
                 }
             }
-            .padding()
-            .padding(.horizontal, 10)
+
+            Text(title)
+                .font(isLargeTitle ? .heading32Medium : .heading24Medium)
+                .lineLimit(1)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+        }.overlay(alignment: .trailing) {
+            if onInfo != nil {
+                Button(action: onInfo ?? { }) {
+                    Image(systemName: "info.circle")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+                .padding(.trailing,0)
+            }
         }
+        .padding(.horizontal, 20)
+        .frame(height: UIScreen.main.bounds.height * 0.08)
     }
 }
 
