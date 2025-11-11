@@ -33,10 +33,10 @@ struct HistoryView: View {
                     } else {
                         VStack{
                             HStack{
-                                Text("History")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.leading,16)
-                                    .font(.title)
+                                RoolaHeader(
+                                    title: "History",
+                                    isLargeTitle: true
+                                )
                                 
                                 Button(action: {
                                     showSortSheet = true
@@ -55,7 +55,6 @@ struct HistoryView: View {
                     }
                 }
                 .background(FirstGradientBackground().ignoresSafeArea())
-                .navigationBarTitleDisplayMode(.large)
             }
             .sheet(isPresented: $showSortSheet) {
                 SortSheet(selectedSort: $selectedSort)
