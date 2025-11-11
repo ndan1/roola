@@ -9,17 +9,30 @@ import SwiftUI
 
 struct CameraTermsView: View {
     let onContinue: () -> Void
+    @Binding var isShowPolicy: Bool
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
-            SecondGradientBackground()
-            
             VStack {
-                Text("Before you continue")
-                    .font(.title)
-                    .fontWeight(.medium)
-                    .padding(.bottom, 32)
-                    .padding(.top, UIScreen.main.bounds.height * 0.25)
+                HStack {
+                    Spacer()
+                    Text("Data Policy")
+                        .font(.title)
+                        .fontWeight(.medium)
+                        .padding(.leading, UIScreen.main.bounds.width * 0.15)
+                    Spacer()
+                    Button (action: {
+                        dismiss()
+                    }){
+                        Image(systemName: "x.circle.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                            .font(.system(size: 32))
+                            .padding(.trailing, UIScreen.main.bounds.width * 0.05)
+                    }
+                }
+                .padding(.bottom, 24)
                 
                 VStack (alignment: .leading, spacing: 24){
                     HStack (alignment: .top, spacing: 16){
@@ -59,9 +72,6 @@ struct CameraTermsView: View {
                         }
                     }
                 }
-                Spacer()
-                RoolaButton(buttonTitle: "Continue", buttonColor: AppColors.primaryButton, action: onContinue)
-                    .padding(.bottom, UIScreen.main.bounds.height * 0.1)
             }
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,5 +83,5 @@ struct CameraTermsView: View {
 }
 
 #Preview {
-    CameraTermsView(onContinue: {})
+    CameraTermsView(onContinue: {}, isShowPolicy: .constant(true))
 }
