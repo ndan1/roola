@@ -13,15 +13,7 @@ struct YourBodyMeasureNavbar: View {
         var infoAction: () -> Void
         
         var body: some View {
-            ZStack {
-                // LAYER 1: The title (centered by default)
-                Text(title)
-                    .font(.title)
-                    .fontWeight(.medium)
-                
-                // LAYER 2: The buttons
-                HStack {
-                    // Back Button
+            HStack{
                     Button(action: backAction) {
                         Image(systemName: "chevron.left")
                             .font(.headline)
@@ -30,20 +22,25 @@ struct YourBodyMeasureNavbar: View {
                             .background(.regularMaterial) // Frosted glass effect
                             .clipShape(Circle())
                     }
-                    
-                    Spacer() // Pushes buttons to the edges
+
+                Text(title)
+                    .font(.title)
+                    .fontWeight(.medium)
+                    // Pushes buttons to the edges
                     
                     // Info Button
                     Button(action: infoAction) {
                         Image(systemName: "info.circle")
                             .font(.title)
-                            // Using .purple, but you can use AppColors.primaryPurple
                             .foregroundColor(AppColors.primaryPurple)
                     }
-                }
-            }
+                
+            
             .padding(.horizontal) // Padding for the whole bar
-            .frame(height: 60) // Gives the bar a consistent height
+            .frame(height: 60)
+            }
+            .padding(.leading, UIScreen.main.bounds.width * 0.03)
+                 // Gives the bar a consistent height
         }
 }
 

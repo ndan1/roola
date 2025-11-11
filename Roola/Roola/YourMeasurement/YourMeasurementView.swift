@@ -7,23 +7,20 @@
 
 import SwiftUI
 
-
-import SwiftUI
-
 struct YourMeasurementView: View {
     
+    @State private var isShowingInfoModal: Bool = false
+    
+    // ... (all your other @State variables)
     @State private var chest: Int? = nil
     @State private var waist: Int? = nil
     @State private var armLength: Int? = nil
     @State private var torsoLength: Int? = nil
-    
     @State private var hasAttemptedSave: Bool = false
     
-
+    // ... (all your computed properties like isChestError, hasError, etc.)
     private var isChestError: Bool {
-        // Don't show any error until save is tapped
         if !hasAttemptedSave { return false }
-        // Now, check for either error
         return (chest ?? 0) > 250 || chest == nil
     }
     
@@ -42,13 +39,9 @@ struct YourMeasurementView: View {
         return (torsoLength ?? 0) > 250 || torsoLength == nil
     }
     
-    // This property now only becomes true *after* save is attempted
     private var hasError: Bool {
         isChestError || isWaistError || isArmLengthError || isTorsoLengthError
     }
-    
-    // --- 2. UPDATED ERROR MESSAGE LOGIC ---
-    // These also wait for 'hasAttemptedSave'
     
     private var isOver250Error: Bool {
         if !hasAttemptedSave { return false }
@@ -59,9 +52,10 @@ struct YourMeasurementView: View {
         if !hasAttemptedSave { return false }
         return chest == nil || waist == nil || armLength == nil || torsoLength == nil
     }
-
+    
     var body: some View {
         ZStack{
+            // ... (your background and main VStack)
             FirstGradientBackground()
             
             VStack(spacing: 0){
@@ -69,61 +63,67 @@ struct YourMeasurementView: View {
                 YourBodyMeasureNavbar(title: "Your Measurement") {
                     print("Back Tapped")
                 } infoAction: {
-                    print("Info Tapped")
+                    isShowingInfoModal = true // This is correct
                 }
                 .padding(.top, UIScreen.main.bounds.height * 0.06)
                 .padding(.bottom, 31)
+                
+                VStack{
+                    MeasurementsCard(
+                        chest: $chest,
+                        waist: $waist,
+                        armLength: $armLength,
+                        torsoLength: $torsoLength,
+                        isChestError: isChestError,
+                        isWaistError: isWaistError,
+                        isArmLengthError: isArmLengthError,
+                        isTorsoLengthError: isTorsoLengthError,
+                        hasAnyError: hasError
+                    )
                     
-                
-                MeasurementsCard(
-                    chest: $chest,
-                    waist: $waist,
-                    armLength: $armLength,
-                    torsoLength: $torsoLength,
-                    isChestError: isChestError,
-                    isWaistError: isWaistError,
-                    isArmLengthError: isArmLengthError,
-                    isTorsoLengthError: isTorsoLengthError,
-                    hasAnyError: hasError
-                )
-                
-                // --- 3. STACKED ERROR MESSAGES ---
-                // By removing 'else', both messages can appear.
-                VStack(alignment: .leading, spacing: 4) {
-                    if hasEmptyError {
-                        Text("• Please fill in all fields")
-                            .font(.body)
-                            .foregroundColor(.red)
-                    }
-                    
-                    if isOver250Error {
-                        Text("• Number must be below 250 cm")
-                            .font(.body)
-                            .foregroundColor(.red)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 8) // Give the error block some space
-                
-                Spacer() // Pushes the button to the bottom
-                
-                // 4. Save Button
-                RoolaButton(
-                    buttonTitle: "Save",
-                    buttonColor: AppColors.primaryPurple,
-                    action: {
-                        // This single line will trigger all the error checks
-                        hasAttemptedSave = true
+                    // --- Error Messages ---
+                    VStack(alignment: .leading, spacing: 4) {
+                        if hasEmptyError {
+                            Text("• Please fill in all fields")
+                                .font(.body)
+                                .foregroundColor(.red)
+                        }
                         
-                        if !hasError {
-                            print("Data saved! Chest: \(chest ?? 0), Waist: \(waist ?? 0), ...")
+                        if isOver250Error {
+                            Text("• Number must be below 250 cm")
+                                .font(.body)
+                                .foregroundColor(.red)
                         }
                     }
-                )
-                .padding(.bottom, UIScreen.main.bounds.height * 0.088)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
+                    
+                    Spacer()
+                    
+                    // ... (your RoolaButton)
+                    RoolaButton(
+                        buttonTitle: "Save",
+                        buttonColor: AppColors.primaryPurple,
+                        action: {
+                            hasAttemptedSave = true
+                            
+                            if !hasError {
+                                print("Data saved! Chest: \(chest ?? 0), Waist: \(waist ?? 0), ...")
+                            }
+                        }
+                    )
+                    .padding(.bottom, UIScreen.main.bounds.height * 0.088)
+                    
+                }
+                .padding(.horizontal, 31)
                 
             }
-            .padding(.horizontal, 31)
+            
+        }
+        .sheet(isPresented: $isShowingInfoModal) {
+            MeasureGuideModal()
+            // --- ADD THIS LINE ---
+                .presentationDetents([.fraction(0.7), .fraction(0.8)])
         }
     }
 }
