@@ -27,8 +27,7 @@ struct RecommendationView: View {
                 Spacer().frame(height: 20)
                 HStack {
                     Text("Find your fit")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.heading32Medium)
                     
                     Spacer()
                     

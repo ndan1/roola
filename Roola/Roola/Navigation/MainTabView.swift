@@ -24,7 +24,8 @@ struct MainTabView: View {
 //                .tabItem {
 //                    Label("Profile", systemImage: "person.circle.fill")
 //                }
-            UserProfileView()
+//            UserProfileView()
+            MeasurementFlowView()
                 .tabItem {
                     VStack {
                         Image(systemName: "pencil.and.ruler")

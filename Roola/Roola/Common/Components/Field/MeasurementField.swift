@@ -45,7 +45,7 @@ struct MeasurementField: View {
     VStack(spacing: 0) {
         MeasurementField(
             label: "Chest",
-            placeholder: "Chest", inputText: .constant("90")
+            inputText: .constant("90")
         )
 
         MeasurementField(
