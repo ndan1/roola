@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MeasurementField: View {
     let label: String
-    let placeholder: String
     let unit: String = "cm"
     @Binding var inputText: String
     var body: some View {
@@ -22,7 +21,7 @@ struct MeasurementField: View {
             
             Spacer()
             
-            TextField(placeholder, text: $inputText)
+            TextField("", text: $inputText)
                 .font(.body)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
@@ -33,7 +32,7 @@ struct MeasurementField: View {
                 .foregroundColor(.secondary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 20)
         .background(Color.white)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
@@ -43,23 +42,25 @@ struct MeasurementField: View {
 }
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: 0) {
         MeasurementField(
             label: "Chest",
-            placeholder: "Chest", inputText: .constant("90"),
+            inputText: .constant("90")
         )
 
         MeasurementField(
             label: "Waist",
-            placeholder: "Waist",
             inputText: .constant("90")
         )
         
         MeasurementField(
             label: "Hips",
-            placeholder: "Hips",
             inputText: .constant("90")
         )
     }
-    .padding()
+    .overlay(
+        RoundedRectangle(cornerRadius: 10)
+            .stroke(Color.red.opacity(1), lineWidth: 4)
+    )
+    .padding(.horizontal, 21)
 }
