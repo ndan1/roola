@@ -32,20 +32,9 @@ struct RoolaApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            #if DEBUG
-//            if CommandLine.arguments.contains("-testing-product-input") {
-//                UserProfileView()
-//                    .modelContainer(sharedModelContainer)
-//            } else {
-//                MainTabView()
-//                    .modelContainer(sharedModelContainer)
-//            }
-//            #else
-            ContentView()
+            MainTabView()
                 .modelContainer(sharedModelContainer)
                 .preferredColorScheme(.light)
-//            #endif
-//            AIMeasurementFlowView()
         }
     }
 }
