@@ -50,9 +50,7 @@ struct OnboardingFlowView: View {
                             }
                             .navigationBarHidden(true) // <-- 2. Hide on AI step
                         case .manual:
-                            ManualInputView { user in
-                                saveUser(user)
-                            }
+                            UserInputView()
                             .navigationBarHidden(true) // <-- 3. Hide on Manual step
                         }
                     }

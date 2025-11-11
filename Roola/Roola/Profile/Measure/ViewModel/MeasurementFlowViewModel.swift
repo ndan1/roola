@@ -140,7 +140,7 @@ class MeasurementFlowViewModel: ObservableObject {
                 // --- CASE 2: UPDATE EXISTING USER ---
                 print("Updating existing user...")
                 
-                userToUpdate.height = Int(data.height.rounded())
+//                userToUpdate.height = Int(data.height.rounded())
                 userToUpdate.bust = Int(data.chestCircumference.rounded())
                 userToUpdate.waist = Int(data.waistCircumference.rounded())
                 userToUpdate.torso = Int(data.torsoLength.rounded())
@@ -150,7 +150,7 @@ class MeasurementFlowViewModel: ObservableObject {
                 print("Creating new user...")
                 
                 let newUser = User(
-                    height: Int(data.height.rounded()),
+//                    height: Int(data.height.rounded()),
                     bust: Int(data.chestCircumference.rounded()),
                     waist: Int(data.waistCircumference.rounded()),
                     torso: Int(data.torsoLength.rounded()),

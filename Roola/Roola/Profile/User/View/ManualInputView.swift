@@ -51,7 +51,7 @@ struct ManualInputView: View {
     }
     
     private func save() {
-        guard let h = Int(height), h > 0,
+        guard //let h = Int(height), h > 0,
               let b = Int(bust), b > 0,
               let w = Int(waist), w > 0,
               let t = Int(torso), t > 0,
@@ -60,7 +60,7 @@ struct ManualInputView: View {
             return
         }
         
-        let user = User(height: h, bust: b, waist: w, torso: t, arms_length: a)
+        let user = User(bust: b, waist: w, torso: t, arms_length: a)
         onSave(user)
     }
 }

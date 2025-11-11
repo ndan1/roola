@@ -37,7 +37,7 @@ struct MainTabView: View {
 
     var body: some View {
         TabView {
-            MeasurementFlowView()
+            UserInputView()
                 .tabItem {
                     VStack {
                         smallSymbol("pencil.and.ruler", size: 14)

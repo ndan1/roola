@@ -13,6 +13,8 @@ struct MeasurementResultView: View {
     // The View now only has one source of truth: the ViewModel.
     @StateObject private var viewModel: MeasurementResultViewModel
     
+    @State private var showMeasureGuide = false
+    
     // MARK: - Init
     init(data: MeasurementData?, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: MeasurementResultViewModel(
@@ -27,7 +29,9 @@ struct MeasurementResultView: View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
                 title: "Your measurement",
-                onInfo: viewModel.onInfo, // Get action from VM
+                onInfo: {
+                    showMeasureGuide.toggle()
+                },
                 isLargeTitle: true
             )
 
@@ -102,6 +106,11 @@ struct MeasurementResultView: View {
             }
         }
         .background(FirstGradientBackground())
+        .sheet(isPresented: $showMeasureGuide) {
+            MeasureGuideModal()
+                .presentationDetents([.fraction(0.75)])
+                .presentationDragIndicator(.visible)
+        }
     }
 }
 
