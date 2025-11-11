@@ -76,6 +76,7 @@ import SwiftUI
 struct ResultsView: View {
     @ObservedObject var viewModel: RecommendationViewModel
     @Binding var showResults: Bool
+    var onTryAgain: (() -> Void)?  // Callback untuk reset fields di parent
     
     @State private var sliderValue: Float = 2.0 // Default to "Standard" (index 2)
     
@@ -210,6 +211,7 @@ struct ResultsView: View {
                         
                     })
                     RoolaButton(buttonTitle: "Try Again", buttonColor: AppColors.primaryWhite, action: {
+                        onTryAgain?()  // Panggil callback untuk reset fields
                         showResults = false
                     })
                 }

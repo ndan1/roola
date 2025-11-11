@@ -50,7 +50,10 @@ struct RecommendationView: View {
                 }
             }
             .fullScreenCover(isPresented: $showResults) {
-                ResultsView(viewModel: viewModel, showResults: $showResults)
+                ResultsView(viewModel: viewModel, showResults: $showResults, onTryAgain: {
+                    // Reset semua fields ketika Try Again diklik
+                    resetAllFields()
+                })
             }
             .sheet(isPresented: $showFitGuide) {
                 FitGuideView(showFitGuide: $showFitGuide)
@@ -295,6 +298,25 @@ struct RecommendationView: View {
         case "loose": return "Loose"
         default: return "Select fit preference"
         }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func resetAllFields() {
+        // Reset foto
+        viewModel.selectedImage = nil
+        selectedPhoto = nil
+        
+        // Reset clothing type
+        viewModel.clothingType = ""
+        
+        // Reset fit preference
+        fitPreference = ""
+        
+        // Reset all view model states
+        viewModel.resetAllStates()
+        
+        print("✅ All fields reset")
     }
 }
 
