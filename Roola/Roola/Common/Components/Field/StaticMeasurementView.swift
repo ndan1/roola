@@ -101,7 +101,7 @@ struct MeasurementDisplayRow: View {
     MeasurementListView(
         items: [
             MeasurementItem(label: "Chest", value: 92),
-            MeasurementItem(label: "Waist", value: 80,),
+            MeasurementItem(label: "Waist", value: 80),
             MeasurementItem(label: "Arm Length", value: 49),
             MeasurementItem(label: "Torso", value: nil)
         ]

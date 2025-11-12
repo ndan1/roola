@@ -16,8 +16,7 @@ struct MeasureGuideModal: View {
             HStack{
                 Spacer()
                 Text("Details")
-                    .font(.title)
-                    .fontWeight(.medium)
+                    .font(.heading24Medium)
                 Spacer()
                 Button(action: {
                     dismiss()
@@ -68,13 +67,15 @@ struct InfoRow: View {
 //                .offset(x: imageName == "Torso 9 3" ? (UIScreen.main.bounds.width * 0.00) : (UIScreen.main.bounds.width * 0.05))
 //                .padding(.trailing, 10)
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title)
-                    .fontWeight(.medium)
-                    .font(.title2)
+                    .font(.title2_20Medium)
                 
                 Text(description)
                     .foregroundStyle(AppColors.grayScale400)
+                    .lineSpacing(1.5)
+                    .font(.body16Regular)
+                    .padding(.trailing)
             }
         }
     }

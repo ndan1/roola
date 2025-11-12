@@ -13,11 +13,11 @@ struct FitGuideView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
+            Spacer()
             HStack {
                 Spacer()
                 Text("Fit guide")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.title1_22Medium)
                 Spacer()
             }
             .overlay(
@@ -26,9 +26,9 @@ struct FitGuideView: View {
                 }) {
                     Image(systemName: "xmark")
                         .foregroundColor(.gray)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.body16Regular)
                 }
-                    .padding(.trailing, 20),
+                .padding(.trailing, 20),
                 alignment: .trailing
             )
             .padding(.top, 16)
@@ -36,7 +36,7 @@ struct FitGuideView: View {
             
             // Content
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 10) {
                     GuideStepView(
                         number: "1",
                         title: "Choose your type of clothes"
@@ -69,6 +69,7 @@ struct FitGuideView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
+                .font(.title3_16Medium)
             }
         }
         .presentationDetents([.medium])
