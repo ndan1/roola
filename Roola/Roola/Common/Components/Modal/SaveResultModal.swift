@@ -111,7 +111,6 @@ struct SaveResultModal: View {
             .background(Color.white)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
-            .padding(.horizontal, 32)
         }
     }
 }

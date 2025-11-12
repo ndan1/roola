@@ -480,10 +480,9 @@ struct ResultsView: View {
             // Create message for each fit type
             for (fitType, parts) in groupedByFit {
                 let partsText = formatPartsList(parts)
-                let othersText = parts.count < 3 ? ", but others are just right" : ""
                 issues.append(StatusIssue(
-                    part: "slightly-off",
-                    message: "\(partsText) will be \(fitType)\(othersText)",
+                    part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
+                    message: "\(partsText) will be \(fitType)",
                     icon: "exclamationmark.circle.fill",
                     iconForeground: .black,
                     iconBackground: Color(hex: "FEC901").opacity(0.5)
