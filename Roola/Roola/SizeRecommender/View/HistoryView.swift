@@ -36,7 +36,7 @@ struct HistoryView: View {
                                 Text("History")
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.leading,16)
-                                    .font(.title)
+                                    .font(.heading32Medium)
                                 
                                 Button(action: {
                                     showSortSheet = true
@@ -84,8 +84,7 @@ struct EmptyHistoryView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         Text("Start inputing your desire outfit and \nget recommendations")
-                            .font(.title3)
-                            .fontWeight(.semibold)
+                            .font(.title2_20Medium)
                         Spacer()
                     }
                     .padding(.leading, 30)
@@ -120,7 +119,7 @@ struct InstructionRow: View {
             }
             
             Text(text)
-                .font(.body)
+                .font(.body16Regular)
                 .foregroundColor(AppColors.primaryBlack)
                 .multilineTextAlignment(.leading)
             
@@ -156,18 +155,17 @@ struct HistoryCard: View {
                     .frame(width: 60, height: 80)
                 
                 Text(item.initial)
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
+                    .font(.heading32Medium)
                     .foregroundColor(AppColors.primaryWhite)
             }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
-                    .font(.headline)
+                    .font(.body18Medium)
                     .foregroundColor(AppColors.primaryBlack)
                 
                 Text(item.location)
-                    .font(.subheadline)
+                    .font(.body15Regular)
                     .foregroundColor(AppColors.grayScale400)
             }
             
@@ -175,7 +173,7 @@ struct HistoryCard: View {
             
             VStack {
                 Text(item.date)
-                    .font(.subheadline)
+                    .font(.body15Regular)
                     .foregroundColor(AppColors.grayScale400)
                 Spacer()
             }
@@ -197,22 +195,21 @@ struct SortSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 2.5)
-                .fill(Color.gray.opacity(0.3))
+                .fill(AppColors.grayScale400.opacity(1))
                 .frame(width: 60, height: 5)
                 .padding(.top, 12)
             
             HStack {
                 Spacer()
                 Text("Sort by")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                    .font(.heading24Medium)
                 Spacer()
             }
             .padding(.vertical, 24)
             .overlay(alignment: .trailing) {
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark")
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppColors.grayScale300)
                         .padding(.trailing, 20)
                 }
             }
@@ -222,8 +219,8 @@ struct SortSheet: View {
                     Button(action: { selectedSort = option }) {
                         HStack {
                             Text(option)
-                                .font(.body)
-                                .foregroundColor(.primary)
+                                .font(.title2_20Medium)
+                                .foregroundColor(AppColors.primaryBlack)
                             Spacer()
                             Circle()
                                 .stroke(AppColors.primaryPurple, lineWidth: 2)
@@ -243,8 +240,8 @@ struct SortSheet: View {
             
             Button(action: { dismiss() }) {
                 Text("Done")
-                    .font(.headline)
-                    .foregroundColor(.white)
+                    .font(.button16Bold)
+                    .foregroundColor(AppColors.primaryWhite)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(AppColors.primaryPurple)

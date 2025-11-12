@@ -35,7 +35,7 @@ struct RecommendationView: View {
                         showFitGuide = true
                     }) {
                         Image(systemName: "info.circle")
-                            .font(.title2)
+                            .font(.title2_20Medium)
                             .foregroundColor(AppColors.primaryPurple)
                     }
                 }
@@ -44,7 +44,7 @@ struct RecommendationView: View {
                 .padding(.bottom, 8)
                 
                 Text("Fill your product details to get your best match")
-                    .font(.body)
+                    .font(.title3_16Medium)
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
@@ -54,21 +54,46 @@ struct RecommendationView: View {
                 VStack(spacing: 0) {
                     HStack {
                         Text("Clothes type")
+                            .font(.body16Regular)
                             .foregroundColor(AppColors.grayScale400)
                         
                         Spacer()
                         
                         Menu {
-                            Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
-                            Button("Blouse") { viewModel.clothingType = "blouse" }
-                            Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
-                            Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+                            Button {
+                                viewModel.clothingType = "t_shirt"
+                            } label: {
+                                Text("T-Shirt")
+                                    .font(.body16Regular)
+                            }
+
+                            Button {
+                                viewModel.clothingType = "blouse"
+                            } label: {
+                                Text("Blouse")
+                                    .font(.body16Regular)
+                            }
+
+                            Button {
+                                viewModel.clothingType = "long_sleeved_shirt"
+                            } label: {
+                                Text("Long Sleeved Shirt")
+                                    .font(.body16Regular)
+                            }
+
+                            Button {
+                                viewModel.clothingType = "short_sleeved_shirt"
+                            } label: {
+                                Text("Short Sleeved Shirt")
+                                    .font(.body16Regular)
+                            }
                         } label: {
                             HStack(spacing: 4) {
                                 Text(displayClothingType)
+                                    .font(.body16Regular)
                                     .foregroundColor(viewModel.clothingType.isEmpty ? .gray : .primary)
                                 Image(systemName: "chevron.up.chevron.down")
-                                    .font(.caption)
+                                    .font(.body15Regular)
                                     .foregroundColor(AppColors.primaryPurple)
                             }
                         }
@@ -82,22 +107,53 @@ struct RecommendationView: View {
                     
                     HStack {
                         Text("Fit preference")
+                            .font(.body16Regular)
                             .foregroundColor(AppColors.grayScale400)
                         
                         Spacer()
                         
                         Menu {
-                            Button("Tight") { fitPreference = "tight" }
-                            Button("Slim") { fitPreference = "slim" }
-                            Button("Standard") { fitPreference = "standard" }
-                            Button("Relaxed") { fitPreference = "relaxed" }
-                            Button("Loose") { fitPreference = "loose" }
+                            Button {
+                                fitPreference = "tight"
+                            } label: {
+                                Text("Tight")
+                                    .font(.body16Regular)
+                            }
+                            
+                            Button {
+                                fitPreference = "slim"
+                            } label: {
+                                Text("Slim")
+                                    .font(.body16Regular)
+                            }
+                            
+                            Button {
+                                fitPreference = "standard"
+                            } label: {
+                                Text("Standard")
+                                    .font(.body16Regular)
+                            }
+                            
+                            Button {
+                                fitPreference = "relaxed"
+                            } label: {
+                                Text("Relaxed")
+                                    .font(.body16Regular)
+                            }
+                            
+                            Button {
+                                fitPreference = "loose"
+                            } label: {
+                                Text("Loose")
+                                    .font(.body16Regular)
+                            }
                         } label: {
                             HStack(spacing: 4) {
                                 Text(displayFitPreference)
+                                    .font(.body16Regular)
                                     .foregroundColor(fitPreference.isEmpty ? .gray : .primary)
                                 Image(systemName: "chevron.up.chevron.down")
-                                    .font(.caption)
+                                    .font(.body15Regular)
                                     .foregroundColor(AppColors.primaryPurple)
                             }
                         }
@@ -116,10 +172,9 @@ struct RecommendationView: View {
                 // Upload section
                 VStack(spacing: 16) {
                     Text("Upload size chart screenshot")
-                        .font(.body)
+                        .font(.body16Regular)
                         .foregroundColor(AppColors.grayScale400)
                     
-                    // Upload button only when no image selected
                     if viewModel.selectedImage == nil {
                         PhotosPicker(
                             selection: $selectedPhoto,
@@ -128,8 +183,9 @@ struct RecommendationView: View {
                         ) {
                             HStack {
                                 Text("Upload")
-                                    .fontWeight(.medium)
+                                    .font(.body16Regular)
                                 Image(systemName: "square.and.arrow.up")
+                                    .font(.body16Regular)
                             }
                             .foregroundColor(AppColors.primaryPurple)
                             .padding(.horizontal, 32)
@@ -146,14 +202,13 @@ struct RecommendationView: View {
                         }
                     }
                     
-                    // Image preview with X button
                     if let image = viewModel.selectedImage {
                         ZStack(alignment: .topTrailing) {
                             Image(uiImage: image)
                                 .resizable()
-                                .scaledToFill()            // fill the square
-                                .frame(width: 180, height: 180)   // square preview size
-                                .clipped()                 // crop overflow
+                                .scaledToFill()
+                                .frame(width: 180, height: 180)
+                                .clipped()
                                 .cornerRadius(12)
                             
                             Button {
@@ -161,14 +216,13 @@ struct RecommendationView: View {
                                 selectedPhoto = nil
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.button16Bold)
                                     .foregroundColor(AppColors.primaryWhite)
                                     .padding(10)
                                     .background(AppColors.grayScale400.opacity(0.6))
                                     .clipShape(Circle())
                             }
                             .padding(6)
-
                         }
                     }
 
@@ -200,8 +254,8 @@ struct RecommendationView: View {
                     }
                 } label: {
                     Text("Find your fit")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                        .font(.button16Bold)
+                        .foregroundColor(AppColors.primaryWhite)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
                         .background(AppColors.primaryPurple)
@@ -219,8 +273,10 @@ struct RecommendationView: View {
                     selectedPhoto = nil
                     viewModel.selectedImage = nil
                 }
+                .font(.body16Regular)
             } message: {
                 Text(viewModel.currentError?.message ?? "")
+                    .font(.body16Regular)
             }
             .onAppear {
                 if let user = users.first {
@@ -231,7 +287,8 @@ struct RecommendationView: View {
                 ResultsView(viewModel: viewModel, showResults: $showResults)
             }
             .sheet(isPresented: $showFitGuide) {
-                FitGuideView(showFitGuide: $showFitGuide).presentationDetents([.fraction(0.75)])
+                FitGuideView(showFitGuide: $showFitGuide)
+                    .presentationDetents([.fraction(0.75)])
                     .presentationDragIndicator(.visible)
             }
         }
@@ -270,56 +327,41 @@ struct ResultsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     if let recommendations = viewModel.serverResponse?.recommendations {
                         Text("Size Recommendations")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.title1_22Medium)
                             .padding(.horizontal)
                             .padding(.top)
                         
-                        // Map the 5 fit types to new names
-                        RecommendationCard(
-                            fit: "Tight",
-                            recommendation: recommendations.tight
-                        )
-                        
-                        RecommendationCard(
-                            fit: "Slim",
-                            recommendation: recommendations.slightlyTight
-                        )
-                        
-                        RecommendationCard(
-                            fit: "Standard",
-                            recommendation: recommendations.regular
-                        )
-                        
-                        RecommendationCard(
-                            fit: "Relaxed",
-                            recommendation: recommendations.slightlyLoose
-                        )
-                        
-                        RecommendationCard(
-                            fit: "Loose",
-                            recommendation: recommendations.loose
-                        )
+                        RecommendationCard(fit: "Tight", recommendation: recommendations.tight)
+                        RecommendationCard(fit: "Slim", recommendation: recommendations.slightlyTight)
+                        RecommendationCard(fit: "Standard", recommendation: recommendations.regular)
+                        RecommendationCard(fit: "Relaxed", recommendation: recommendations.slightlyLoose)
+                        RecommendationCard(fit: "Loose", recommendation: recommendations.loose)
                         
                     } else if viewModel.isCallingAPI {
                         ProgressView("Calculating Recommendations...")
+                            .font(.body16Regular)
                             .frame(maxWidth: .infinity)
                             .padding()
                     } else if let apiError = viewModel.apiError {
                         Text(apiError)
+                            .font(.body16Regular)
                             .foregroundColor(.red)
                             .padding()
                     }
                 }
                 .padding(.bottom)
             }
-            .navigationTitle("Your Results")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("")
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Your Results")
+                        .font(.title1_22Medium)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         showResults = false
                     }
+                    .font(.body16Regular)
                 }
             }
         }

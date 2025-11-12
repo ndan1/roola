@@ -16,13 +16,11 @@ struct GuideStepView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 8) {
                 Text("\(number).")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                    .font(.title3_16Medium)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                        .font(.title3_16Medium)
                     
                     if let subtitle = subtitle {
                         Text(subtitle)

@@ -62,5 +62,5 @@ struct OnboardingPage: View {
 }
 
 #Preview {
-    OnboardingPage(onAI: {print("AI")}, onInput: {print("Manual")},)
+    OnboardingPage(onAI: {print("AI")}, onInput: {print("Manual")})
 }
