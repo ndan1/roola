@@ -32,7 +32,8 @@ class RecommendationViewModel: ObservableObject {
     
     // MARK: - Services
     private let ocrService: LocalOCRService
-    private let openAIService: OpenAIService
+//    private let openAIService: OpenAIService
+    private let geminiService: GeminiService
     
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
     
@@ -41,7 +42,8 @@ class RecommendationViewModel: ObservableObject {
 
     init() {
         self.ocrService = LocalOCRService()
-        self.openAIService = OpenAIService()
+//        self.openAIService = OpenAIService()
+        self.geminiService = GeminiService()
     }
     
     // load user data
@@ -49,8 +51,6 @@ class RecommendationViewModel: ObservableObject {
         self.userMeasurements = UserMeasurements(
             bust: Double(user.bust),
             waist: Double(user.waist),
-            hips: Double(user.hips),
-            shoulderWidth: Double(user.shoulder_width),
             torso: Double(user.torso),
             armLength: Double(user.arms_length)
         )
@@ -101,9 +101,9 @@ class RecommendationViewModel: ObservableObject {
                 
                 try await ocrService.validateOCRText(ocrResult)
                 
-                self.currentStep = "Sending to OpenAI API..."
+                self.currentStep = "Sending to Gemini API..."
                 
-                let jsonResult = try await openAIService.extractSizeChart(from: ocrResult)
+                let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 
                 self.extractedJSON = jsonResult
                 self.currentStep = ""
@@ -134,7 +134,6 @@ class RecommendationViewModel: ObservableObject {
         apiError = nil
         serverResponse = nil
 
-        // 1. Decode the extracted JSON string
         guard let jsonData = extractedJSON.data(using: .utf8) else {
             apiError = "Failed to read JSON data."
             isCallingAPI = false
@@ -151,13 +150,11 @@ class RecommendationViewModel: ObservableObject {
             return
         }
         
-        // 2. Transform the decoded data
         let clothesData = transformOCRResponseToClothesData(
             ocrResponse: ocrResponse,
             clothingType: clothingType
         )
         
-        // 3. Panggil kalkulasi FUZZY LOKAL
         calculateLocalRecommendations(
             userMeasurements: userMeasurements,
             clothesData: clothesData
@@ -228,7 +225,6 @@ class RecommendationViewModel: ObservableObject {
     /// Titik masuk utama untuk kalkulasi fuzzy lokal
     private func calculateLocalRecommendations(userMeasurements: UserMeasurements, clothesData: ClothesData) {
         
-        // 1. Get Config & Validate
         guard let clothesType = clothesData.item.keys.first, !clothesType.isEmpty,
               let config = RECOMMENDER_CONFIG[clothesType] else {
             self.apiError = "No configuration found for clothing type '\(clothesData.item.keys.first ?? "unknown")'. Please make sure the clothing type is entered correctly (e.g., 'blouse')."
@@ -242,57 +238,44 @@ class RecommendationViewModel: ObservableObject {
             return
         }
 
-        // 2. Convert Inputs
         let userMeasurementsDict = userMeasurementsToDictionary(userMeasurements)
         let availableSizes = transformSizeChart(sizeChartStructs)
         
-        // 3. Run Recommendation for All Fits
         var allRecommendations: [String: FitRecommendation] = [:]
-        var hasAnyValidRecommendation = false
+        var previousSize: String? = nil
 
         for fit in ALL_FITS {
             let (bestSize, scores, partFits, fitIssues) = get_size_recommendation(
                 user_measurements: userMeasurementsDict,
                 clothes_db: availableSizes,
                 config: config,
-                desired_fit: fit
+                desired_fit: fit,
+                minimumSize: previousSize
             )
             
-            // Logika "N/A" (skor < 30)
-            if let bestSize = bestSize, let bestScore = scores[bestSize], bestScore >= MIN_ACCEPTABLE_SCORE {
-                hasAnyValidRecommendation = true
-                allRecommendations[fit] = FitRecommendation(
+            if let bestSize = bestSize {
+                let bestScore = scores[bestSize] ?? 0
+                let recommendation = FitRecommendation(
                     bestScore: bestScore,
                     bestSize: bestSize,
                     partFits: partFits,
                     fitIssues: fitIssues
                 )
+                allRecommendations[fit] = recommendation
+                previousSize = bestSize
+                
+                if bestScore < MIN_ACCEPTABLE_SCORE {
+                    print("⚠️ [INFO] Low confidence recommendation for fit '\(fit)': size \(bestSize) (score: \(String(format: "%.1f", bestScore))%)")
+                    if let issues = fitIssues, !issues.isEmpty {
+                        print("   Issues: \(issues.map { "\($0.key)=\($0.value.issue.rawValue)" }.joined(separator: ", "))")
+                    }
+                }
             } else {
-                // Beri placeholder N/A
-                allRecommendations[fit] = FitRecommendation.empty(with: fitIssues)
-                print("⚠️ Could not generate valid recommendation for fit: \(fit) (best score: \(scores.values.max() ?? 0))")
+                allRecommendations[fit] = FitRecommendation.empty
+                print("❌ [ERROR] Could not generate recommendation for fit: \(fit)")
             }
         }
         
-        // 4. Check if ANY recommendation is valid
-        if !hasAnyValidRecommendation {
-            self.apiError = "No suitable size found for this garment.\n\nYour measurements are outside the available size range. The garment sizes may be too small or too large for your body measurements."
-            self.serverResponse = nil
-            self.isCallingAPI = false
-            return
-        }
-        
-        // 5. PERBAIKAN: "Fill in the blanks"
-        // Jika slightly-tight N/A, gunakan hasil 'tight'
-        if allRecommendations["slightly-tight"]?.bestSize == "N/A" {
-            allRecommendations["slightly-tight"] = allRecommendations["tight"]
-        }
-        // Jika slightly-loose N/A, gunakan hasil 'regular'
-        if allRecommendations["slightly-loose"]?.bestSize == "N/A" {
-             allRecommendations["slightly-loose"] = allRecommendations["regular"]
-        }
-        
-        // 6. Assemble Final Struct (ServerResponse)
         guard let loose = allRecommendations["loose"],
               let regular = allRecommendations["regular"],
               let slightlyLoose = allRecommendations["slightly-loose"],
@@ -322,7 +305,8 @@ class RecommendationViewModel: ObservableObject {
         user_measurements: [String: Double],
         clothes_db: [String: [String: [Double]]],
         config: ClothingConfig,
-        desired_fit: String
+        desired_fit: String,
+        minimumSize: String? = nil
     ) -> (best_size: String?, scores: [String: Double], part_fits: [String: String], fit_issues: [String: FitIssue]?) {
         
         print("\n🔍 [DEBUG] Starting recommendation for fit: \(desired_fit)")
@@ -330,7 +314,6 @@ class RecommendationViewModel: ObservableObject {
         
         var sizeScores: [String: Double] = [:]
 
-        // Urutkan keys untuk konsistensi
         let sortedSizes = clothes_db.keys.sorted(by: compareSizes)
         
         for size in sortedSizes {
@@ -338,7 +321,6 @@ class RecommendationViewModel: ObservableObject {
             
             var partScores: [String: Double] = [:]
             
-            // Urutkan parts juga
             let sortedParts = config.relevantParts.sorted { $0.partName < $1.partName }
             
             print("\n   📏 Calculating for size \(size):")
@@ -400,115 +382,158 @@ class RecommendationViewModel: ObservableObject {
         for (size, score) in sizeScores.sorted(by: { compareSizes($0.key, $1.key) }) {
             print("   \(size.padding(toLength: 5, withPad: " ", startingAt: 0)): \(String(format: "%.2f", score))%")
         }
-
-        // Check if all scores are below threshold
-        if sizeScores.isEmpty || sizeScores.values.allSatisfy({ $0 < MIN_ACCEPTABLE_SCORE }) {
-            print("⚠️ [DEBUG] No valid size found for \(desired_fit) (all scores < \(MIN_ACCEPTABLE_SCORE)%)")
+        
+        // CONSTRAINT: Filter sizes yang >= minimumSize (untuk menjaga hierarki fit)
+        var eligibleSizes = sizeScores
+        if let minSize = minimumSize {
+            eligibleSizes = sizeScores.filter { size, _ in
+                compareSizes(minSize, size) || minSize == size // size >= minSize
+            }
             
-            // Analyze WHY the fit failed
-            let issues = _analyze_fit_issues(
-                user_measurements: user_measurements,
-                clothes_db: clothes_db,
-                config: config,
-                desired_fit: desired_fit
-            )
-            
-            return (nil, sizeScores, [:], issues)
+            if eligibleSizes.isEmpty {
+                print("⚠️ [DEBUG] No sizes meet minimum constraint ('\(minSize)'). Using minimum size.")
+                eligibleSizes = [minSize: sizeScores[minSize] ?? 0]
+            } else if eligibleSizes.count < sizeScores.count {
+                print("🔒 [DEBUG] Constraint applied: size must be >= '\(minSize)' (filtered \(sizeScores.count - eligibleSizes.count) smaller sizes)")
+            }
         }
 
-        // PERBAIKAN: Logika Tie-Breaking yang lebih baik
-        let bestSize = sizeScores
-            .filter { $0.value >= MIN_ACCEPTABLE_SCORE } // Hanya ambil score >= 30%
-            .max { a, b in
-                // a = (key: "M", value: 90.0)
-                // b = (key: "L", value: 90.0)
-                if abs(a.value - b.value) < 0.01 { // Jika score sama
-                    // Untuk 'loose' dan 'slightly-loose', pilih size LEBIH BESAR
-                    if desired_fit.contains("loose") {
-                        return compareSizes(a.key, b.key) // return true jika a < b, .max akan keep 'b' (size besar)
+        let bestSize: String?
+        let hasGoodScore = eligibleSizes.values.contains(where: { $0 >= MIN_ACCEPTABLE_SCORE })
+        
+        if hasGoodScore {
+            bestSize = eligibleSizes
+                .filter { $0.value >= MIN_ACCEPTABLE_SCORE }
+                .max { a, b in
+                    if abs(a.value - b.value) < 0.01 {
+                        if desired_fit.contains("loose") {
+                            return compareSizes(a.key, b.key) // Pilih size besar untuk loose
+                        } else {
+                            return !compareSizes(a.key, b.key) // Pilih size kecil untuk tight/regular
+                        }
                     }
-                    // Untuk 'tight', 'slightly-tight', dan 'regular', pilih size LEBIH KECIL
-                    else {
-                        return !compareSizes(a.key, b.key) // return true jika a > b, .max akan keep 'b' (size kecil)
+                    return a.value < b.value
+                }?.key
+        } else {
+            print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%). Selecting fallback...")
+            
+            if !eligibleSizes.isEmpty {
+                // Untuk loose/slightly-loose: pilih size TERBESAR dari eligible sizes
+                if desired_fit.contains("loose") {
+                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
+                    bestSize = sortedEligible.last  // Terbesar
+                    print("   → Fallback: Largest eligible size '\(bestSize ?? "nil")' (loose preference)")
+                }
+                // Untuk tight/slightly-tight: pilih size TERKECIL dari eligible sizes
+                else if desired_fit.contains("tight") {
+                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
+                    bestSize = sortedEligible.first  // Terkecil
+                    print("   → Fallback: Smallest eligible size '\(bestSize ?? "nil")' (tight preference)")
+                }
+                // Untuk regular: pilih yang score tertinggi
+                else {
+                    bestSize = eligibleSizes.max { a, b in
+                        a.value < b.value
+                    }?.key
+                    if let bestSize = bestSize {
+                        print("   → Fallback: Size '\(bestSize)' with highest score (\(String(format: "%.1f", eligibleSizes[bestSize] ?? 0))%)")
                     }
                 }
-                return a.value < b.value // Score lebih besar menang
-            }?.key
+            } else {
+                bestSize = nil
+                print("   → Fallback: No sizes available")
+            }
+        }
         
+        // Analyze fit issues untuk size yang dipilih
+        var fitIssues: [String: FitIssue]? = nil
         var partFits: [String: String] = [:]
+        
         if let bestSize = bestSize, let bestSizeGarmentRanges = clothes_db[bestSize] {
+            // Get part fits (normal classification)
             partFits = _get_part_fit_details(
                 user_measurements: user_measurements,
                 best_size_garment_ranges: bestSizeGarmentRanges,
                 config: config
             )
+            
+            // Analyze issues (for visualization)
+            fitIssues = _analyze_fit_issues_for_size(
+                user_measurements: user_measurements,
+                garment_ranges: bestSizeGarmentRanges,
+                config: config,
+                desired_fit: desired_fit
+            )
+            
+            // Debug print issues
+            if let issues = fitIssues, !issues.isEmpty {
+                print("⚠️ [DEBUG] Fit issues detected:")
+                for (part, issue) in issues {
+                    print("   [\(part)]: \(issue.issue.rawValue) (ease: \(String(format: "%+.1f", issue.easeValue))cm)")
+                }
+            }
         }
         
         print("✅ [DEBUG] Best size: \(bestSize ?? "nil") (score: \(bestSize.flatMap { sizeScores[$0] }.map { String(format: "%.2f", $0) } ?? "N/A")%)")
         
-        return (bestSize, sizeScores, partFits, nil)
+        return (bestSize, sizeScores, partFits, fitIssues)
     }
     
-    private func _analyze_fit_issues(
+    /// Analyze fit issues untuk SIZE SPESIFIK yang sudah dipilih
+    private func _analyze_fit_issues_for_size(
         user_measurements: [String: Double],
-        clothes_db: [String: [String: [Double]]],
+        garment_ranges: [String: [Double]],
         config: ClothingConfig,
         desired_fit: String
-    ) -> [String: FitIssue] {
+    ) -> [String: FitIssue]? {
         
         var issues: [String: FitIssue] = [:]
-        
-        // Ambil size terbesar dan terkecil untuk analisis
-        let sortedSizes = clothes_db.keys.sorted(by: compareSizes)
-        guard let smallestSize = sortedSizes.first,
-              let largestSize = sortedSizes.last,
-              let smallestGarment = clothes_db[smallestSize],
-              let largestGarment = clothes_db[largestSize] else {
-            return issues
-        }
         
         for partConfig in config.relevantParts {
             let part = partConfig.partName
             
             guard let userMeas = user_measurements[part],
+                  let garmentRange = garment_ranges[part], garmentRange.count == 2,
                   let desiredFitParams = partConfig.fitFunctions[desired_fit],
                   desiredFitParams.count == 4 else {
                 continue
             }
             
-            // Check against SMALLEST size
-            if let smallestRange = smallestGarment[part], smallestRange.count == 2 {
-                let smallestMax = smallestRange[1]
-                let easeSmallest = smallestMax - userMeas
-                
-                // Jika ease < minimum acceptable ease untuk fit ini
-                if easeSmallest < desiredFitParams[0] {
-                    issues[part] = FitIssue(
-                        part: part,
-                        issue: .tooTight,
-                        easeValue: easeSmallest
-                    )
-                    continue
-                }
-            }
+            let gMin = garmentRange[0]
+            let gMax = garmentRange[1]
             
-            // Check against LARGEST size
-            if let largestRange = largestGarment[part], largestRange.count == 2 {
-                let largestMin = largestRange[0]
-                let easeLargest = largestMin - userMeas
-                
-                // Jika ease > maximum acceptable ease untuk fit ini
-                if easeLargest > desiredFitParams[3] {
-                    issues[part] = FitIssue(
-                        part: part,
-                        issue: .tooLoose,
-                        easeValue: easeLargest
-                    )
-                }
+            // Calculate actual ease for this size
+            let actualEase = _calculate_effective_ease(
+                user_meas: userMeas,
+                g_min: gMin,
+                g_max: gMax,
+                part_config: partConfig,
+                desired_fit: desired_fit
+            )
+            
+            // Check apakah ease di luar acceptable range untuk desired fit
+            let minAcceptableEase = desiredFitParams[0]
+            let maxAcceptableEase = desiredFitParams[3]
+            
+            if actualEase < minAcceptableEase {
+                // Garment terlalu kecil untuk desired fit (too tight)
+                issues[part] = FitIssue(
+                    part: part,
+                    issue: .tooTight,
+                    easeValue: actualEase
+                )
+            } else if actualEase > maxAcceptableEase {
+                // Garment terlalu besar untuk desired fit (too loose)
+                issues[part] = FitIssue(
+                    part: part,
+                    issue: .tooLoose,
+                    easeValue: actualEase
+                )
             }
+            // Jika actualEase dalam range [minAcceptableEase, maxAcceptableEase], tidak ada issue
         }
         
-        return issues
+        return issues.isEmpty ? nil : issues
     }
 
     private func _calculate_effective_ease(
@@ -535,7 +560,6 @@ class RecommendationViewModel: ObservableObject {
         }
         
         // Case 4: User DI DALAM range
-        // Gunakan midpoint sebagai garment effective size
         let midpoint = (g_min + g_max) / 2
         return midpoint - user_meas
     }
@@ -559,7 +583,6 @@ class RecommendationViewModel: ObservableObject {
             let (g_min, g_max) = (garmentRange[0], garmentRange[1])
             
             let actualEase: Double
-            // PERBAIKAN: Gunakan logic yang sama dengan _calculate_effective_ease
             if abs(g_min - g_max) < 0.01 {
                 actualEase = g_min - userMeas
             } else if userMeas < g_min {
@@ -596,8 +619,8 @@ class RecommendationViewModel: ObservableObject {
         return [
             "bust": measurements.bust,
             "waist": measurements.waist,
-            "hips": measurements.hips,
-            "shoulder_width": measurements.shoulderWidth,
+//            "hips": measurements.hips,
+//            "shoulder_width": measurements.shoulderWidth,
             "torso": measurements.torso,
             "arm_length": measurements.armLength
         ].compactMapValues { $0 }
@@ -711,10 +734,10 @@ fileprivate let RECOMMENDER_CONFIG: [String: ClothingConfig] = [
     ),
     "long_sleeved_shirt": ClothingConfig(
         partWeights: [
-            "bust": 0.6,
-            "torso": 0.25,
+            "bust": 0.7,
+            "torso": 0.20,
             "shoulder_width": 0,
-            "arm_length": 0.15
+            "arm_length": 0.10
         ],
         relevantParts: [
             RelevantPart(
@@ -754,8 +777,8 @@ fileprivate let RECOMMENDER_CONFIG: [String: ClothingConfig] = [
     ),
     "short_sleeved_shirt": ClothingConfig(
         partWeights: [
-            "bust": 0.7,
-            "torso": 0.3
+            "bust": 0.75,
+            "torso": 0.25
         ],
         relevantParts: [
             RelevantPart(
@@ -805,7 +828,7 @@ fileprivate func roundToDecimalPlaces(_ value: Double, places: Int = 2) -> Doubl
 
 // MARK: - Helper Structs & Extensions
 
-struct FitRecommendation: Codable {
+struct FitRecommendation: Codable, Equatable {
     var bestScore: Double
     var bestSize: String
     var partFits: [String: String]
@@ -822,7 +845,7 @@ struct FitRecommendation: Codable {
     }
 }
 
-struct FitIssue: Codable {
+struct FitIssue: Codable, Equatable {
     let part: String
     let issue: IssueType
     let easeValue: Double

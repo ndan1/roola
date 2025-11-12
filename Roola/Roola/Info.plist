@@ -4,5 +4,11 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>To scan your body and get measurements</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>HelveticaNeueRegular.otf</string>
+		<string>HelveticaNeueMedium.otf</string>
+		<string>HelveticaNeueRegular.otf</string>
+	</array>
 </dict>
 </plist>

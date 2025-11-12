@@ -15,6 +15,7 @@ enum AppColors {
     
 //    Button Colors
     static let primaryButton = Color(hex: "#6F60E2")
+    static let borderButton = Color(hex: "##B0B0B0")
     
 //    Gray Colors
     static let grayScale50 = Color(hex: "FCFCFC")

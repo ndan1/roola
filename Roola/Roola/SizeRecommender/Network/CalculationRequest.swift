@@ -18,14 +18,13 @@ struct RequestBody: Codable {
 struct UserMeasurements: Codable {
     let bust: Double
     let waist: Double
-    let hips: Double
-    let shoulderWidth: Double
+//    let hips: Double
+//    let shoulderWidth: Double
     let torso: Double
     let armLength: Double
 
     enum CodingKeys: String, CodingKey {
-        case bust, waist, hips
-        case shoulderWidth = "shoulder_width"
+        case bust, waist
         case torso
         case armLength = "arm_length"
     }

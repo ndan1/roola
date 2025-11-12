@@ -15,277 +15,305 @@ struct RecommendationView: View {
     @StateObject private var viewModel = RecommendationViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
     @Query private var users: [User]
+    @State private var showResults = false
+    @State private var fitPreference: String = ""
+    @State private var showFitGuide = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text("OCR + AI Size Extractor")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                imageDisplayView
-                
-                PhotosPicker(
-                    selection: $selectedPhoto,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ) {
-                    Label("Select from Gallery", systemImage: "photo.on.rectangle")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .onChange(of: selectedPhoto) { oldValue, newValue in
-                    viewModel.handlePhotoSelection(newValue)
-                }
-                
-                processButtonView
-                
-                ocrResultView
-                
-                apiSectionView
-                
+        VStack(spacing: 0) {
+            // Using refactored sections from the right version
+            headerSection
+            formSection
+            uploadSection
+            Spacer()
+            bottomButton
+            Color.clear.frame(height: 0)
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .onAppear {
+            if let user = users.first {
+                viewModel.loadUserMeasurements(user: user)
             }
-            .padding()
-            .alert(viewModel.currentError?.title ?? "Error", isPresented: $viewModel.showErrorAlert) {
-                Button("Retry", role: .cancel) {
+        }
+        // Using reactive onChange modifiers from the right version
+        .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
+            if !newValue.isEmpty && !viewModel.isCallingAPI {
+                viewModel.getRecommendation()
+            }
+        }
+        .onChange(of: viewModel.serverResponse) { oldValue, newValue in
+            if newValue != nil && !viewModel.isCallingAPI {
+                showResults = true
+            }
+        }
+        // Using .fullScreenCover for ResultsView from the right version
+        .fullScreenCover(isPresented: $showResults) {
+            ResultsView(
+                viewModel: viewModel,
+                showResults: $showResults,
+                onTryAgain: {
+                    resetAllFields()
+                },
+                initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
+            )
+        }
+        // Using .sheet for FitGuideView from the left version (includes presentationDetents)
+        .sheet(isPresented: $showFitGuide) {
+            FitGuideView(showFitGuide: $showFitGuide)
+                .presentationDetents([.fraction(0.75)]) // Kept from left
+                .presentationDragIndicator(.visible) // Kept from left
+        }
+        .background(
+            FirstGradientBackground().ignoresSafeArea()
+        )
+        
+        // Using custom OCRErrorModal from the right version
+        if viewModel.showErrorAlert, let error = viewModel.currentError {
+            OCRErrorModal(
+                error: error,
+                onRetry: {
                     viewModel.resetAllStates()
                     selectedPhoto = nil
                     viewModel.selectedImage = nil
-                }
-            } message: {
-                Text(viewModel.currentError?.message ?? "")
-            }
-            .onAppear{
-                if let user = users.first{
-                    viewModel.loadUserMeasurements(user: user)
-                }
-            }
+                },
+                isPresented: $viewModel.showErrorAlert
+            )
+            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
+        }
+    }
+  
+    private var headerSection: some View {
+        VStack(spacing: 0) {
+            RoolaHeader(
+                title: "Find your fit",
+                onInfo: {
+                    showFitGuide = true
+                },
+                isLargeTitle: true
+            )
+            
+            Text("Fill your product details to get your best match")
+                .font(.body)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
         }
     }
     
-    // MARK: - Sub-Views
+    private var formSection: some View {
+        VStack(spacing: 0) {
+            clothingTypeRow
+            
+            Rectangle()
+                .fill(AppColors.grayScale400.opacity(0.36))
+                .frame(height: 0.5)
+            
+            fitPreferenceRow
+        }
+        .background(AppColors.primaryWhite.opacity(0.5))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+        )
+        .padding(.horizontal, 24)
+    }
     
-    @ViewBuilder
-    private var imageDisplayView: some View {
-        if let image = viewModel.selectedImage {
+    private var clothingTypeRow: some View {
+        HStack {
+            Text("Clothes type")
+                .foregroundColor(AppColors.grayScale400)
+            
+            Spacer()
+            
+            Menu {
+                Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
+                Button("Blouse") { viewModel.clothingType = "blouse" }
+                Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
+                Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(displayClothingType)
+                        .foregroundColor(viewModel.clothingType.isEmpty ? .gray : .primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+    }
+    
+    private var fitPreferenceRow: some View {
+        HStack {
+            Text("Fit preference")
+                .foregroundColor(AppColors.grayScale400)
+            
+            Spacer()
+            
+            Menu {
+                Button("Tight") { fitPreference = "tight" }
+                Button("Slim") { fitPreference = "slim" }
+                Button("Standard") { fitPreference = "standard" }
+                Button("Relaxed") { fitPreference = "relaxed" }
+                Button("Loose") { fitPreference = "loose" }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(displayFitPreference)
+                        .foregroundColor(fitPreference.isEmpty ? .gray : .primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+    }
+    
+    private var uploadSection: some View {
+        VStack(spacing: 16) {
+            Text("Upload size chart screenshot")
+                .font(.body)
+                .foregroundColor(AppColors.grayScale400)
+            
+            if viewModel.selectedImage == nil {
+                uploadButton
+            }
+            
+            if let image = viewModel.selectedImage {
+                imagePreview(image: image)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 24)
+        .background(AppColors.primaryWhite.opacity(0.5))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+        )
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+    }
+    
+    private var uploadButton: some View {
+        PhotosPicker(
+            selection: $selectedPhoto,
+            matching: .images,
+            photoLibrary: .shared()
+        ) {
+            HStack {
+                Text("Upload")
+                    .fontWeight(.medium)
+                Image(systemName: "square.and.arrow.up")
+            }
+            .foregroundColor(AppColors.primaryPurple)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 12)
+            .background(AppColors.primaryWhite.opacity(0.5))
+            .cornerRadius(25)
+            .overlay(
+                RoundedRectangle(cornerRadius: 25)
+                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+            )
+        }
+        .onChange(of: selectedPhoto) { oldValue, newValue in
+            viewModel.handlePhotoSelection(newValue)
+        }
+    }
+    
+    private func imagePreview(image: UIImage) -> some View {
+        ZStack(alignment: .topTrailing) {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFit()
-                .frame(maxHeight: 300)
+                .scaledToFill()
+                .frame(width: 180, height: 180)
+                .clipped()
                 .cornerRadius(12)
-                .shadow(radius: 5)
-        } else {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(height: 300)
-                .cornerRadius(12)
-                .overlay(
-                    VStack {
-                        Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        Text("No image selected")
-                            .foregroundColor(.gray)
-                            .font(.headline)
-                    }
-                )
-        }
-    }
-    
-    private var processButtonView: some View {
-        VStack {
+            
             Button {
-                viewModel.processImage()
+                viewModel.selectedImage = nil
+                selectedPhoto = nil
             } label: {
-                Label("1. Process Image (OCR + AI)", systemImage: "wand.and.stars")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(viewModel.selectedImage == nil ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                Image(systemName: "xmark")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(AppColors.primaryWhite)
+                    .padding(10)
+                    .background(AppColors.grayScale400.opacity(0.6))
+                    .clipShape(Circle())
             }
-            .disabled(viewModel.selectedImage == nil || viewModel.isProcessing)
-            
-            if viewModel.isProcessing {
-                VStack {
-                    ProgressView()
-                    Text(viewModel.currentStep)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
-            }
+            .padding(6)
         }
     }
     
-    @ViewBuilder
-    private var ocrResultView: some View {
-        if !viewModel.recognizedText.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("OCR Raw Text:")
-                    .font(.headline)
-                
-                TextEditor(text: .constant(viewModel.recognizedText))
-                    .frame(minHeight: 150)
-                    .border(Color.gray, width: 1)
-                    .cornerRadius(8)
+    private var bottomButton: some View {
+        Button {
+            if viewModel.selectedImage != nil {
+                viewModel.processImage()
+                // onChange observers will handle the rest
             }
+        } label: {
+            Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
+                .cornerRadius(30)
+        }
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 110)
+    }
+    
+    private var displayClothingType: String {
+        switch viewModel.clothingType {
+        case "t_shirt": return "T-Shirt"
+        case "blouse": return "Blouse"
+        case "long_sleeved_shirt": return "Long Sleeved Shirt"
+        case "short_sleeved_shirt": return "Short Sleeved Shirt"
+        default: return "Select clothing type"
         }
     }
     
-    @ViewBuilder
-    private var apiSectionView: some View {
-        if !viewModel.extractedJSON.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("AI Extracted JSON:")
-                    .font(.headline)
-                
-                TextEditor(text: .constant(viewModel.extractedJSON))
-                    .frame(minHeight: 200)
-                    .border(Color.green, width: 2)
-                    .cornerRadius(8)
-                Button {
-                    UIPasteboard.general.string = viewModel.extractedJSON
-                } label: {
-                    Label("Copy JSON", systemImage: "doc.on.doc")
-                        .font(.caption)
-                }
-            }
-            .padding(.bottom)
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Get Recommendation")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Picker("Clothing Type", selection: $viewModel.clothingType) {
-                    Text("Select clothing type").tag("")
-                    Text("T-Shirt").tag("t_shirt")
-                    Text("Blouse").tag("blouse")
-                    Text("Long Sleeved Shirt").tag("long_sleeved_shirt")
-                    Text("Short Sleeved Shirt").tag("short_sleeved_shirt")
-                }
-                .pickerStyle(.menu)
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
-                
-                Button {
-                    // Panggil getRecommendation (sekarang menjalankan fuzzy lokal)
-                    viewModel.getRecommendation()
-                } label: {
-                    Label("2. Get Recommendation", systemImage: "arrow.down.circle.dotted")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(viewModel.clothingType.isEmpty ? Color.gray : Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .disabled(viewModel.clothingType.isEmpty || viewModel.isCallingAPI)
-                
-                if viewModel.isCallingAPI {
-                    ProgressView("Calculating Recommendations...") // Ubah teks
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                }
-                
-                // Tampilan hasil API (Sekarang menampilkan 5 hasil fuzzy)
-                apiResultView
-            }
+    private var displayFitPreference: String {
+        switch fitPreference {
+        case "tight": return "Tight"
+        case "slim": return "Slim"
+        case "standard": return "Standard"
+        case "relaxed": return "Relaxed"
+        case "loose": return "Loose"
+        default: return "Select fit preference"
         }
     }
     
-    @ViewBuilder
-    private var apiResultView: some View {
-        // Tampilkan 5 rekomendasi
-        if let recommendations = viewModel.serverResponse?.recommendations {
-            VStack(alignment: .leading, spacing: 15) {
-                Text("Size Recommendations:")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                RecommendationRow(fit: "Regular", recommendation: recommendations.regular)
-                Divider()
-                RecommendationRow(fit: "Loose", recommendation: recommendations.loose)
-                Divider()
-                RecommendationRow(fit: "Slightly Loose", recommendation: recommendations.slightlyLoose)
-                Divider()
-                RecommendationRow(fit: "Slightly Tight", recommendation: recommendations.slightlyTight)
-                Divider()
-                RecommendationRow(fit: "Tight", recommendation: recommendations.tight)
-            }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
-            
-        } else if let apiError = viewModel.apiError {
-            Text(apiError)
-                .foregroundColor(.red)
-                .multilineTextAlignment(.center)
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(10)
-        }
+    // MARK: - Helper Functions
+    
+    private func resetAllFields() {
+        // Reset foto
+        viewModel.selectedImage = nil
+        selectedPhoto = nil
+        
+        // Reset clothing type
+        viewModel.clothingType = ""
+        
+        // Reset fit preference
+        fitPreference = ""
+        
+        // Reset all view model states
+        viewModel.resetAllStates()
+        
+        print("✅ All fields reset")
     }
 }
 
-/// Helper view dari RecView.swift, dipindahkan ke sini
-private struct RecommendationRow: View {
-    let fit: String
-    let recommendation: FitRecommendation
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(fit)
-                .font(.headline)
-                .foregroundColor(Color.blue)
-            
-            HStack {
-                Text("Best Size:")
-                    .fontWeight(.medium)
-                Spacer()
-                Text(recommendation.bestSize)
-                    .font(.system(.body, design: .monospaced))
-                    .padding(5)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(5)
-            }
-            
-            HStack {
-                Text("Score:")
-                    .fontWeight(.medium)
-                Spacer()
-                Text(String(format: "%.1f%%", recommendation.bestScore))
-            }
-            
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Part Fits:")
-                    .fontWeight(.medium)
-                
-                if recommendation.partFits.isEmpty {
-                    Text("N/A")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    // Sortir keys agar urutan konsisten
-                    ForEach(recommendation.partFits.sorted(by: { $0.key < $1.key }), id: \.key) { part, fit in
-                        HStack {
-                            Text("  • \(part.capitalized):")
-                                .font(.caption)
-                            Text(fit)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                    }
-                }
-            }
-            .padding(.top, 2)
-        }
-    }
+// MARK: - Preview
+#Preview {
+    RecommendationView()
+        .modelContainer(for: User.self, inMemory: true)
 }

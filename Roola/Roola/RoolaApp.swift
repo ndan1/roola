@@ -6,17 +6,11 @@
 
 import SwiftUI
 import SwiftData
-import Supabase
-
-let supabase = SupabaseClient(
-    supabaseURL: SupabaseConfig.url,
-    supabaseKey: SupabaseConfig.anonKey
-)
 
 @main
 struct RoolaApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Clothes.self, User.self])
+        let schema = Schema([Clothes.self, User.self, MeasurementHistory.self])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false
@@ -38,18 +32,9 @@ struct RoolaApp: App {
     
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            if CommandLine.arguments.contains("-testing-product-input") {
-                UserProfileView()
-                    .modelContainer(sharedModelContainer)
-            } else {
-                MainTabView()
-                    .modelContainer(sharedModelContainer)
-            }
-            #else
             ContentView()
                 .modelContainer(sharedModelContainer)
-            #endif
+                .preferredColorScheme(.light)
         }
     }
 }
