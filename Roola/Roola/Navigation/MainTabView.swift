@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @State private var selectedTab = 1
 
     init() {
         let appearance = UITabBarAppearance()
@@ -36,7 +37,7 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             UserInputView()
                 .tabItem {
                     VStack {
@@ -44,6 +45,7 @@ struct MainTabView: View {
                         Text("Measurements")
                     }
                 }
+                .tag(0)
 
             RecommendationView()
                 .tabItem {
@@ -52,6 +54,7 @@ struct MainTabView: View {
                         Text("Recommendation")
                     }
                 }
+                .tag(1)
 
             HistoryView()
                 .tabItem {
@@ -60,6 +63,7 @@ struct MainTabView: View {
                         Text("History")
                     }
                 }
+                .tag(2)
         }
     }
 }

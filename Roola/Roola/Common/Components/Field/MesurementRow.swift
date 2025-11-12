@@ -17,11 +17,11 @@ struct MeasurementRow: View {
         HStack {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.body)
+                    .font(.body16Regular)
                 if isError {
                     Image(systemName: "exclamationmark.circle")
-                        .font(.caption)
-                        .foregroundColor(.red)
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
                 } else {
                     EmptyView()
                 }
@@ -30,20 +30,20 @@ struct MeasurementRow: View {
             Spacer()
 
             TextField("", value: $value, format: .number)
-                .font(.body)
+                .font(.body16Regular)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
 
             Text(unit)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .font(.body16Regular)
+                .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.primaryWhite)
         .overlay(
             Rectangle()
-                .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
+                .stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
         )
     }
 }
@@ -59,34 +59,34 @@ struct TopMeasurementRow: View {
         HStack {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.body)
+                    .font(.body16Regular)
                 
                 if isError {
                     Image(systemName: "exclamationmark.circle")
-                        .font(.caption)
-                        .foregroundColor(.red)
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
                 }
             }
             
             Spacer()
             
             TextField("", value: $value, format: .number)
-                .font(.body)
+                .font(.body16Regular)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
             
             Text(unit)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .font(.body16Regular)
+                .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.primaryWhite)
         .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
         
         .overlay(
             RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
-                .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
+                .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
         )
     }
 }
@@ -118,33 +118,33 @@ struct BottomMeasurementRow: View {
         HStack {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.body)
+                    .font(.body16Regular)
                 
                 if isError {
                     Image(systemName: "exclamationmark.circle")
-                        .font(.caption)
-                        .foregroundColor(.red)
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
                 }
             }
             
             Spacer()
             
             TextField("", value: $value, format: .number)
-                .font(.body)
+                .font(.body16Regular)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
             
             Text(unit)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .font(.body16Regular)
+                .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.primaryWhite)
         .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
         .overlay(
                     RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
-                        .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
+                        .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
                 )
     }
 }

@@ -18,6 +18,8 @@ struct OnboardingPage: View {
                 .padding(.top, UIScreen.main.bounds.height * 0.09)
             Text("Input your measurements and find your match.")
                 .font(.body16Regular)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
 
             ZStack{
                 Image("GradientStar")
