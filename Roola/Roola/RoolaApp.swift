@@ -10,7 +10,7 @@ import SwiftData
 @main
 struct RoolaApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Clothes.self, User.self])
+        let schema = Schema([Clothes.self, User.self, MeasurementHistory.self])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false

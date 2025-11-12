@@ -7,79 +7,21 @@
 
 import SwiftUI
 
-//struct ResultsView: View {
-//    @ObservedObject var viewModel: RecommendationViewModel
-//    @Binding var showResults: Bool
-//
-//    var body: some View {
-//        NavigationView {
-//            ScrollView {
-//                VStack(alignment: .leading, spacing: 20) {
-//                    if let recommendations = viewModel.serverResponse?.recommendations {
-//                        Text("Size Recommendations")
-//                            .font(.title2)
-//                            .fontWeight(.bold)
-//                            .padding(.horizontal)
-//                            .padding(.top)
-//
-//                        // Map the 5 fit types to new names
-//                        RecommendationCard(
-//                            fit: "Tight",
-//                            recommendation: recommendations.tight
-//                        )
-//
-//                        RecommendationCard(
-//                            fit: "Slim",
-//                            recommendation: recommendations.slightlyTight
-//                        )
-//
-//                        RecommendationCard(
-//                            fit: "Standard",
-//                            recommendation: recommendations.regular
-//                        )
-//
-//                        RecommendationCard(
-//                            fit: "Relaxed",
-//                            recommendation: recommendations.slightlyLoose
-//                        )
-//
-//                        RecommendationCard(
-//                            fit: "Loose",
-//                            recommendation: recommendations.loose
-//                        )
-//
-//                    } else if viewModel.isCallingAPI {
-//                        ProgressView("Calculating Recommendations...")
-//                            .frame(maxWidth: .infinity)
-//                            .padding()
-//                    } else if let apiError = viewModel.apiError {
-//                        Text(apiError)
-//                            .foregroundColor(.red)
-//                            .padding()
-//                    }
-//                }
-//                .padding(.bottom)
-//            }
-//            .navigationTitle("Your Results")
-//            .navigationBarTitleDisplayMode(.inline)
-//            .toolbar {
-//                ToolbarItem(placement: .navigationBarTrailing) {
-//                    Button("Done") {
-//                        showResults = false
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
-
 struct ResultsView: View {
     @ObservedObject var viewModel: RecommendationViewModel
     @Binding var showResults: Bool
-    var onTryAgain: (() -> Void)?  // Callback untuk reset fields di parent
-    var initialFitPreference: String = "standard"  // Preference yang dipilih di RecommendationView
+    var onTryAgain: (() -> Void)?
+    var initialFitPreference: String = "standard"
+    var isFromHistory: Bool = false  // NEW: Flag untuk view dari history
     
-    @State private var sliderValue: Float = 2.0 // Default to "Standard" (index 2)
+    @Environment(\.modelContext) private var modelContext  // NEW: SwiftData context
+    @Environment(\.dismiss) private var dismiss  // NEW: For back button
+    
+    @State private var sliderValue: Float = 2.0
+    @State private var showSaveModal = false
+    @State private var showSuccessModal = false
+    @State private var productName = ""
+    @State private var shopName = ""
     
     // Computed property untuk mapping fit preference
     private var currentFitPreference: String {
@@ -144,11 +86,11 @@ struct ResultsView: View {
         let preferenceMap: [String: Float] = [
             "tight": 0.0,
             "slim": 1.0,
-            "slightly-tight": 1.0,  // Alias untuk slim
+            "slightly-tight": 1.0,
             "standard": 2.0,
-            "regular": 2.0,  // Alias untuk standard
+            "regular": 2.0,
             "relaxed": 3.0,
-            "slightly-loose": 3.0,  // Alias untuk relaxed
+            "slightly-loose": 3.0,
             "loose": 4.0
         ]
         
@@ -156,15 +98,93 @@ struct ResultsView: View {
         print("🎚️ Slider initialized to: \(sliderValue) for preference: \(initialFitPreference)")
     }
     
+    // MARK: - Save to History
+    
+    private func saveToHistory() {
+        guard let serverResponse = viewModel.serverResponse,
+              let userMeasurements = viewModel.userMeasurements else {
+            print("❌ Cannot save: missing data")
+            return
+        }
+        
+        // Encode recommendations to JSON string
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        
+        guard let recommendationsData = try? encoder.encode(serverResponse),
+              let recommendationsJSON = String(data: recommendationsData, encoding: .utf8) else {
+            print("❌ Failed to encode recommendations")
+            return
+        }
+        
+        // Create history entry
+        let history = MeasurementHistory(
+            productName: productName,
+            shopName: shopName,
+            clothingType: viewModel.clothingType,
+            selectedFitPreference: initialFitPreference,
+            recommendationsJSON: recommendationsJSON,
+            userBust: userMeasurements.bust,
+            userWaist: userMeasurements.waist,
+            userTorso: userMeasurements.torso,
+            userArmLength: userMeasurements.armLength
+        )
+        
+        // Save to SwiftData
+        modelContext.insert(history)
+        
+        do {
+            try modelContext.save()
+            print("✅ History saved successfully!")
+            
+            // Close save modal
+            showSaveModal = false
+            
+            // Show success modal
+            showSuccessModal = true
+            
+            // Auto-hide success modal and reset form after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                showSuccessModal = false
+                
+                // Reset form inputs
+                productName = ""
+                shopName = ""
+                
+                // Close results view and reset all fields
+                showResults = false
+                onTryAgain?()
+            }
+        } catch {
+            print("❌ Failed to save history: \(error)")
+        }
+    }
+    
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Recommended Size")
-                        .font(.heading32Medium)
-                        .fontWeight(.medium)
-                        .padding(.top, 42)
+                    HStack (spacing: 8){
+                        if isFromHistory {
+                            Button(action: {
+                                dismiss()
+                            }) {
+                                Image(systemName: "chevron.backward.circle.fill")
+                                    .symbolRenderingMode(.palette)
+                                    .font(.system(size: 38))
+                                    .foregroundStyle(Color(AppColors.primaryPurple), Color(AppColors.primaryWhite).opacity(0.5))
+                            }
+                            .padding(.top, 8)
+                        }
+                        
+                        Text("Recommended Size")
+                            .font(.heading32Medium)
+                            .fontWeight(.medium)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, isFromHistory ? 64 : 42)
                     
                     VStack(alignment: .center) {
                         // Size Badge
@@ -187,7 +207,6 @@ struct ResultsView: View {
                             Text("Fit Preference")
                                 .font(.body16Regular)
                             
-                            // Warning jika score rendah
                             if recommendation.bestScore < 30 {
                                 Text("This fit preference may not be ideal for your measurements")
                                     .font(.caption14Italic)
@@ -196,12 +215,10 @@ struct ResultsView: View {
                             SliderWithLabels(sliderValue: $sliderValue)
                                 .padding(.horizontal, -16)
                             
-                            // Mannequin Visualization
                             bodyVisualization(recommendation: recommendation)
                                 .padding(.bottom, -42)
                                 .padding(.leading, UIScreen.main.bounds.width * 0.05)
                             
-                            // Status indicators
                             statusIndicators(recommendation: recommendation)
                         }
                         .padding(8)
@@ -216,29 +233,50 @@ struct ResultsView: View {
                             .padding(.vertical, 4)
                     }
                     
-                    // Spacer untuk memberi ruang agar content tidak tertutup button
                     Spacer()
                         .frame(height: 140)
                 }
                 .padding(.horizontal, 16)
             }
             
-            // Buttons fixed di bawah screen
-            VStack {
-                Spacer()
-                
-                VStack(spacing: 12) {
-                    RoolaButton(buttonTitle: "Save Result", buttonColor: AppColors.primaryPurple, action: {
-                        // TODO: Implement save logic
-                        
-                    })
-                    RoolaButton(buttonTitle: "Try Again", buttonColor: AppColors.primaryWhite, action: {
-                        onTryAgain?()  // Panggil callback untuk reset fields
-                        showResults = false
-                    })
+            // Buttons (hidden if from history)
+            if !isFromHistory {
+                VStack {
+                    Spacer()
+                    
+                    VStack(spacing: 12) {
+                        RoolaButton(buttonTitle: "Save Result", buttonColor: AppColors.primaryPurple, action: {
+                            showSaveModal = true
+                        })
+                        RoolaButton(buttonTitle: "Try Again", buttonColor: AppColors.primaryWhite, action: {
+                            onTryAgain?()
+                            showResults = false
+                        })
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, UIScreen.main.bounds.height * 0.05)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, UIScreen.main.bounds.height * 0.05)
+            }
+            
+            // Save Result Modal
+            if showSaveModal {
+                SaveResultModal(
+                    isPresented: $showSaveModal,
+                    productName: $productName,
+                    shopName: $shopName,
+                    onSave: {
+                        saveToHistory()
+                    }
+                )
+                .transition(.opacity)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showSaveModal)
+            }
+            
+            // Success Modal
+            if showSuccessModal {
+                SaveSuccessModal()
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showSuccessModal)
             }
         }
     }

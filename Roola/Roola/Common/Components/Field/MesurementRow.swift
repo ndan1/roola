@@ -85,9 +85,10 @@ struct TopMeasurementRow: View {
         .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
         
         .overlay(
-                    RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
-                        .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
-                )    }
+            RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
+                .stroke(isError ? Color.red : Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
 }
 
 extension View {
