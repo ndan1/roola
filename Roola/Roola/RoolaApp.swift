@@ -10,7 +10,7 @@ import SwiftData
 @main
 struct RoolaApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Clothes.self, User.self])
+        let schema = Schema([Clothes.self, User.self, MeasurementHistory.self])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false
@@ -32,38 +32,9 @@ struct RoolaApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            #if DEBUG
-//            if CommandLine.arguments.contains("-testing-product-input") {
-//                UserProfileView()
-//                    .modelContainer(sharedModelContainer)
-//            } else {
-//                MainTabView()
-//                    .modelContainer(sharedModelContainer)
-//            }
-//            #else
-            ContentView()
+            MainTabView()
                 .modelContainer(sharedModelContainer)
                 .preferredColorScheme(.light)
-//            #endif
-
-//            MeasurementResultView(
-//                data: MeasurementData(  // Pass dummy for preview
-//                    armsLength: 49.21,
-//                    chestCircumference: 92,
-//                    height: 169,
-//                    torsoLength: 54,
-//                    waistCircumference: 82
-//                ),
-//                onDone: {
-//                    print("Done tapped")
-//                },
-//                onBack: {
-//                    print("Test")
-//                },
-//                onInfo: {
-//                    print("Modal")
-//                }
-//            )
         }
     }
 }

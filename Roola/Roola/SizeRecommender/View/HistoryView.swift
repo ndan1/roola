@@ -6,32 +6,36 @@
 //
 
 import SwiftUI
+import SwiftData // Added from backend version
 
-struct HistoryItem: Identifiable {
-    let id = UUID()
-    let name: String
-    let location: String
-    let date: String
-    let initial: String
-}
+// The static `HistoryItem` struct from the HEAD version has been removed,
+// as we are now using the `MeasurementHistory` model from SwiftData.
 
 struct HistoryView: View {
-    @State private var historyItems: [HistoryItem] = [
-        HistoryItem(name: "Jennie Blouse", location: "Shop at Velvet", date: "10 Apr 2025", initial: "M"),
-        HistoryItem(name: "Jennie Blouse", location: "Shop at Velvet", date: "10 Apr 2025", initial: "M"),
-        HistoryItem(name: "Jennie Blouse", location: "Shop at Velvet", date: "07 Apr 2025", initial: "M")
-    ]
+    // --- Merged from backend version ---
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var histories: [MeasurementHistory]
+    // ---
+    
+    // --- Kept from UI version ---
     @State private var showSortSheet = false
     @State private var selectedSort = "Last 7 days"
+    // ---
     
     var body: some View {
-        NavigationView {
+        // Using NavigationStack from backend version as it's more modern
+        // and works with the NavigationLink.
+        NavigationStack {
             ZStack {
+                // Kept VStack structure from UI version
                 VStack {
-                    if historyItems.isEmpty {
+                    // Using `histories.isEmpty` (backend) instead of `historyItems.isEmpty` (UI)
+                    if histories.isEmpty {
+                        // Kept detailed EmptyHistoryView from UI version
                         EmptyHistoryView()
                     } else {
                         VStack{
+                            // Kept Header and Sort Button from UI version
                             HStack{
                                 RoolaHeader(
                                     title: "History",
@@ -50,20 +54,62 @@ struct HistoryView: View {
                             }
                             .padding(.top, 18)
                             
-                            HistoryListView(items: historyItems)
+                            // --- Merged ScrollView from backend version ---
+                            // This replaces the `HistoryListView` from the UI version
+                            ScrollView {
+                                VStack(spacing: 12) {
+                                    // Removed the simple `Text("History")` from the backend version
+                                    // as we now have the RoolaHeader.
+                                    
+                                    ForEach(histories) { history in
+                                        NavigationLink(destination: HistoryDetailView(history: history)) {
+                                            // Using the HistoryCard from the backend version
+                                            // as it's built for the `MeasurementHistory` model
+                                            HistoryCard(history: history)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                            Button(role: .destructive) {
+                                                deleteHistory(history)
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.top, 16) // Adjusted padding from backend version
+                                .padding(.bottom, 32)
+                            }
+                            // --- End of merged ScrollView ---
                         }
                     }
                 }
-                .background(FirstGradientBackground().ignoresSafeArea())
+                .background(FirstGradientBackground().ignoresSafeArea()) // Kept from UI version
             }
+            // Kept sheet from UI version
             .sheet(isPresented: $showSortSheet) {
                 SortSheet(selectedSort: $selectedSort)
                     .presentationDetents([.height(350)])
             }
         }
     }
+    
+    // --- Kept from backend version ---
+    private func deleteHistory(_ history: MeasurementHistory) {
+        modelContext.delete(history)
+        
+        do {
+            try modelContext.save()
+            print("✅ History deleted successfully")
+        } catch {
+            print("❌ Failed to delete history: \(error)")
+        }
+    }
+    // ---
 }
 
+// --- Kept from UI version ---
 struct EmptyHistoryView: View {
     var body: some View {
         VStack {
@@ -101,6 +147,7 @@ struct EmptyHistoryView: View {
     }
 }
 
+// --- Kept from UI version ---
 struct InstructionRow: View {
     let icon: String
     let text: String
@@ -127,64 +174,100 @@ struct InstructionRow: View {
     }
 }
 
-struct HistoryListView: View {
-    let items: [HistoryItem]
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                ForEach(items) { item in
-                    HistoryCard(item: item)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-    }
-}
+// `HistoryListView` from the UI version was removed as its
+// logic was merged directly into `HistoryView`.
 
+// --- Kept from backend version ---
+// This HistoryCard is used because it works with the `MeasurementHistory` model.
 struct HistoryCard: View {
-    let item: HistoryItem
+    let history: MeasurementHistory
     
     var body: some View {
         HStack(spacing: 16) {
+            // Icon
             ZStack {
                 Circle()
-                    .fill(AppColors.primaryPurple)
-                    .frame(width: 60, height: 80)
+                    .fill(AppColors.primaryPurple.opacity(0.1))
+                    .frame(width: 50, height: 50)
                 
-                Text(item.initial)
-                    .font(.heading32Medium)
-                    .foregroundColor(AppColors.primaryWhite)
+                Image(systemName: "tshirt.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(AppColors.primaryPurple)
             }
             
+            // Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.name)
-                    .font(.body18Medium)
-                    .foregroundColor(AppColors.primaryBlack)
+                Text(history.productName)
+                    .font(.body16Regular)
+                    .foregroundColor(.black)
+                    .lineLimit(1)
                 
-                Text(item.location)
+                Text(history.shopName)
                     .font(.body15Regular)
-                    .foregroundColor(AppColors.grayScale400)
+                    .foregroundColor(Color(hex: "#838383"))
+                    .lineLimit(1)
+                
+                HStack(spacing: 8) {
+                    Text(displayClothingType(history.clothingType))
+                        .font(.caption)
+                        .foregroundColor(AppColors.primaryPurple)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppColors.primaryPurple.opacity(0.1))
+                        .cornerRadius(6)
+                    
+                    Text(displayFitPreference(history.selectedFitPreference))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(6)
+                }
             }
             
             Spacer()
             
-            VStack {
-                Text(item.date)
-                    .font(.body15Regular)
-                    .foregroundColor(AppColors.grayScale400)
-                Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(formatDate(history.createdAt))
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gray)
             }
         }
         .padding(16)
-        .background(AppColors.primaryWhite)
+        .background(Color.white)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMM yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func displayClothingType(_ type: String) -> String {
+        switch type {
+        case "t_shirt": return "T-Shirt"
+        case "blouse": return "Blouse"
+        case "long_sleeved_shirt": return "Long Sleeve"
+        case "short_sleeved_shirt": return "Short Sleeve"
+        default: return type.capitalized
+        }
+    }
+    
+    private func displayFitPreference(_ preference: String) -> String {
+        return preference.capitalized
     }
 }
+// --- End of backend version HistoryCard ---
 
 
+// --- Kept from UI version ---
 struct SortSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var selectedSort: String
@@ -253,9 +336,12 @@ struct SortSheet: View {
         }
     }
 }
+// --- End of UI version SortSheet ---
 
-struct HistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        HistoryView()
-    }
+
+// --- Preview kept from backend version ---
+// This is required for the SwiftData model container
+#Preview {
+    HistoryView()
+        .modelContainer(for: MeasurementHistory.self, inMemory: true)
 }

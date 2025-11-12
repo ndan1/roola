@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct ServerResponse: Codable {
+struct ServerResponse: Codable, Equatable {
     let recommendations: Recommendations
 }
 
-struct Recommendations: Codable {
+struct Recommendations: Codable, Equatable {
     let loose: FitRecommendation
     let regular: FitRecommendation
     let slightlyLoose: FitRecommendation
