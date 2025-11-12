@@ -10,7 +10,6 @@ import SwiftData
 
 struct MeasurementResultView: View {
     
-    // The View now only has one source of truth: the ViewModel.
     @StateObject private var viewModel: MeasurementResultViewModel
     
     @State private var showMeasureGuide = false
@@ -36,7 +35,6 @@ struct MeasurementResultView: View {
             )
 
             Group {
-                // The View checks the VM's data property
                 if viewModel.data != nil {
                     VStack(spacing: 30) {
                         Group {
@@ -77,14 +75,14 @@ struct MeasurementResultView: View {
                             RoolaButton(
                                 buttonTitle: "Save",
                                 buttonColor: AppColors.primaryPurple,
-                                action: viewModel.saveTapped // Call the VM's function
+                                action: viewModel.saveTapped
                             )
                             .frame(width: UIScreen.main.bounds.width * 0.8)
                             
                             RoolaButton(
                                 buttonTitle: "Retake",
                                 buttonColor: AppColors.primaryWhite,
-                                action: viewModel.retakeTapped // Call the VM's function
+                                action: viewModel.retakeTapped
                             )
                             .frame(width: UIScreen.main.bounds.width * 0.8)
                         }
@@ -92,8 +90,6 @@ struct MeasurementResultView: View {
                     }
                     .padding(.horizontal, 30)
                     .padding(.top,10)
-                    // The .onAppear block is no longer needed here!
-                    // Its logic is now in the ViewModel's init.
                 } else {
                     VStack(spacing: 10) {
                         Text("Measurement Data Not Found")

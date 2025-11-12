@@ -5,7 +5,6 @@
 //  Created by Lin Dan Christiano on 08/11/25.
 //
 
-//  UserInputViewModel.swift
 import Foundation
 
 final class UserInputViewModel: ObservableObject {
