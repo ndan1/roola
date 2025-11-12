@@ -8,24 +8,29 @@
 import SwiftUI
 
 struct NoInternetPage: View {
-    @Environment(\.dismiss) private var dismiss
+    var onRetry: (() -> Void)?
     var body: some View {
-        VStack {
-            Spacer()
-            Image(systemName: "wifi.exclamationmark")
-                .font(.system(size: 96))
-                .foregroundStyle(AppColors.primaryPurple)
-            Text("No Internet")
-                .font(.heading32Medium)
-                .foregroundStyle(Color.red)
-            Text("You’re offline. Please check your connection.")
-                .multilineTextAlignment(.center)
-                .font(.body16Regular)
-            Spacer()
-            RoolaButton(buttonTitle: "Retry", buttonColor: AppColors.primaryPurple, action: {
-            })
+        ZStack {
+            FirstGradientBackground()
+            
+            VStack {
+                Spacer()
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.system(size: 96))
+                    .foregroundStyle(AppColors.primaryPurple)
+                Text("No Internet")
+                    .font(.heading32Medium)
+                    .foregroundStyle(Color.red)
+                Text("You're offline. Please check your connection.")
+                    .multilineTextAlignment(.center)
+                    .font(.body16Regular)
+                Spacer()
+                RoolaButton(buttonTitle: "Retry", buttonColor: AppColors.primaryPurple, action: {
+                    onRetry?()
+                })
+            }
+            .padding(.horizontal, 32)
         }
-        .padding(.horizontal, 32)
     }
 }
 

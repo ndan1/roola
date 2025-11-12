@@ -21,6 +21,7 @@ struct RecommendationView: View {
     @State private var showFitGuide = false
     @State private var showValidationError = false
     @State private var showNoInternetModal = false
+    @State private var showNoInternetPage = false
     
     // Computed property to check if form fields are empty
     private var hasEmptyFormFields: Bool {
@@ -89,6 +90,13 @@ struct RecommendationView: View {
                     showValidationError = false
                 }
             }
+            .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
+                // Monitor internet connection during processing
+                if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+                    // Internet disconnected during processing, show NoInternetPage
+                    showNoInternetPage = true
+                }
+            }
             .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
                 // Auto-trigger recommendation ketika OCR extraction selesai
                 if !newValue.isEmpty && !viewModel.isCallingAPI {
@@ -114,6 +122,13 @@ struct RecommendationView: View {
             }
             .sheet(isPresented: $showFitGuide) {
                 FitGuideView(showFitGuide: $showFitGuide)
+            }
+            .fullScreenCover(isPresented: $showNoInternetPage) {
+                NoInternetPage(onRetry: {
+                    showNoInternetPage = false
+                    // Reset all states and return to RecommendationView
+                    resetAllFields()
+                })
             }
             
             if viewModel.showErrorAlert, let error = viewModel.currentError {
