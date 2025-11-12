@@ -15,7 +15,6 @@ struct CameraFlowContainerView: View {
     var body: some View {
         NavigationStack(path: $path) {
             CameraTutorialView {
-                // User tapped Continue → check permission then push capture
                 checkCameraPermission { granted in
                     if granted {
                         path.append(FlowStep.capture)
@@ -24,16 +23,21 @@ struct CameraFlowContainerView: View {
                     }
                 }
             }
+            .navigationBarHidden(true)
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
                 case .capture:
-                    MeasurementFlowView()
-                        .navigationBarHidden(true)
+                    MeasurementFlowView(
+                        onFlowDidFinish: { dismiss() },
+                        onSwitchToManual: { dismiss() }
+                    )
+                    .navigationBarHidden(true)
                 case .permissionDenied:
                     CameraPermissionDeniedView(
                         onCancel: { dismiss() },
                         onOpenSettings: openSettings
                     )
+                    .navigationBarHidden(true)
                 }
             }
         }

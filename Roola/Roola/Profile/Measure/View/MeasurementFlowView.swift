@@ -16,6 +16,12 @@ struct MeasurementFlowView: View {
     
     @State private var showSuccessPopup = false
 
+    // --- ADD THIS CALLBACK ---
+    var onFlowDidFinish: () -> Void
+    
+    // --- THIS CALLBACK IS FROM OUR PREVIOUS CHANGE ---
+    var onSwitchToManual: () -> Void
+
     var body: some View {
         ZStack {
             // 2. Switch on the ViewModel's published state
@@ -85,8 +91,9 @@ struct MeasurementFlowView: View {
                     buttonTitle: "Input Manually",
                     buttonColor: AppColors.primaryWhite,
                     action: {
-                        // TODO: You would add a new method to the ViewModel
-                        // e.g., viewModel.switchToManualInput()
+                        // --- NOW CALLS THE CALLBACK ---
+                        // In this new flow, this will just dismiss the modal.
+                        onSwitchToManual()
                     }
                 )
                 .frame(width: UIScreen.main.bounds.width * 0.8)
@@ -132,6 +139,11 @@ struct MeasurementFlowView: View {
                     try? await Task.sleep(nanoseconds: 2_000_000_000)
                     await MainActor.run {
                         withAnimation { showSuccessPopup = false }
+                        
+                        // --- CALL THE NEW CALLBACK HERE ---
+                        // This will tell the parent (CameraFlowContainerView)
+                        // to dismiss itself.
+                        onFlowDidFinish()
                     }
                 }
             }
@@ -140,7 +152,10 @@ struct MeasurementFlowView: View {
 }
 
 #Preview {
-    MeasurementFlowView()
-        // 9. Add the model container for the preview to work
-        .modelContainer(for: User.self, inMemory: true)
+    MeasurementFlowView(
+        // --- UPDATE PREVIEW ---
+        onFlowDidFinish: { print("Flow Finished") },
+        onSwitchToManual: { print("Switch to Manual") }
+    )
+    .modelContainer(for: User.self, inMemory: true)
 }

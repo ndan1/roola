@@ -30,27 +30,27 @@ struct CameraTutorialView: View {
     var body: some View {
         let width = UIScreen.main.bounds.width
 
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             RoolaHeader(
                 title: "Instructions",
                 onBack: { dismiss() },
                 isLargeTitle: true
             )
 
-            VStack {
+            VStack (alignment: .center, spacing: width * 0.01) {
                 ForEach(tutorialSteps) { step in
-                    VStack(spacing: 0) {
+                    VStack(alignment:.leading, spacing: 5) {
                         Text(step.title)
                             .font(.body16Regular)
                         
-                        HStack(spacing: width * 0.1) {
+                        HStack(spacing: width * 0.125) {
                             Image(step.image1)
                                 .resizable()
-                                .frame(width: 102, height: 123)
+                                .frame(width: 112, height: 133)
 
                             Image(step.image2)
                                 .resizable()
-                                .frame(width: 102, height: 123)
+                                .frame(width: 112, height: 133)
                         }
                     }
                     .padding(.bottom, 20)
@@ -62,7 +62,6 @@ struct CameraTutorialView: View {
                     Text("Turn your volume on for better experience")
                         .font(.subheadline)
                 }
-                .padding(.top)
 
                 Spacer()
 
@@ -75,18 +74,21 @@ struct CameraTutorialView: View {
                         .foregroundStyle(Color(AppColors.primaryPurple))
                 }
                 .padding(.bottom, 8)
-                .padding(.top, 20)
 
-                RoolaButton(buttonTitle: "Continue", buttonColor: AppColors.primaryButton, action: onContinue)
-                    .padding(.bottom, 15)
+                VStack{
+                    RoolaButton(buttonTitle: "Continue",
+                                buttonColor: AppColors.primaryButton,
+                                action: onContinue)
+                        .frame(width: UIScreen.main.bounds.width * 0.8)
+                        .padding(.bottom, 15)
+                }
             }
 
         }
-        .padding(.horizontal, 16)
-        .padding(.top)
         .sheet(isPresented: $isShowPolicy) {
             CameraTermsView(onContinue: onContinue, isShowPolicy: $isShowPolicy)
                 .presentationDetents([.fraction(0.5)])
+                .presentationDragIndicator(.visible)
         }
         .background(FirstGradientBackground().ignoresSafeArea())
     }

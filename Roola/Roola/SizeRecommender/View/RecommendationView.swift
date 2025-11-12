@@ -20,18 +20,11 @@ struct RecommendationView: View {
     @State private var showFitGuide = false
     
     var body: some View {
-        ZStack {
-            FirstGradientBackground()
+        VStack {
             VStack(spacing: 0) {
-                // Header
-                Spacer().frame(height: 20)
-                HStack {
-                    Text("Find your fit")
-                        .font(.heading32Medium)
-                    
-                    Spacer()
-                    
-                    Button(action: {
+                RoolaHeader(
+                    title: "Find your fit",
+                    onInfo: {
                         showFitGuide = true
                     }) {
                         Image(systemName: "info.circle")
@@ -45,6 +38,12 @@ struct RecommendationView: View {
                 
                 Text("Fill your product details to get your best match")
                     .font(.title3_16Medium)
+                    },
+                    isLargeTitle: true
+                )
+                
+                Text("Fill your product details to get your best match")
+                    .font(.body16Regular)
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
@@ -291,6 +290,7 @@ struct RecommendationView: View {
                     .presentationDetents([.fraction(0.75)])
                     .presentationDragIndicator(.visible)
             }
+            .background(FirstGradientBackground().ignoresSafeArea())
         }
     }
     

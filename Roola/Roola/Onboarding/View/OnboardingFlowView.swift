@@ -34,12 +34,11 @@ struct OnboardingFlowView: View {
                         onAI: { path.append(OnboardingStep.ai) },
                         onInput: { path.append(OnboardingStep.manual) }
                     )
-                    .navigationBarHidden(true) // <-- 1. Hide on root
+                    .navigationBarHidden(true)
                     .navigationDestination(for: OnboardingStep.self) { step in
                         switch step {
                         case .ai:
                             CameraTutorialView {
-                                // This logic was in CameraFlowContainerView
                                 checkCameraPermission { granted in
                                     if granted {
                                         path.append(FlowStep.capture)
@@ -48,17 +47,22 @@ struct OnboardingFlowView: View {
                                     }
                                 }
                             }
-                            .navigationBarHidden(true) // <-- 2. Hide on AI step
+                            .navigationBarHidden(true)
                         case .manual:
                             UserInputView()
-                            .navigationBarHidden(true) // <-- 3. Hide on Manual step
+                            .navigationBarHidden(true)
                         }
                     }
                     .navigationDestination(for: FlowStep.self) { step in
                         switch step {
                         case .capture:
-                            MeasurementFlowView()
-                                .navigationBarHidden(true) // <-- 4. Hide on Capture
+                            MeasurementFlowView(
+                                onFlowDidFinish: {},
+                                onSwitchToManual: {
+                                    path.removeLast(path.count)
+                                    path.append(OnboardingStep.manual)
+                            })
+                            .navigationBarHidden(true)
                         case .permissionDenied:
                             CameraPermissionDeniedView(
                                 onCancel: {

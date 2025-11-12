@@ -1,7 +1,6 @@
 {
   "images" : [
     {
-      "filename" : "camera guide.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
@@ -10,6 +9,7 @@
       "scale" : "2x"
     },
     {
+      "filename" : "green_stencil.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
