@@ -18,6 +18,16 @@ struct RecommendationView: View {
     @State private var showResults = false
     @State private var fitPreference: String = ""
     @State private var showFitGuide = false
+    @State private var showValidationError = false
+    
+    // Computed property to check if form fields are empty
+    private var hasEmptyFormFields: Bool {
+        return viewModel.clothingType.isEmpty || fitPreference.isEmpty
+    }
+    
+    private var hasNoImage: Bool {
+        return viewModel.selectedImage == nil
+    }
     
     var body: some View {
         ZStack {
@@ -26,7 +36,29 @@ struct RecommendationView: View {
             VStack(spacing: 0) {
                 headerSection
                 formSection
+                
+                // Validation error for empty form fields
+                if showValidationError && hasEmptyFormFields {
+                    Text("Please fill in all fields")
+                        .font(.body)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                }
+                
                 uploadSection
+                
+                // Validation error for missing image
+                if showValidationError && hasNoImage {
+                    Text("Please insert the size chart image")
+                        .font(.body)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                }
+                
                 Spacer()
                 bottomButton
                 Color.clear.frame(height: 0)
@@ -35,6 +67,24 @@ struct RecommendationView: View {
             .onAppear {
                 if let user = users.first {
                     viewModel.loadUserMeasurements(user: user)
+                }
+            }
+            .onChange(of: viewModel.clothingType) { oldValue, newValue in
+                // Hide validation error when user fills clothing type
+                if !newValue.isEmpty && showValidationError {
+                    showValidationError = false
+                }
+            }
+            .onChange(of: fitPreference) { oldValue, newValue in
+                // Hide validation error when user fills fit preference
+                if !newValue.isEmpty && showValidationError {
+                    showValidationError = false
+                }
+            }
+            .onChange(of: viewModel.selectedImage) { oldValue, newValue in
+                // Hide validation error when user uploads image
+                if newValue != nil && showValidationError {
+                    showValidationError = false
                 }
             }
             .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
@@ -264,11 +314,17 @@ struct RecommendationView: View {
     
     private var bottomButton: some View {
         Button {
-            if viewModel.selectedImage != nil {
-                viewModel.processImage()
-                // onChange observers akan handle sisanya:
-                // 1. onChange(extractedJSON) → auto call getRecommendation()
-                // 2. onChange(serverResponse) → auto set showResults = true
+            // Validate form fields and image
+            if hasEmptyFormFields || hasNoImage {
+                showValidationError = true
+            } else {
+                showValidationError = false
+                if viewModel.selectedImage != nil {
+                    viewModel.processImage()
+                    // onChange observers akan handle sisanya:
+                    // 1. onChange(extractedJSON) → auto call getRecommendation()
+                    // 2. onChange(serverResponse) → auto set showResults = true
+                }
             }
         } label: {
             Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
@@ -279,7 +335,7 @@ struct RecommendationView: View {
                 .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
                 .cornerRadius(30)
         }
-        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
     }
