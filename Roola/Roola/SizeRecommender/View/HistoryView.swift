@@ -14,10 +14,9 @@ struct HistoryView: View {
     @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var allHistories: [MeasurementHistory]
     
     @State private var showSortSheet = false
-    // Default sort option from original UI
+    
     @State private var selectedSort = "Last 7 days"
     
-    /// Computes the filtered list of histories based on the selected sort option
     private var filteredHistories: [MeasurementHistory] {
         let now = Date()
         let calendar = Calendar.current
@@ -45,15 +44,12 @@ struct HistoryView: View {
     }
     
     var body: some View {
-        // Using NavigationView to match the original file structure
         NavigationView {
             VStack {
-                // Use `allHistories` to check for the empty state, not filteredHistories
                 if allHistories.isEmpty {
                     EmptyHistoryView()
                 } else {
                     VStack{
-                        // Kept the original Header and Sort Button UI
                         HStack{
                             RoolaHeader(
                                 title: "History",
@@ -70,12 +66,9 @@ struct HistoryView: View {
                             .buttonStyle(.plain)
                             .padding(.trailing, 16)
                         }
-                        .padding(.top, 18)
                         
-                        // Replaced HistoryListView with ScrollView from the logic example
                         ScrollView {
                             VStack(spacing: 12) {
-                                // Iterate over the new `filteredHistories`
                                 ForEach(filteredHistories) { history in
                                     NavigationLink(destination: HistoryDetailView(history: history)) {
                                         HistoryCard(history: history)
@@ -119,7 +112,7 @@ struct HistoryView: View {
     }
 }
 
-// MARK: - Empty State View (Original)
+
 struct EmptyHistoryView: View {
     var body: some View {
         VStack {
@@ -158,33 +151,6 @@ struct EmptyHistoryView: View {
     }
 }
 
-// MARK: - Instruction Row (Original)
-struct InstructionRow: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(AppColors.primaryPurple)
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: icon)
-                    .foregroundColor(AppColors.primaryWhite)
-                    .font(.system(size: 18))
-            }
-            
-            Text(text)
-                .font(.body)
-                .foregroundColor(AppColors.primaryBlack)
-                .multilineTextAlignment(.leading)
-            
-            Spacer()
-        }
-    }
-}
-
 // MARK: - History Card (From Logic Example)
 struct HistoryCard: View {
     let history: MeasurementHistory
@@ -205,13 +171,13 @@ struct HistoryCard: View {
             // Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(history.productName)
-                    .font(.body16Regular) // Assuming .body16Regular is defined
+                    .font(.body16Regular)
                     .foregroundColor(.black)
                     .lineLimit(1)
                 
                 Text(history.shopName)
-                    .font(.body15Regular) // Assuming .body15Regular is defined
-                    .foregroundColor(Color(hex: "#838383")) // Assuming Color(hex:) is defined
+                    .font(.body15Regular)
+                    .foregroundColor(AppColors.grayScale300)
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
@@ -272,86 +238,13 @@ struct HistoryCard: View {
     }
 }
 
-
-// MARK: - Sort Sheet (Original)
-struct SortSheet: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var selectedSort: String
-    
-    let sortOptions = ["Newest", "Last 7 days", "Last 30 days"]
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 2.5)
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 60, height: 5)
-                .padding(.top, 12)
-            
-            HStack {
-                Spacer()
-                Text("Sort by")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            .padding(.vertical, 24)
-            .overlay(alignment: .trailing) {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.gray)
-                        .padding(.trailing, 20)
-                }
-            }
-            
-            VStack(spacing: 0) {
-                ForEach(sortOptions, id: \.self) { option in
-                    Button(action: { selectedSort = option }) {
-                        HStack {
-                            Text(option)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Circle()
-                                .stroke(AppColors.primaryPurple, lineWidth: 2)
-                                .frame(width: 24, height: 24)
-                                .overlay(
-                                    Circle()
-                                        .fill(AppColors.primaryPurple)
-                                        .frame(width: 14, height: 14)
-                                        .opacity(selectedSort == option ? 1 : 0)
-                                )
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 20)
-                    }
-                }
-            }
-            
-            Button(action: { dismiss() }) {
-                Text("Done")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(AppColors.primaryPurple)
-                    .cornerRadius(28)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-            
-            Spacer()
-        }
-    }
-}
-
-// MARK: - Previews (From Logic Example)
 #Preview {
     HistoryView()
         .modelContainer(for: MeasurementHistory.self, inMemory: true)
 }
 
 #Preview("Filled State") {
-    // 1. Create a function to configure and populate the container
+
     @MainActor
     func createFilledContainer() -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -359,9 +252,6 @@ struct SortSheet: View {
             let container = try ModelContainer(for: MeasurementHistory.self, configurations: config)
             let context = container.mainContext
             
-            // 2. Create mock data
-            
-            // Mock recommendations JSON (you can adjust this as needed)
             let mockRecommendations = """
             {
                 "tight": { "bestSize": "S", "bestScore": 85.0 },
@@ -370,7 +260,6 @@ struct SortSheet: View {
             }
             """
             
-            // History Item 1
             let history1 = MeasurementHistory(
                 productName: "Classic T-Shirt",
                 shopName: "The Cotton Co.",
@@ -382,10 +271,9 @@ struct SortSheet: View {
                 userTorso: 42.0,
                 userArmLength: 55.0
             )
-            // Manually adjust createdAt date since the init defaults to Date()
-            history1.createdAt = Date().addingTimeInterval(-86400 * 2) // 2 days ago
             
-            // History Item 2
+            history1.createdAt = Date().addingTimeInterval(-86400 * 2)
+            
             let history2 = MeasurementHistory(
                 productName: "Silk Blouse",
                 shopName: "Elegant Wears",
@@ -397,9 +285,8 @@ struct SortSheet: View {
                 userTorso: 43.0,
                 userArmLength: 56.0
             )
-            history2.createdAt = Date().addingTimeInterval(-86400 * 5) // 5 days ago
-
-            // History Item 3
+            history2.createdAt = Date().addingTimeInterval(-86400 * 5)
+            
             let history3 = MeasurementHistory(
                 productName: "Long Sleeve",
                 shopName: "Urban Store",
@@ -411,9 +298,8 @@ struct SortSheet: View {
                 userTorso: 41.0,
                 userArmLength: 54.0
             )
-            history3.createdAt = Date().addingTimeInterval(-86400 * 10) // 10 days ago
+            history3.createdAt = Date().addingTimeInterval(-86400 * 10)
             
-            // 3. Insert data into the context
             context.insert(history1)
             context.insert(history2)
             context.insert(history3)
@@ -423,11 +309,6 @@ struct SortSheet: View {
             fatalError("Failed to create in-memory container: \(error)")
         }
     }
-    
-    // 4. Return the view with the populated container
     return HistoryView()
         .modelContainer(createFilledContainer())
 }
-
-// NOTE: You will need to have these helper extensions/structs defined elsewhere in your project
-// for the code to compile fully (e.g., AppColors, RoolaHeader, font extensions, Color(hex:)).
