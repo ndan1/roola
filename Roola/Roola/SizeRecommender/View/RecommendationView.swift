@@ -13,12 +13,14 @@ import SwiftData
 struct RecommendationView: View {
     
     @StateObject private var viewModel = RecommendationViewModel()
+    @StateObject private var networkMonitor = NetworkMonitor()
     @State private var selectedPhoto: PhotosPickerItem?
     @Query private var users: [User]
     @State private var showResults = false
     @State private var fitPreference: String = ""
     @State private var showFitGuide = false
     @State private var showValidationError = false
+    @State private var showNoInternetModal = false
     
     // Computed property to check if form fields are empty
     private var hasEmptyFormFields: Bool {
@@ -126,6 +128,19 @@ struct RecommendationView: View {
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
+            }
+            
+            if showNoInternetModal {
+                NoInternetModal(
+                    isPresented: $showNoInternetModal,
+                    onRetry: {
+                        if networkMonitor.isConnected {
+                            showNoInternetModal = false
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
             }
         }
     }
@@ -314,6 +329,12 @@ struct RecommendationView: View {
     
     private var bottomButton: some View {
         Button {
+            // Check for internet connection first
+            if !networkMonitor.isConnected {
+                showNoInternetModal = true
+                return
+            }
+            
             // Validate form fields and image
             if hasEmptyFormFields || hasNoImage {
                 showValidationError = true

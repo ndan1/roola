@@ -8,16 +8,22 @@
 import SwiftUI
 
 struct NoInternetModal: View {
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
+    var onRetry: (() -> Void)?
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
+            
             VStack {
                 HStack {
                     Spacer()
                     Button (action: {
-                        dismiss()
+                        isPresented = false
                     }){
                         Image(systemName: "x.circle.fill")
                             .symbolRenderingMode(.palette)
@@ -40,6 +46,8 @@ struct NoInternetModal: View {
                     .padding(.vertical, 4)
                 
                 RoolaButton(buttonTitle: "Retry", buttonColor: AppColors.primaryPurple, action: {
+                    isPresented = false
+                    onRetry?()
                 })
             }
             .padding(32)
@@ -50,10 +58,9 @@ struct NoInternetModal: View {
             )
             .padding(.horizontal, 40)
         }
-//            .padding(.vertical, 16)
     }
 }
 
 #Preview {
-    NoInternetModal()
+    NoInternetModal(isPresented: .constant(true))
 }
