@@ -10,7 +10,7 @@ import SwiftData
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
-    // Query all histories, sorted by newest first (which also supports the "Newest" filter)
+    
     @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var allHistories: [MeasurementHistory]
     
     @State private var showSortSheet = false

@@ -32,7 +32,7 @@ struct RoolaApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            ContentView()
                 .modelContainer(sharedModelContainer)
                 .preferredColorScheme(.light)
         }

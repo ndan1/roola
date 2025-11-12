@@ -13,7 +13,7 @@ struct ContentView: View {
     
     var body: some View {
         OnboardingFlowView(isOnboardingComplete: $isOnboardingComplete)
-            .modelContainer(for: User.self)
+            .modelContainer(for: [User.self, MeasurementHistory.self])
     }
 }
 

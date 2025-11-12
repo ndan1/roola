@@ -12,6 +12,7 @@ import AVFoundation
 struct OnboardingFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var users: [User]
+    @Query private var history: [MeasurementHistory]
     @Binding var isOnboardingComplete: Bool
     
     // Navigation inside the flow
