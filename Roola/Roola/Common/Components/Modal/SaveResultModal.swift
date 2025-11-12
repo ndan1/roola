@@ -12,7 +12,6 @@ struct SaveResultModal: View {
     @Binding var productName: String
     @Binding var shopName: String
     var onSave: () -> Void
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
@@ -34,7 +33,7 @@ struct SaveResultModal: View {
                             .padding(.leading, UIScreen.main.bounds.width * 0.15)
                         Spacer()
                         Button (action: {
-                            dismiss()
+                            isPresented = false
                         }){
                             Image(systemName: "x.circle.fill")
                                 .symbolRenderingMode(.palette)
