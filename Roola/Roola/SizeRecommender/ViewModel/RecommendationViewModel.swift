@@ -37,7 +37,7 @@ class RecommendationViewModel: ObservableObject {
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
     
     // MINIMUM SCORE THRESHOLD - Rekomendasi harus punya score minimal 30%
-    private let MIN_ACCEPTABLE_SCORE = 30.0
+    private let MIN_ACCEPTABLE_SCORE = 20.0
 
     init() {
         self.ocrService = LocalOCRService()
@@ -390,60 +390,67 @@ class RecommendationViewModel: ObservableObject {
             print("   \(size.padding(toLength: 5, withPad: " ", startingAt: 0)): \(String(format: "%.2f", score))%")
         }
         
-        // CONSTRAINT: Filter sizes yang >= minimumSize (untuk menjaga hierarki fit)
-        var eligibleSizes = sizeScores
-        if let minSize = minimumSize {
-            eligibleSizes = sizeScores.filter { size, _ in
-                compareSizes(minSize, size) || minSize == size // size >= minSize
-            }
-            
-            if eligibleSizes.isEmpty {
-                print("⚠️ [DEBUG] No sizes meet minimum constraint ('\(minSize)'). Using minimum size.")
-                eligibleSizes = [minSize: sizeScores[minSize] ?? 0]
-            } else if eligibleSizes.count < sizeScores.count {
-                print("🔒 [DEBUG] Constraint applied: size must be >= '\(minSize)' (filtered \(sizeScores.count - eligibleSizes.count) smaller sizes)")
-            }
-        }
-
         let bestSize: String?
-        let hasGoodScore = eligibleSizes.values.contains(where: { $0 >= MIN_ACCEPTABLE_SCORE })
+        let hasGoodScore = sizeScores.values.contains(where: { $0 >= MIN_ACCEPTABLE_SCORE })
         
         if hasGoodScore {
+            // Ada size dengan score bagus (>= 30%), terapkan constraint ordering
+            var eligibleSizes = sizeScores
+            if let minSize = minimumSize {
+                eligibleSizes = sizeScores.filter { size, _ in
+                    compareSizes(minSize, size) || minSize == size // size >= minSize
+                }
+                
+                if eligibleSizes.isEmpty {
+                    print("⚠️ [DEBUG] No sizes meet minimum constraint ('\(minSize)'). Using minimum size.")
+                    eligibleSizes = [minSize: sizeScores[minSize] ?? 0]
+                } else if eligibleSizes.count < sizeScores.count {
+                    print("🔒 [DEBUG] Constraint applied: size must be >= '\(minSize)' (filtered \(sizeScores.count - eligibleSizes.count) smaller sizes)")
+                }
+            }
+            
             bestSize = eligibleSizes
                 .filter { $0.value >= MIN_ACCEPTABLE_SCORE }
                 .max { a, b in
                     if abs(a.value - b.value) < 0.01 {
                         if desired_fit.contains("loose") {
-                            return compareSizes(a.key, b.key) // Pilih size besar untuk loose
+                            return compareSizes(a.key, b.key)
                         } else {
-                            return !compareSizes(a.key, b.key) // Pilih size kecil untuk tight/regular
+                            return !compareSizes(a.key, b.key)
                         }
                     }
                     return a.value < b.value
                 }?.key
         } else {
-            print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%). Selecting fallback...")
+            // PERBAIKAN: Tidak ada size yang cocok (semua < 30%)
+            // Pilih size dengan SCORE TERTINGGI tanpa constraint untuk memberikan closest fit
+            print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%). Selecting closest fit (highest score)...")
             
-            if !eligibleSizes.isEmpty {
-                // Untuk loose/slightly-loose: pilih size TERBESAR dari eligible sizes
-                if desired_fit.contains("loose") {
-                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
-                    bestSize = sortedEligible.last  // Terbesar
-                    print("   → Fallback: Largest eligible size '\(bestSize ?? "nil")' (loose preference)")
-                }
-                // Untuk tight/slightly-tight: pilih size TERKECIL dari eligible sizes
-                else if desired_fit.contains("tight") {
-                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
-                    bestSize = sortedEligible.first  // Terkecil
-                    print("   → Fallback: Smallest eligible size '\(bestSize ?? "nil")' (tight preference)")
-                }
-                // Untuk regular: pilih yang score tertinggi
-                else {
-                    bestSize = eligibleSizes.max { a, b in
-                        a.value < b.value
-                    }?.key
-                    if let bestSize = bestSize {
-                        print("   → Fallback: Size '\(bestSize)' with highest score (\(String(format: "%.1f", eligibleSizes[bestSize] ?? 0))%)")
+            if !sizeScores.isEmpty {
+                bestSize = sizeScores.max { a, b in
+                    if abs(a.value - b.value) < 0.01 {
+                        // Tie-breaker berdasarkan preference
+                        if desired_fit.contains("loose") {
+                            return compareSizes(a.key, b.key) // Prefer larger
+                        } else if desired_fit.contains("tight") {
+                            return !compareSizes(a.key, b.key) // Prefer smaller
+                        } else {
+                            // Regular: prefer middle size
+                            let sortedSizes = clothes_db.keys.sorted(by: compareSizes)
+                            let middleIndex = sortedSizes.count / 2
+                            let middleSize = sortedSizes[middleIndex]
+                            let distA = abs((SIZE_ORDER[a.key.uppercased()] ?? 0) - (SIZE_ORDER[middleSize.uppercased()] ?? 0))
+                            let distB = abs((SIZE_ORDER[b.key.uppercased()] ?? 0) - (SIZE_ORDER[middleSize.uppercased()] ?? 0))
+                            return distA > distB
+                        }
+                    }
+                    return a.value < b.value
+                }?.key
+                
+                if let bestSize = bestSize {
+                    print("   → Fallback: Size '\(bestSize)' with highest score (\(String(format: "%.1f", sizeScores[bestSize] ?? 0))%)")
+                    if let minSize = minimumSize, compareSizes(bestSize, minSize) {
+                        print("   ℹ️ Note: Selected size '\(bestSize)' is smaller than previous fit's size '\(minSize)' (all scores < 30%, prioritizing closest fit)")
                     }
                 }
             } else {
