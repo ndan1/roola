@@ -19,6 +19,16 @@ struct RecommendationView: View {
     @State private var fitPreference: String = ""
     @State private var showFitGuide = false
     
+    // Network monitoring
+    @StateObject private var networkMonitor = NetworkMonitor()
+    @State private var showNoInternetModal = false
+    @State private var showNoInternetPage = false
+    
+    // Validation states
+    @State private var showClothingTypeError = false
+    @State private var showFitPreferenceError = false
+    @State private var showImageError = false
+    
     var body: some View {
         ZStack {
             FirstGradientBackground().ignoresSafeArea()
@@ -45,6 +55,26 @@ struct RecommendationView: View {
             .onChange(of: viewModel.serverResponse) { oldValue, newValue in
                 if newValue != nil && !viewModel.isCallingAPI {
                     showResults = true
+                }
+            }
+            .onChange(of: viewModel.clothingType) { oldValue, newValue in
+                if !newValue.isEmpty {
+                    showClothingTypeError = false
+                }
+            }
+            .onChange(of: fitPreference) { oldValue, newValue in
+                if !newValue.isEmpty {
+                    showFitPreferenceError = false
+                }
+            }
+            .onChange(of: viewModel.selectedImage) { oldValue, newValue in
+                if newValue != nil {
+                    showImageError = false
+                }
+            }
+            .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
+                if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+                    showNoInternetPage = true
                 }
             }
             .fullScreenCover(isPresented: $showResults) {
@@ -78,6 +108,24 @@ struct RecommendationView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
             }
+            
+            // NoInternetModal untuk validasi sebelum processing
+            if showNoInternetModal {
+                NoInternetModal(
+                    isPresented: $showNoInternetModal,
+                    onRetry: {
+                        showNoInternetModal = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
+            }
+        }
+        .fullScreenCover(isPresented: $showNoInternetPage) {
+            NoInternetPage(onRetry: {
+                showNoInternetPage = false
+                resetAllFields()
+            })
         }
     }
     
@@ -117,20 +165,45 @@ struct RecommendationView: View {
     
     private var formSection: some View {
         VStack(spacing: 0) {
-            clothingTypeRow
+            VStack(spacing: 0) {
+                clothingTypeRow
+                
+                Rectangle()
+                    .fill(AppColors.grayScale400.opacity(0.36))
+                    .frame(height: 0.5)
+                
+                fitPreferenceRow
+            }
+            .background(AppColors.primaryWhite.opacity(0.5))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+            )
             
-            Rectangle()
-                .fill(AppColors.grayScale400.opacity(0.36))
-                .frame(height: 0.5)
+            // Validation errors
+            if showClothingTypeError {
+                HStack {
+                    Text("• Please fill in this field")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+            }
             
-            fitPreferenceRow
+            if showFitPreferenceError {
+                HStack {
+                    Text("• Please fill in this field")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, showClothingTypeError ? 4 : 8)
+            }
         }
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-        )
         .padding(.horizontal, 24)
     }
     
@@ -188,28 +261,42 @@ struct RecommendationView: View {
     }
     
     private var uploadSection: some View {
-        VStack(spacing: 16) {
-            Text("Upload size chart screenshot")
-                .font(.body)
-                .foregroundColor(AppColors.grayScale400)
-            
-            if viewModel.selectedImage == nil {
-                uploadButton
+        VStack(spacing: 0) {
+            VStack(spacing: 16) {
+                Text("Upload size chart screenshot")
+                    .font(.body)
+                    .foregroundColor(AppColors.grayScale400)
+                
+                if viewModel.selectedImage == nil {
+                    uploadButton
+                }
+                
+                if let image = viewModel.selectedImage {
+                    imagePreview(image: image)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .padding(.horizontal, 24)
+            .background(AppColors.primaryWhite.opacity(0.5))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+            )
             
-            if let image = viewModel.selectedImage {
-                imagePreview(image: image)
+            // Validation error for image
+            if showImageError {
+                HStack {
+                    Text("• Please fill in this field")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal, 24)
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-        )
         .padding(.horizontal, 24)
         .padding(.top, 16)
     }
@@ -266,9 +353,25 @@ struct RecommendationView: View {
     
     private var bottomButton: some View {
         Button {
-            if viewModel.selectedImage != nil {
+            // Validate all fields
+            let hasClothingType = !viewModel.clothingType.isEmpty
+            let hasFitPreference = !fitPreference.isEmpty
+            let hasImage = viewModel.selectedImage != nil
+            
+            // Show errors for empty fields
+            showClothingTypeError = !hasClothingType
+            showFitPreferenceError = !hasFitPreference
+            showImageError = !hasImage
+            
+            // Only proceed if all fields are filled
+            if hasClothingType && hasFitPreference && hasImage {
+                // Check internet connection first
+                if !networkMonitor.isConnected {
+                    showNoInternetModal = true
+                    return
+                }
+                
                 viewModel.processImage()
-                // onChange observers will handle the rest
             }
         } label: {
             Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
@@ -279,7 +382,7 @@ struct RecommendationView: View {
                 .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
                 .cornerRadius(30)
         }
-        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
     }
