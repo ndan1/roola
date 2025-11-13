@@ -84,38 +84,47 @@ class RecommendationViewModel: ObservableObject {
     func processImage() {
         guard let image = selectedImage else { return }
         
+        // 1. Start Loading
         isProcessing = true
         currentStep = "Running OCR..."
         serverResponse = nil
         apiError = nil
         
         Task {
+            // 2. Ensure loading stops when function finishes (Success or Failure)
+            defer {
+                self.isProcessing = false
+            }
+            
             do {
+                // Step A: OCR
                 let ocrResult = try await ocrService.performOCR(on: image)
                 
                 self.recognizedText = ocrResult
-                self.currentStep = "Validating size chart..."
+                self.currentStep = "Validating size chart..." // Update Text on Loading Screen
                 
                 print("\n📝 OCR Result:")
                 print(ocrResult)
                 
                 try await ocrService.validateOCRText(ocrResult)
                 
-                self.currentStep = "Sending to Gemini API..."
+                // Step B: Gemini API
+                self.currentStep = "Analyzing with AI..." // Update Text on Loading Screen
                 
                 let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 
                 self.extractedJSON = jsonResult
-                self.currentStep = ""
-                self.isProcessing = false
+                self.currentStep = "Finalizing..."
 
                 print("\n✅ Final JSON Result:")
                 print(jsonResult)
                 
+                // Note: isProcessing becomes false automatically via 'defer' here
+                
             } catch let error as OCRError {
                 handleError(error)
             } catch {
-                handleError(OCRError.recognitionFailed) // Error umum
+                handleError(OCRError.recognitionFailed)
                 print("❌ Error: \(error)")
             }
         }

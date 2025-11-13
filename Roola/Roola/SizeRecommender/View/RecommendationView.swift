@@ -20,22 +20,56 @@ struct RecommendationView: View {
     @State private var showFitGuide = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Using refactored sections from the right version
-            headerSection
-            formSection
-            uploadSection
-            Spacer()
-            bottomButton
-            Color.clear.frame(height: 0)
+        ZStack {
+            VStack(spacing: 0) {
+                headerSection
+                formSection
+                uploadSection
+                Spacer()
+                bottomButton
+                Color.clear.frame(height: 0)
+            }
+            .ignoresSafeArea(edges: .bottom)
+            .background(
+                FirstGradientBackground().ignoresSafeArea()
+            )
+            if viewModel.isProcessing {
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                
+                ProgressLoading(
+                    title: "Analyzing Chart",
+                    subtitle: viewModel.currentStep,
+                    duration: 3.0
+                )
+                .zIndex(1)
+                .transition(.scale.combined(with: .opacity))
+            }
+            
+            // MARK: - Layer 3: Error Modal
+            if viewModel.showErrorAlert, let error = viewModel.currentError {
+                Color.black.opacity(0.4).ignoresSafeArea()
+                
+                OCRErrorModal(
+                    error: error,
+                    onRetry: {
+                        viewModel.resetAllStates()
+                        selectedPhoto = nil
+                        viewModel.selectedImage = nil
+                    },
+                    isPresented: $viewModel.showErrorAlert
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .zIndex(2)
+            }
         }
-        .ignoresSafeArea(edges: .bottom)
+        // MARK: - Logic & Modifiers
         .onAppear {
             if let user = users.first {
                 viewModel.loadUserMeasurements(user: user)
             }
         }
-        // Using reactive onChange modifiers from the right version
         .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
             if !newValue.isEmpty && !viewModel.isCallingAPI {
                 viewModel.getRecommendation()
@@ -46,7 +80,6 @@ struct RecommendationView: View {
                 showResults = true
             }
         }
-        // Using .fullScreenCover for ResultsView from the right version
         .fullScreenCover(isPresented: $showResults) {
             ResultsView(
                 viewModel: viewModel,
@@ -57,32 +90,18 @@ struct RecommendationView: View {
                 initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
             )
         }
-        // Using .sheet for FitGuideView from the left version (includes presentationDetents)
         .sheet(isPresented: $showFitGuide) {
             FitGuideView(showFitGuide: $showFitGuide)
-                .presentationDetents([.fraction(0.75)]) // Kept from left
-                .presentationDragIndicator(.visible) // Kept from left
+                .presentationDetents([.fraction(0.75)])
+                .presentationDragIndicator(.visible)
         }
-        .background(
-            FirstGradientBackground().ignoresSafeArea()
-        )
-        
-        // Using custom OCRErrorModal from the right version
-        if viewModel.showErrorAlert, let error = viewModel.currentError {
-            OCRErrorModal(
-                error: error,
-                onRetry: {
-                    viewModel.resetAllStates()
-                    selectedPhoto = nil
-                    viewModel.selectedImage = nil
-                },
-                isPresented: $viewModel.showErrorAlert
-            )
-            .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
-        }
+        // Animation for state changes in the ZStack
+        .animation(.spring(), value: viewModel.isProcessing)
+        .animation(.spring(), value: viewModel.showErrorAlert)
     }
   
+    // ... (Rest of your subviews: headerSection, formSection, etc. remain exactly the same)
+    
     private var headerSection: some View {
         VStack(spacing: 0) {
             RoolaHeader(
@@ -252,20 +271,15 @@ struct RecommendationView: View {
     }
     
     private var bottomButton: some View {
-        Button {
-            if viewModel.selectedImage != nil {
-                viewModel.processImage()
-                // onChange observers will handle the rest
+        RoolaButton(
+            buttonTitle: "Find your fit",
+            buttonColor: AppColors.primaryPurple,
+            action: {
+                if viewModel.selectedImage != nil {
+                    viewModel.processImage()
+                }
             }
-        } label: {
-            Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
-                .cornerRadius(30)
-        }
+        )
         .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
@@ -292,23 +306,12 @@ struct RecommendationView: View {
         }
     }
     
-    // MARK: - Helper Functions
-    
     private func resetAllFields() {
-        // Reset foto
         viewModel.selectedImage = nil
         selectedPhoto = nil
-        
-        // Reset clothing type
         viewModel.clothingType = ""
-        
-        // Reset fit preference
         fitPreference = ""
-        
-        // Reset all view model states
         viewModel.resetAllStates()
-        
-        print("✅ All fields reset")
     }
 }
 

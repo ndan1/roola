@@ -73,7 +73,7 @@ struct OnboardingFlowView: View {
                                 },
                                 onOpenSettings: openSettings
                             )
-                            .navigationBarHidden(true) // <-- 5. Hide on Permission
+                            .navigationBarHidden(true)
                         }
                     }
                 }
