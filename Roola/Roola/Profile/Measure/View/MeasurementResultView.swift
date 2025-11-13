@@ -86,7 +86,7 @@ struct MeasurementResultView: View {
                             )
                             .frame(width: UIScreen.main.bounds.width * 0.8)
                         }
-                        .padding(.bottom, 50)
+                        .padding(.bottom, UIScreen.main.bounds.height * 0.05)
                     }
                     .padding(.horizontal, 30)
                     .padding(.top,10)

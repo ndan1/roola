@@ -31,8 +31,6 @@ struct RecommendationView: View {
     
     var body: some View {
         ZStack {
-            FirstGradientBackground().ignoresSafeArea()
-            
             VStack(spacing: 0) {
                 headerSection
                 formSection
@@ -127,10 +125,10 @@ struct RecommendationView: View {
                 resetAllFields()
             })
         }
+        // Animation for state changes in the ZStack
+        .animation(.spring(), value: viewModel.isProcessing)
+        .animation(.spring(), value: viewModel.showErrorAlert)
     }
-    
-    // MARK: - Subviews
-    // All subviews below are from the right version (7b2d507...)
     
     private var headerSection: some View {
         VStack(spacing: 0) {
@@ -341,37 +339,16 @@ struct RecommendationView: View {
     }
     
     private var bottomButton: some View {
-        Button {
-            // Validate all fields
-            let hasClothingType = !viewModel.clothingType.isEmpty
-            let hasFitPreference = !fitPreference.isEmpty
-            let hasImage = viewModel.selectedImage != nil
-            
-            // Show errors for empty fields
-            showClothingTypeError = !hasClothingType
-            showFitPreferenceError = !hasFitPreference
-            showImageError = !hasImage
-            
-            // Only proceed if all fields are filled
-            if hasClothingType && hasFitPreference && hasImage {
-                // Check internet connection first
-                if !networkMonitor.isConnected {
-                    showNoInternetModal = true
-                    return
+        RoolaButton(
+            buttonTitle: "Find your fit",
+            buttonColor: AppColors.primaryPurple,
+            action: {
+                if viewModel.selectedImage != nil {
+                    viewModel.processImage()
                 }
-                
-                viewModel.processImage()
             }
-        } label: {
-            Text(viewModel.isProcessing || viewModel.isCallingAPI ? "Processing..." : "Find your fit")
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background((viewModel.isProcessing || viewModel.isCallingAPI) ? Color.gray : AppColors.primaryPurple)
-                .cornerRadius(30)
-        }
-        .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
+        )
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
     }
@@ -397,23 +374,12 @@ struct RecommendationView: View {
         }
     }
     
-    // MARK: - Helper Functions
-    
     private func resetAllFields() {
-        // Reset foto
         viewModel.selectedImage = nil
         selectedPhoto = nil
-        
-        // Reset clothing type
         viewModel.clothingType = ""
-        
-        // Reset fit preference
         fitPreference = ""
-        
-        // Reset all view model states
         viewModel.resetAllStates()
-        
-        print("✅ All fields reset")
     }
 }
 

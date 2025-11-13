@@ -15,11 +15,11 @@ struct OnboardingPage: View {
         VStack(alignment: .leading){
             Text("Let's get your fit right")
                 .font(.heading32Medium)
-                .padding(.top, UIScreen.main.bounds.height * 0.09)
+                .padding(.top, UIScreen.main.bounds.height * 0.065)
             Text("Input your measurements and find your match.")
-                .font(.body16Regular)
-                .lineLimit(2)
+                .font(.body15Regular)
                 .multilineTextAlignment(.leading)
+                .lineLimit(1)
 
             ZStack{
                 Image("GradientStar")
@@ -47,12 +47,18 @@ struct OnboardingPage: View {
 
             
             VStack{
-                RoolaButton(buttonTitle: "Measure with AI", buttonColor: AppColors.primaryPurple, action: {
-                    onAI()
+                RoolaButton(
+                    buttonTitle: "Measure with AI",
+                    buttonColor: AppColors.primaryPurple,
+                    action: {
+                        onAI()
                 })
                     .padding(.bottom, 6)
-                RoolaButton(buttonTitle: "Input Manually", buttonColor: .white, action: {
-                    onInput()
+                RoolaButton(
+                    buttonTitle: "Input Manually",
+                    buttonColor: AppColors.primaryWhite,
+                    action: {
+                        onInput()
                 })
             }
             .padding(.bottom, UIScreen.main.bounds.height * 0.088)

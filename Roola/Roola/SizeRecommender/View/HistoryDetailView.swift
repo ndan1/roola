@@ -106,7 +106,3 @@ struct HistoryDetailView: View {
         }
     }
 }
-
-#Preview {
-    
-}
