@@ -20,78 +20,91 @@ struct RecommendationView: View {
     @State private var showFitGuide = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Using refactored sections from the right version
-            headerSection
-            formSection
-            uploadSection
-            Spacer()
-            bottomButton
-            Color.clear.frame(height: 0)
-        }
-        .ignoresSafeArea(edges: .bottom)
-        .onAppear {
-            if let user = users.first {
-                viewModel.loadUserMeasurements(user: user)
-            }
-        }
-        // Using reactive onChange modifiers from the right version
-        .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
-            if !newValue.isEmpty && !viewModel.isCallingAPI {
-                viewModel.getRecommendation()
-            }
-        }
-        .onChange(of: viewModel.serverResponse) { oldValue, newValue in
-            if newValue != nil && !viewModel.isCallingAPI {
-                showResults = true
-            }
-        }
-        // Using .fullScreenCover for ResultsView from the right version
-        .fullScreenCover(isPresented: $showResults) {
-            ResultsView(
-                viewModel: viewModel,
-                showResults: $showResults,
-                onTryAgain: {
-                    resetAllFields()
-                },
-                initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
-            )
-        }
-        // Using .sheet for FitGuideView from the left version (includes presentationDetents)
-        .sheet(isPresented: $showFitGuide) {
-            FitGuideView(showFitGuide: $showFitGuide)
-                .presentationDetents([.fraction(0.75)]) // Kept from left
-                .presentationDragIndicator(.visible) // Kept from left
-        }
-        .background(
+        ZStack {
             FirstGradientBackground().ignoresSafeArea()
-        )
-        
-        // Using custom OCRErrorModal from the right version
-        if viewModel.showErrorAlert, let error = viewModel.currentError {
-            OCRErrorModal(
-                error: error,
-                onRetry: {
-                    viewModel.resetAllStates()
-                    selectedPhoto = nil
-                    viewModel.selectedImage = nil
-                },
-                isPresented: $viewModel.showErrorAlert
-            )
-            .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
+            
+            VStack(spacing: 0) {
+                headerSection
+                formSection
+                uploadSection
+                Spacer()
+                bottomButton
+                Color.clear.frame(height: 0)
+            }
+            .ignoresSafeArea(edges: .bottom)
+            .onAppear {
+                if let user = users.first {
+                    viewModel.loadUserMeasurements(user: user)
+                }
+            }
+            .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
+                if !newValue.isEmpty && !viewModel.isCallingAPI {
+                    viewModel.getRecommendation()
+                }
+            }
+            .onChange(of: viewModel.serverResponse) { oldValue, newValue in
+                if newValue != nil && !viewModel.isCallingAPI {
+                    showResults = true
+                }
+            }
+            .fullScreenCover(isPresented: $showResults) {
+                ResultsView(
+                    viewModel: viewModel,
+                    showResults: $showResults,
+                    onTryAgain: {
+                        resetAllFields()
+                    },
+                    initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
+                )
+            }
+            .sheet(isPresented: $showFitGuide) {
+                FitGuideView(showFitGuide: $showFitGuide)
+                    .presentationDetents([.fraction(0.75)])
+                    .presentationDragIndicator(.visible)
+            }
+        }
+        .overlay {
+            // OCRErrorModal di-render sebagai overlay untuk memastikan muncul di atas semua konten
+            if viewModel.showErrorAlert, let error = viewModel.currentError {
+                OCRErrorModal(
+                    error: error,
+                    onRetry: {
+                        viewModel.resetAllStates()
+                        selectedPhoto = nil
+                        viewModel.selectedImage = nil
+                    },
+                    isPresented: $viewModel.showErrorAlert
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
+            }
         }
     }
-  
+    
+    // MARK: - Subviews
+    // All subviews below are from the right version (7b2d507...)
+    
     private var headerSection: some View {
         VStack(spacing: 0) {
-            RoolaHeader(
-                title: "Find your fit",
-                onInfo: {
+            Spacer().frame(height: 20)
+            
+            HStack {
+                Text("Find your fit")
+                    .font(.heading32Medium)
+                
+                Spacer()
+                
+                Button(action: {
                     showFitGuide = true
-                },
-                isLargeTitle: true
-            )
+                }) {
+                    Image(systemName: "info.circle")
+                        .font(.title2)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 60)
+            .padding(.bottom, 8)
             
             Text("Fill your product details to get your best match")
                 .font(.body)

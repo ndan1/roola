@@ -32,7 +32,6 @@ class RecommendationViewModel: ObservableObject {
     
     // MARK: - Services
     private let ocrService: LocalOCRService
-//    private let openAIService: OpenAIService
     private let geminiService: GeminiService
     
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
@@ -78,6 +77,7 @@ class RecommendationViewModel: ObservableObject {
         serverResponse = nil
         apiError = nil
         currentError = nil
+        showErrorAlert = false
     }
     
     /// 1. Menjalankan OCR dan ekstraksi AI
@@ -113,9 +113,13 @@ class RecommendationViewModel: ObservableObject {
                 print(jsonResult)
                 
             } catch let error as OCRError {
-                handleError(error)
+                await MainActor.run {
+                    handleError(error)
+                }
             } catch {
-                handleError(OCRError.recognitionFailed) // Error umum
+                await MainActor.run {
+                    handleError(OCRError.recognitionFailed) // Error umum
+                }
                 print("❌ Error: \(error)")
             }
         }
@@ -164,11 +168,14 @@ class RecommendationViewModel: ObservableObject {
     // MARK: - Private Helper Functions
     
     private func handleError(_ error: OCRError) {
+        print("\n🚨 [handleError] Called with error: \(error)")
         recognizedText = "Error: \(error.localizedDescription)"
         currentStep = ""
         isProcessing = false
         currentError = error
         showErrorAlert = true
+        print("🚨 [handleError] showErrorAlert set to: \(showErrorAlert)")
+        print("🚨 [handleError] currentError set to: \(String(describing: currentError))")
     }
     
     private func transformOCRResponseToClothesData(ocrResponse: OCRResponse, clothingType: String) -> ClothesData {
