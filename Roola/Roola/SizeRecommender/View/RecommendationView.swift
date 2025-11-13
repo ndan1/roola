@@ -182,7 +182,7 @@ struct RecommendationView: View {
             )
             
             // Validation errors
-            if showClothingTypeError {
+            if showClothingTypeError || showFitPreferenceError {
                 HStack {
                     Text("• Please fill in this field")
                         .font(.caption)
@@ -191,17 +191,6 @@ struct RecommendationView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
-            }
-            
-            if showFitPreferenceError {
-                HStack {
-                    Text("• Please fill in this field")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, showClothingTypeError ? 4 : 8)
             }
         }
         .padding(.horizontal, 24)
