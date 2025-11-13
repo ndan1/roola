@@ -410,10 +410,13 @@ struct ResultsView: View {
     }
     
     private func getOverallStatus(recommendation: FitRecommendation) -> (isAllGood: Bool, issues: [StatusIssue]) {
+        // Fit hierarchy untuk calculate distance
+        let fitHierarchy = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
+        
         // Group issues by type and severity
         var tooTightParts: [String] = []
         var tooLooseParts: [String] = []
-        var slightlyOffParts: [(part: String, fit: String)] = []
+        var slightlyOffParts: [(part: String, fit: String, distance: Int)] = []
         
         let parts = ["bust", "torso", "arm_length"]
         
@@ -435,14 +438,19 @@ struct ResultsView: View {
             }
             // Check if fit doesn't match preference (slightly off)
             else if let partFit = recommendation.partFits[part], partFit != currentFitPreference {
+                // Calculate distance between fits
+                let currentIndex = fitHierarchy.firstIndex(of: currentFitPreference) ?? 2
+                let partIndex = fitHierarchy.firstIndex(of: partFit) ?? 2
+                let distance = abs(currentIndex - partIndex)
+                
                 let fitDisplay = partFit.replacingOccurrences(of: "-", with: " ").capitalized
-                slightlyOffParts.append((part: displayName, fit: fitDisplay))
+                slightlyOffParts.append((part: displayName, fit: fitDisplay, distance: distance))
             }
         }
         
         var issues: [StatusIssue] = []
         
-        // Combine too tight parts into one message
+        // Combine too tight parts into one message (RED - critical)
         if !tooTightParts.isEmpty {
             let partsText = formatPartsList(tooTightParts)
             issues.append(StatusIssue(
@@ -454,39 +462,66 @@ struct ResultsView: View {
             ))
         }
         
-        // Combine too loose parts into one message
+        // Combine too loose parts into one message (RED - critical)
         if !tooLooseParts.isEmpty {
             let partsText = formatPartsList(tooLooseParts)
             issues.append(StatusIssue(
                 part: "loose",
                 message: "\(partsText) will be too loose for this fit preference",
-                icon: "exclamationmark.circle.fill",
-                iconForeground: .black,
-                iconBackground: Color(hex: "FEC901").opacity(0.5)
+                icon: "xmark.circle.fill",
+                iconForeground: .white,
+                iconBackground: Color.red
             ))
         }
         
-        // Combine slightly off parts by fit type
+        // Group slightly off parts by fit type AND distance
         if !slightlyOffParts.isEmpty {
-            // Group by fit type
-            var groupedByFit: [String: [String]] = [:]
-            for item in slightlyOffParts {
-                if groupedByFit[item.fit] == nil {
-                    groupedByFit[item.fit] = []
+            // Separate by distance: 1 step vs 2+ steps
+            let oneStepOff = slightlyOffParts.filter { $0.distance == 1 }
+            let farOff = slightlyOffParts.filter { $0.distance > 1 }
+            
+            // Process 1-step differences (ORANGE - warning)
+            if !oneStepOff.isEmpty {
+                var groupedByFit: [String: [String]] = [:]
+                for item in oneStepOff {
+                    if groupedByFit[item.fit] == nil {
+                        groupedByFit[item.fit] = []
+                    }
+                    groupedByFit[item.fit]?.append(item.part)
                 }
-                groupedByFit[item.fit]?.append(item.part)
+                
+                for (fitType, parts) in groupedByFit {
+                    let partsText = formatPartsList(parts)
+                    issues.append(StatusIssue(
+                        part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
+                        message: "\(partsText) will be \(fitType)",
+                        icon: "exclamationmark.circle.fill",
+                        iconForeground: .black,
+                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                    ))
+                }
             }
             
-            // Create message for each fit type
-            for (fitType, parts) in groupedByFit {
-                let partsText = formatPartsList(parts)
-                issues.append(StatusIssue(
-                    part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
-                    message: "\(partsText) will be \(fitType)",
-                    icon: "exclamationmark.circle.fill",
-                    iconForeground: .black,
-                    iconBackground: Color(hex: "FEC901").opacity(0.5)
-                ))
+            // Process 2+ step differences (RED - critical)
+            if !farOff.isEmpty {
+                var groupedByFit: [String: [String]] = [:]
+                for item in farOff {
+                    if groupedByFit[item.fit] == nil {
+                        groupedByFit[item.fit] = []
+                    }
+                    groupedByFit[item.fit]?.append(item.part)
+                }
+                
+                for (fitType, parts) in groupedByFit {
+                    let partsText = formatPartsList(parts)
+                    issues.append(StatusIssue(
+                        part: "far-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
+                        message: "\(partsText) will be \(fitType)",
+                        icon: "xmark.circle.fill",
+                        iconForeground: .white,
+                        iconBackground: Color.red
+                    ))
+                }
             }
         }
         
