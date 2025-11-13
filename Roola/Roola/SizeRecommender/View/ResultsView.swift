@@ -195,7 +195,7 @@ struct ResultsView: View {
                                 .overlay(
                                     Text(recommendation.bestSize)
                                         .foregroundColor(.white)
-                                        .font(.system(size: (recommendation.bestSize == "XXL" || recommendation.bestSize == "XXXL") ? 32 : 48))
+                                        .font(.system(size: (recommendation.bestSize == "XXL") ? 28 : recommendation.bestSize == "XXXL" ? 24 : recommendation.bestSize == "All Size" ? 18 : 48))
                                         .fontWeight(.bold)
                                 )
                         }

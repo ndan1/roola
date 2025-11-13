@@ -413,6 +413,15 @@ class RecommendationViewModel: ObservableObject {
                 .filter { $0.value >= MIN_ACCEPTABLE_SCORE }
                 .max { a, b in
                     if abs(a.value - b.value) < 0.01 {
+                        // PERBAIKAN: Jika score sama, pilih yang terdekat dari previousSize
+                        if let minSize = minimumSize {
+                            let distA = abs((SIZE_ORDER[a.key.uppercased()] ?? 0) - (SIZE_ORDER[minSize.uppercased()] ?? 0))
+                            let distB = abs((SIZE_ORDER[b.key.uppercased()] ?? 0) - (SIZE_ORDER[minSize.uppercased()] ?? 0))
+                            if distA != distB {
+                                return distA > distB // Prefer closer to previousSize
+                            }
+                        }
+                        // Fallback: gunakan preference
                         if desired_fit.contains("loose") {
                             return compareSizes(a.key, b.key)
                         } else {
