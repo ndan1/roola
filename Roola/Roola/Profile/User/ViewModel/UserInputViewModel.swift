@@ -14,11 +14,8 @@ final class UserInputViewModel: ObservableObject {
     @Published var torso: Int?
     @Published var armsLength: Int?
 
-    @Published var showingAlert = false
-    @Published private(set) var alertTitle = ""
-    @Published private(set) var alertMessage = ""
-
-    @Published var shouldDismiss = false
+    // Replaced generic alert with specific success state
+    @Published var showSuccessPopup = false
     @Published private(set) var hasAttemptedSave = false
 
     // MARK: - Load
@@ -53,16 +50,7 @@ final class UserInputViewModel: ObservableObject {
         return !hasError
     }
 
-    func showSaveSuccess() {
-        alertTitle = "Success"
-        alertMessage = "Your measurements have been saved successfully!"
-        showingAlert = true
-        shouldDismiss = true
-    }
-
-    func showSaveError(_ error: Error) {
-        alertTitle = "Error"
-        alertMessage = "Failed to save data: \(error.localizedDescription)"
-        showingAlert = true
+    func triggerSuccess() {
+        showSuccessPopup = true
     }
 }
