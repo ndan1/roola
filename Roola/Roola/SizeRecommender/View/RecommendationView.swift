@@ -44,7 +44,11 @@ struct RecommendationView: View {
                 if let user = users.first {
                     viewModel.loadUserMeasurements(user: user)
                 }
-            }
+            } // <-- 1. Closed .onAppear block
+            .background( // <-- 2. .background now correctly modifies the VStack
+                FirstGradientBackground().ignoresSafeArea()
+            )
+            // 3. All these modifiers are now correctly attached to the VStack
             .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
                 if !newValue.isEmpty && !viewModel.isCallingAPI {
                     viewModel.getRecommendation()
@@ -89,6 +93,21 @@ struct RecommendationView: View {
                 FitGuideView(showFitGuide: $showFitGuide)
                     .presentationDetents([.fraction(0.75)])
                     .presentationDragIndicator(.visible)
+            }
+            
+            // 4. This block is now a sibling to the VStack, correctly overlaying it
+            if viewModel.isProcessing {
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                
+                ProgressLoading(
+                    title: "Hang Tight...",
+                    subtitle: "We're tailoring this for you.",
+                    duration: 3.0
+                )
+                .zIndex(1)
+                .transition(.scale.combined(with: .opacity))
             }
         }
         .overlay {
