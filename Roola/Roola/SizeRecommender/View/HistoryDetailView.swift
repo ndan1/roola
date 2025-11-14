@@ -9,18 +9,18 @@ import SwiftUI
 import SwiftData
 import Foundation
 
-// MARK: - History Detail View
-
 struct HistoryDetailView: View {
     let history: MeasurementHistory
     
     @StateObject private var viewModel = RecommendationViewModel()
     @State private var isLoading = true
     @State private var loadError: String?
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
             FirstGradientBackground()
+                .ignoresSafeArea()
             
             if isLoading {
                 VStack(spacing: 16) {
@@ -46,7 +46,6 @@ struct HistoryDetailView: View {
                 }
                 .padding()
             } else if viewModel.serverResponse != nil {
-                // Show ResultsView with isFromHistory = true (no buttons)
                 ResultsView(
                     viewModel: viewModel,
                     showResults: .constant(true),
@@ -54,14 +53,14 @@ struct HistoryDetailView: View {
                     initialFitPreference: history.selectedFitPreference,
                     isFromHistory: true
                 )
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationBarBackButtonHidden(true)
             }
         }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .tabBar)  // Hide tab bar in detail view
         .onAppear {
             loadHistoryData()
         }
-        .toolbar(.hidden, for: .tabBar)
     }
     
     private func loadHistoryData() {
@@ -105,8 +104,4 @@ struct HistoryDetailView: View {
             isLoading = false
         }
     }
-}
-
-#Preview {
-    
 }

@@ -46,7 +46,7 @@ struct ResultsView: View {
     
     var body: some View {
         ZStack {
-            FirstGradientBackground()
+            FirstGradientBackground().ignoresSafeArea()
             
             if viewModel.isCallingAPI {
                 ProgressView("Calculating Recommendations...")
@@ -184,7 +184,7 @@ struct ResultsView: View {
                         
                         Spacer()
                     }
-                    .padding(.top, isFromHistory ? 64 : 42)
+                    .padding(.top, isFromHistory ? 56 : 42)
                     
                     VStack(alignment: .center) {
                         // Size Badge
