@@ -39,8 +39,8 @@ struct RecommendationView: View {
                     .transition(.opacity)
                 
                 ProgressLoading(
-                    title: "Analyzing Chart",
-                    subtitle: viewModel.currentStep,
+                    title: "Hang Tight...",
+                    subtitle: "We're tailoring this for you.",
                     duration: 3.0
                 )
                 .zIndex(1)
@@ -99,8 +99,6 @@ struct RecommendationView: View {
         .animation(.spring(), value: viewModel.isProcessing)
         .animation(.spring(), value: viewModel.showErrorAlert)
     }
-  
-    // ... (Rest of your subviews: headerSection, formSection, etc. remain exactly the same)
     
     private var headerSection: some View {
         VStack(spacing: 0) {
