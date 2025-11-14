@@ -61,6 +61,7 @@ struct HistoryDetailView: View {
         .onAppear {
             loadHistoryData()
         }
+        .toolbar(.hidden, for: .tabBar)
     }
     
     private func loadHistoryData() {
