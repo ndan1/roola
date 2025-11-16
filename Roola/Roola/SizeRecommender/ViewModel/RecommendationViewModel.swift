@@ -84,32 +84,35 @@ class RecommendationViewModel: ObservableObject {
     func processImage() {
         guard let image = selectedImage else { return }
         
-        // 1. Start Loading
-        isProcessing = true
-        currentStep = "Running OCR..."
+        // Reset states (but don't start loading yet)
+        currentStep = ""
         serverResponse = nil
         apiError = nil
         
         Task {
-            // 2. Ensure loading stops when function finishes (Success or Failure)
-            defer {
-                self.isProcessing = false
-            }
-            
             do {
-                // Step A: OCR
+                // Step A: OCR (without showing loading yet)
                 let ocrResult = try await ocrService.performOCR(on: image)
                 
                 self.recognizedText = ocrResult
-                self.currentStep = "Validating size chart..." // Update Text on Loading Screen
                 
                 print("\n📝 OCR Result:")
                 print(ocrResult)
                 
+                // Validate OCR text first (this may throw OCRError)
                 try await ocrService.validateOCRText(ocrResult)
                 
+                // If validation passes, NOW show loading
+                self.isProcessing = true
+                self.currentStep = "Validating size chart..."
+                
+                // Ensure loading stops when function finishes
+                defer {
+                    self.isProcessing = false
+                }
+                
                 // Step B: Gemini API
-                self.currentStep = "Analyzing with AI..." // Update Text on Loading Screen
+                self.currentStep = "Analyzing with AI..."
                 
                 let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 

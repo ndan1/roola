@@ -362,14 +362,51 @@ struct RecommendationView: View {
             buttonTitle: "Find your fit",
             buttonColor: AppColors.primaryPurple,
             action: {
-                if viewModel.selectedImage != nil {
-                    viewModel.processImage()
-                }
+                handleFindYourFit()
             }
         )
-        .disabled(viewModel.isProcessing || viewModel.isCallingAPI || viewModel.selectedImage == nil)
+        .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
+    }
+    
+    private func handleFindYourFit() {
+        // Reset error states
+        showClothingTypeError = false
+        showFitPreferenceError = false
+        showImageError = false
+        
+        // Validate inputs
+        var hasError = false
+        
+        if viewModel.clothingType.isEmpty {
+            showClothingTypeError = true
+            hasError = true
+        }
+        
+        if fitPreference.isEmpty {
+            showFitPreferenceError = true
+            hasError = true
+        }
+        
+        if viewModel.selectedImage == nil {
+            showImageError = true
+            hasError = true
+        }
+        
+        // If there are validation errors, don't proceed
+        if hasError {
+            return
+        }
+        
+        // Check internet connection
+        if !networkMonitor.isConnected {
+            showNoInternetModal = true
+            return
+        }
+        
+        // All validations passed, process the image
+        viewModel.processImage()
     }
     
     private var displayClothingType: String {
