@@ -11,12 +11,14 @@ import AVFoundation
 
 struct OnboardingFlowView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var users: [User]
     @Query private var history: [MeasurementHistory]
     @Binding var isOnboardingComplete: Bool
     
     // Navigation inside the flow
     @State private var path = NavigationPath()
+    @State private var isReturningFromSettings = false
     
     init(isOnboardingComplete: Binding<Bool>) {
         self._isOnboardingComplete = isOnboardingComplete
@@ -80,6 +82,22 @@ struct OnboardingFlowView: View {
             }
         }
         .animation(.easeInOut, value: users.isEmpty)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // Detect when app returns from background (Settings)
+            if oldPhase == .background && newPhase == .active {
+                print("🔄 [OnboardingFlow] App returned from background")
+                isReturningFromSettings = true
+                
+                // Check if we're on permission denied screen and reset navigation
+                if !path.isEmpty {
+                    // Clear navigation stack safely to prevent crash
+                    DispatchQueue.main.async {
+                        path = NavigationPath()
+                        print("✅ [OnboardingFlow] Navigation path reset")
+                    }
+                }
+            }
+        }
     }
     
     private func saveUser(_ user: User) {
