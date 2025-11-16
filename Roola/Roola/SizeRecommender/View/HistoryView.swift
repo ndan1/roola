@@ -59,7 +59,7 @@ struct HistoryView: View {
                                     .foregroundColor(AppColors.primaryPurple)
                             }
                             .buttonStyle(.plain)
-                            .padding(.trailing, 16)
+                            .padding(.trailing, 18)
                         }
                         
                         ScrollView {
@@ -71,7 +71,7 @@ struct HistoryView: View {
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, 20)
                             .padding(.vertical, 12)
                         }
                     }
@@ -191,7 +191,7 @@ struct HistoryCard: View {
                 Text(formatDate(history.createdAt))
                     .font(.caption)
                     .foregroundColor(.gray)
-                
+                Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.gray)

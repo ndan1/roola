@@ -165,26 +165,30 @@ struct ResultsView: View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack (spacing: 8){
+                    HStack (alignment: .center, spacing: 8){
                         if isFromHistory {
                             Button(action: {
                                 dismiss()
                             }) {
-                                Image(systemName: "chevron.backward.circle.fill")
-                                    .symbolRenderingMode(.palette)
-                                    .font(.system(size: 38))
-                                    .foregroundStyle(Color(AppColors.primaryPurple), Color(AppColors.primaryWhite).opacity(0.5))
+                                Image(systemName: "chevron.left.circle.fill")
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .foregroundColor(AppColors.primaryWhite)
+                                    .background(
+                                        Circle()
+                                            .fill(AppColors.primaryPurple)
+                                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    )
                             }
-                            .padding(.top, 8)
+//                            .padding(.top, 8)
                         }
                         
                         Text("Recommended Size")
-                            .font(.heading32Medium)
-                            .fontWeight(.medium)
+                            .font(isFromHistory ? .heading24Medium : .heading32Medium )
                         
                         Spacer()
                     }
-                    .padding(.top, isFromHistory ? 56 : 42)
+                    .padding(.top, 60)
                     
                     VStack(alignment: .center) {
                         // Size Badge
@@ -204,13 +208,17 @@ struct ResultsView: View {
                         .zIndex(1)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Fit Preference")
-                                .font(.body16Regular)
-                            
                             if recommendation.bestScore < 30 {
-                                Text("This fit preference may not be ideal for your measurements")
+                                Text("Looser fit may not be available for this item")
+                                    .font(.caption14Italic)
+                                    .foregroundColor(AppColors.grayScale300)
+                            }
+                            else{
+                                Text("")
                                     .font(.caption14Italic)
                             }
+                            Text("Fit Preference")
+                                .font(.body16Regular)
                             
                             SliderWithLabels(sliderValue: $sliderValue)
                                 .padding(.horizontal, -16)

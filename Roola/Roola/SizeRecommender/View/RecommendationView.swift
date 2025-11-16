@@ -151,26 +151,13 @@ struct RecommendationView: View {
     
     private var headerSection: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 20)
-            
-            HStack {
-                Text("Find your fit")
-                    .font(.heading32Medium)
-                
-                Spacer()
-                
-                Button(action: {
+            RoolaHeader(
+                title: "Find your fit",
+                onInfo: {
                     showFitGuide = true
-                }) {
-                    Image(systemName: "info.circle")
-                        .font(.title2)
-                        .foregroundColor(AppColors.primaryPurple)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 60)
-            .padding(.bottom, 8)
-            
+                },
+                isLargeTitle: true
+            )
             Text("Fill your product details to get your best match")
                 .font(.body)
                 .foregroundColor(.primary)
@@ -202,7 +189,7 @@ struct RecommendationView: View {
             if showClothingTypeError || showFitPreferenceError {
                 HStack {
                     Text("• Please fill in this field")
-                        .font(.caption)
+                        .font(.body14Regular)
                         .foregroundColor(.red)
                     Spacer()
                 }

@@ -40,7 +40,7 @@ struct MeasurementRow: View {
                 .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(AppColors.primaryWhite)
+        .background(AppColors.primaryWhite.opacity(0.5))
         .overlay(
             Rectangle()
                 .stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
@@ -81,7 +81,7 @@ struct TopMeasurementRow: View {
                 .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(AppColors.primaryWhite)
+        .background(AppColors.primaryWhite.opacity(0.5))
         .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
         
         .overlay(
@@ -140,7 +140,7 @@ struct BottomMeasurementRow: View {
                 .foregroundColor(AppColors.grayScale300)
         }
         .padding()
-        .background(AppColors.primaryWhite)
+        .background(AppColors.primaryWhite.opacity(0.5))
         .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
         .overlay(
             RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
@@ -161,13 +161,12 @@ struct BottomMeasurementRow: View {
         
         // State for the "error" card
         @State private var topErrValue: Int? = nil
-        @State private var midErrValue: Int? = 300 // Error value
+        @State private var midErrValue: Int? = 300
         @State private var botErrValue: Int? = 40
         
         var body: some View {
             VStack(spacing: 30) {
                 
-                // --- EXAMPLE 1: NORMAL STATE ---
                 VStack(spacing: 0) {
                     TopMeasurementRow(label: "Chest", value: $topValue)
                     Divider()
@@ -177,18 +176,16 @@ struct BottomMeasurementRow: View {
                     Divider()
                     BottomMeasurementRow(label: "Arm Length", value: $botValue)
                 }
-                .cornerRadius(12) // Apply corner radius to the whole stack
+                .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .stroke(AppColors.grayScale300, lineWidth: 1)
                 )
             }
             .padding()
-            .background(Color.gray.opacity(0.1))
         }
     }
     
     // This tells the preview to show our wrapper
     return PreviewWrapper()
 }
-

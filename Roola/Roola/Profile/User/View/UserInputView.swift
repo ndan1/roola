@@ -111,7 +111,7 @@ private extension UserInputView {
                 .frame(width: UIScreen.main.bounds.width * 0.85)
                 .padding(.bottom, 25)
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, 20)
             .padding(.top, 10)
         }
     }
@@ -142,11 +142,22 @@ private extension UserInputView {
                     
                     Spacer()
 
-                    RoolaButton(buttonTitle: "Update",
-                                buttonColor: AppColors.primaryPurple,
-                                action: saveUser)
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 40)
+                    VStack (spacing: 20){
+                        RoolaButton(
+                            buttonTitle: "Update",
+                            buttonColor: AppColors.primaryPurple,
+                            action: saveUser
+                        )
+                        RoolaButton(
+                            buttonTitle: "Cancel",
+                            buttonColor: AppColors.primaryWhite,
+                            action: {
+                                isEditing = false
+                            }
+                        )
+                    }
+                    .frame(width: UIScreen.main.bounds.width * 0.85)
+                    .padding(.bottom, 25)
                 } else {
                     MeasurementListView(
                         items: [
@@ -158,7 +169,7 @@ private extension UserInputView {
                     )
                     Spacer()
                     
-                    VStack(spacing:10){
+                    VStack(spacing:20){
                         RoolaButton(
                             buttonTitle: "Measure with AI",
                             buttonColor: AppColors.primaryPurple,
@@ -181,7 +192,7 @@ private extension UserInputView {
                     .padding(.bottom, 25)
                 }
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, 20)
             .padding(.top, 10)
         }
     }
@@ -234,7 +245,6 @@ private extension UserInputView {
         
         try? modelContext.save()
         
-        // Trigger the view state; the View will handle the timer via .onAppear
         withAnimation {
             viewModel.triggerSuccess()
         }
