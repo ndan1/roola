@@ -143,9 +143,9 @@ struct BottomMeasurementRow: View {
         .background(AppColors.primaryWhite)
         .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
         .overlay(
-                    RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
-                        .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
-                )
+            RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
+                .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+        )
     }
 }
 
@@ -170,6 +170,8 @@ struct BottomMeasurementRow: View {
                 // --- EXAMPLE 1: NORMAL STATE ---
                 VStack(spacing: 0) {
                     TopMeasurementRow(label: "Chest", value: $topValue)
+                    Divider()
+                    MeasurementRow(label: "Waist", value: $midValue)
                     Divider()
                     MeasurementRow(label: "Waist", value: $midValue)
                     Divider()

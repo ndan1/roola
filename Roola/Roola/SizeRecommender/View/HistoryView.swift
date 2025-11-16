@@ -14,7 +14,6 @@ struct HistoryView: View {
     @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var allHistories: [MeasurementHistory]
     
     @State private var showSortSheet = false
-    
     @State private var selectedSort = "Last 7 days"
     
     private var filteredHistories: [MeasurementHistory] {
@@ -23,20 +22,16 @@ struct HistoryView: View {
         
         switch selectedSort {
         case "Newest":
-            return allHistories // Already sorted by the @Query
+            return allHistories
         case "Last 7 days":
-            // Calculate the date 7 days ago
             guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else {
                 return allHistories
             }
-            // Filter histories created on or after 7 days ago
             return allHistories.filter { $0.createdAt >= sevenDaysAgo }
         case "Last 30 days":
-            // Calculate the date 30 days ago
             guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) else {
                 return allHistories
             }
-            // Filter histories created on or after 30 days ago
             return allHistories.filter { $0.createdAt >= thirtyDaysAgo }
         default:
             return allHistories
@@ -44,13 +39,13 @@ struct HistoryView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 if allHistories.isEmpty {
                     EmptyHistoryView()
                 } else {
-                    VStack{
-                        HStack{
+                    VStack {
+                        HStack {
                             RoolaHeader(
                                 title: "History",
                                 isLargeTitle: true
@@ -74,24 +69,16 @@ struct HistoryView: View {
                                         HistoryCard(history: history)
                                     }
                                     .buttonStyle(PlainButtonStyle())
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button(role: .destructive) {
-                                            deleteHistory(history)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
                                 }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
-                        .navigationBarHidden(true)
-                        .navigationTitle("")
                     }
                 }
             }
             .background(FirstGradientBackground().ignoresSafeArea())
+            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showSortSheet) {
             SortSheet(selectedSort: $selectedSort)
@@ -99,7 +86,6 @@ struct HistoryView: View {
         }
     }
     
-    /// Deletes a history item from the model context
     private func deleteHistory(_ history: MeasurementHistory) {
         modelContext.delete(history)
         
