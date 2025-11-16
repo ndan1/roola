@@ -7,56 +7,17 @@
 
 import SwiftUI
 
-struct MeasurementRow: View {
+struct MeasurementField: View {
     var label: String
-    var unit = "cm"
+    var unit: String = "cm"
     @Binding var value: Int?
     var isError: Bool = false
-
-    var body: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(.body16Regular)
-                if isError {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.body16Regular)
-                        .foregroundColor(AppColors.errorRed)
-                } else {
-                    EmptyView()
-                }
-            }
-
-            Spacer()
-
-            TextField("", value: $value, format: .number)
-                .font(.body16Regular)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 80)
-
-            Text(unit)
-                .font(.body16Regular)
-                .foregroundColor(AppColors.grayScale300)
-        }
-        .padding()
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .overlay(
-            Rectangle()
-                .stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
-        )
-    }
-}
-
-struct TopMeasurementRow: View {
-    var label: String
-    var unit = "cm"
-    @Binding var value: Int?
-    var isError: Bool = false
-    var cornerRadius: CGFloat = 12
+    
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         HStack {
+            // LEFT SECTION
             HStack(spacing: 4) {
                 Text(label)
                     .font(.body16Regular)
@@ -70,26 +31,62 @@ struct TopMeasurementRow: View {
             
             Spacer()
             
-            TextField("", value: $value, format: .number)
-                .font(.body16Regular)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 80)
-            
-            Text(unit)
-                .font(.body16Regular)
-                .foregroundColor(AppColors.grayScale300)
+            // RIGHT SECTION (tappable)
+            HStack(spacing: 4) {
+                TextField("", value: $value, format: .number)
+                    .font(.body16Regular)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .focused($isFocused)
+
+                Text(unit)
+                    .font(.body16Regular)
+                    .foregroundColor(AppColors.grayScale300)
+            }
+            .frame(width: 120, alignment: .trailing)
+            .contentShape(Rectangle())      // Enlarges tappable area
+            .onTapGesture {
+                isFocused = true            // Makes tapping “cm” focus the TextField
+            }
         }
         .padding()
         .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
-        
-        .overlay(
-            RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
-                .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
-        )
     }
 }
+
+
+struct MeasurementRow: View {
+    var label: String
+    var unit: String = "cm"
+    @Binding var value: Int?
+    var isError: Bool = false
+
+    var body: some View {
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+            .overlay(
+                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
+            )
+    }
+}
+
+
+struct TopMeasurementRow: View {
+    var label: String
+    var unit: String = "cm"
+    @Binding var value: Int?
+    var isError: Bool = false
+    var cornerRadius: CGFloat = 12
+
+    var body: some View {
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+            .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
+            .overlay(
+                RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
+                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+            )
+    }
+}
+
 
 extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
@@ -109,47 +106,20 @@ struct RoundedCorner: Shape {
 }
 struct BottomMeasurementRow: View {
     var label: String
-    var unit = "cm"
+    var unit: String = "cm"
     @Binding var value: Int?
     var isError: Bool = false
     var cornerRadius: CGFloat = 12
-    
+
     var body: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(.body16Regular)
-                
-                if isError {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.body16Regular)
-                        .foregroundColor(AppColors.errorRed)
-                }
-            }
-            
-            Spacer()
-            
-            TextField("", value: $value, format: .number)
-                .font(.body16Regular)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 80)
-            
-            Text(unit)
-                .font(.body16Regular)
-                .foregroundColor(AppColors.grayScale300)
-        }
-        .padding()
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
-        .overlay(
-            RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
-                .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
-        )
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+            .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
+            .overlay(
+                RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
+                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+            )
     }
 }
-
-
 
 #Preview {
     
