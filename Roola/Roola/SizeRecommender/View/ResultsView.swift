@@ -46,7 +46,7 @@ struct ResultsView: View {
     
     var body: some View {
         ZStack {
-            FirstGradientBackground()
+            FirstGradientBackground().ignoresSafeArea()
             
             if viewModel.isCallingAPI {
                 ProgressView("Calculating Recommendations...")
@@ -165,26 +165,30 @@ struct ResultsView: View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack (spacing: 8){
+                    HStack (alignment: .center, spacing: 8){
                         if isFromHistory {
                             Button(action: {
                                 dismiss()
                             }) {
-                                Image(systemName: "chevron.backward.circle.fill")
-                                    .symbolRenderingMode(.palette)
-                                    .font(.system(size: 38))
-                                    .foregroundStyle(Color(AppColors.primaryPurple), Color(AppColors.primaryWhite).opacity(0.5))
+                                Image(systemName: "chevron.left.circle.fill")
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .foregroundColor(AppColors.primaryWhite)
+                                    .background(
+                                        Circle()
+                                            .fill(AppColors.primaryPurple)
+                                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    )
                             }
-                            .padding(.top, 8)
+//                            .padding(.top, 8)
                         }
                         
                         Text("Recommended Size")
-                            .font(.heading32Medium)
-                            .fontWeight(.medium)
+                            .font(isFromHistory ? .heading24Medium : .heading32Medium )
                         
                         Spacer()
                     }
-                    .padding(.top, isFromHistory ? 64 : 42)
+                    .padding(.top, 60)
                     
                     VStack(alignment: .center) {
                         // Size Badge
@@ -195,7 +199,7 @@ struct ResultsView: View {
                                 .overlay(
                                     Text(recommendation.bestSize)
                                         .foregroundColor(.white)
-                                        .font(.system(size: (recommendation.bestSize == "XXL" || recommendation.bestSize == "XXXL") ? 32 : 48))
+                                        .font(.system(size: (recommendation.bestSize == "XXL") ? 28 : recommendation.bestSize == "XXXL" ? 24 : recommendation.bestSize == "All Size" ? 18 : 48))
                                         .fontWeight(.bold)
                                 )
                         }
@@ -204,13 +208,17 @@ struct ResultsView: View {
                         .zIndex(1)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Fit Preference")
-                                .font(.body16Regular)
-                            
                             if recommendation.bestScore < 30 {
-                                Text("This fit preference may not be ideal for your measurements")
+                                Text("Looser fit may not be available for this item")
+                                    .font(.caption14Italic)
+                                    .foregroundColor(AppColors.grayScale300)
+                            }
+                            else{
+                                Text("")
                                     .font(.caption14Italic)
                             }
+                            Text("Fit Preference")
+                                .font(.body16Regular)
                             
                             SliderWithLabels(sliderValue: $sliderValue)
                                 .padding(.horizontal, -16)
@@ -410,10 +418,13 @@ struct ResultsView: View {
     }
     
     private func getOverallStatus(recommendation: FitRecommendation) -> (isAllGood: Bool, issues: [StatusIssue]) {
+        // Fit hierarchy untuk calculate distance
+        let fitHierarchy = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
+        
         // Group issues by type and severity
         var tooTightParts: [String] = []
         var tooLooseParts: [String] = []
-        var slightlyOffParts: [(part: String, fit: String)] = []
+        var slightlyOffParts: [(part: String, fit: String, distance: Int)] = []
         
         let parts = ["bust", "torso", "arm_length"]
         
@@ -435,14 +446,19 @@ struct ResultsView: View {
             }
             // Check if fit doesn't match preference (slightly off)
             else if let partFit = recommendation.partFits[part], partFit != currentFitPreference {
+                // Calculate distance between fits
+                let currentIndex = fitHierarchy.firstIndex(of: currentFitPreference) ?? 2
+                let partIndex = fitHierarchy.firstIndex(of: partFit) ?? 2
+                let distance = abs(currentIndex - partIndex)
+                
                 let fitDisplay = partFit.replacingOccurrences(of: "-", with: " ").capitalized
-                slightlyOffParts.append((part: displayName, fit: fitDisplay))
+                slightlyOffParts.append((part: displayName, fit: fitDisplay, distance: distance))
             }
         }
         
         var issues: [StatusIssue] = []
         
-        // Combine too tight parts into one message
+        // Combine too tight parts into one message (RED - critical)
         if !tooTightParts.isEmpty {
             let partsText = formatPartsList(tooTightParts)
             issues.append(StatusIssue(
@@ -454,39 +470,66 @@ struct ResultsView: View {
             ))
         }
         
-        // Combine too loose parts into one message
+        // Combine too loose parts into one message (RED - critical)
         if !tooLooseParts.isEmpty {
             let partsText = formatPartsList(tooLooseParts)
             issues.append(StatusIssue(
                 part: "loose",
                 message: "\(partsText) will be too loose for this fit preference",
-                icon: "exclamationmark.circle.fill",
-                iconForeground: .black,
-                iconBackground: Color(hex: "FEC901").opacity(0.5)
+                icon: "xmark.circle.fill",
+                iconForeground: .white,
+                iconBackground: Color.red
             ))
         }
         
-        // Combine slightly off parts by fit type
+        // Group slightly off parts by fit type AND distance
         if !slightlyOffParts.isEmpty {
-            // Group by fit type
-            var groupedByFit: [String: [String]] = [:]
-            for item in slightlyOffParts {
-                if groupedByFit[item.fit] == nil {
-                    groupedByFit[item.fit] = []
+            // Separate by distance: 1 step vs 2+ steps
+            let oneStepOff = slightlyOffParts.filter { $0.distance == 1 }
+            let farOff = slightlyOffParts.filter { $0.distance > 1 }
+            
+            // Process 1-step differences (ORANGE - warning)
+            if !oneStepOff.isEmpty {
+                var groupedByFit: [String: [String]] = [:]
+                for item in oneStepOff {
+                    if groupedByFit[item.fit] == nil {
+                        groupedByFit[item.fit] = []
+                    }
+                    groupedByFit[item.fit]?.append(item.part)
                 }
-                groupedByFit[item.fit]?.append(item.part)
+                
+                for (fitType, parts) in groupedByFit {
+                    let partsText = formatPartsList(parts)
+                    issues.append(StatusIssue(
+                        part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
+                        message: "\(partsText) will be \(fitType)",
+                        icon: "exclamationmark.circle.fill",
+                        iconForeground: .black,
+                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                    ))
+                }
             }
             
-            // Create message for each fit type
-            for (fitType, parts) in groupedByFit {
-                let partsText = formatPartsList(parts)
-                issues.append(StatusIssue(
-                    part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
-                    message: "\(partsText) will be \(fitType)",
-                    icon: "exclamationmark.circle.fill",
-                    iconForeground: .black,
-                    iconBackground: Color(hex: "FEC901").opacity(0.5)
-                ))
+            // Process 2+ step differences (RED - critical)
+            if !farOff.isEmpty {
+                var groupedByFit: [String: [String]] = [:]
+                for item in farOff {
+                    if groupedByFit[item.fit] == nil {
+                        groupedByFit[item.fit] = []
+                    }
+                    groupedByFit[item.fit]?.append(item.part)
+                }
+                
+                for (fitType, parts) in groupedByFit {
+                    let partsText = formatPartsList(parts)
+                    issues.append(StatusIssue(
+                        part: "far-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
+                        message: "\(partsText) will be \(fitType)",
+                        icon: "xmark.circle.fill",
+                        iconForeground: .white,
+                        iconBackground: Color.red
+                    ))
+                }
             }
         }
         

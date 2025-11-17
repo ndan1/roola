@@ -32,13 +32,12 @@ class RecommendationViewModel: ObservableObject {
     
     // MARK: - Services
     private let ocrService: LocalOCRService
-//    private let openAIService: OpenAIService
     private let geminiService: GeminiService
     
     private let ALL_FITS = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
     
     // MINIMUM SCORE THRESHOLD - Rekomendasi harus punya score minimal 30%
-    private let MIN_ACCEPTABLE_SCORE = 30.0
+    private let MIN_ACCEPTABLE_SCORE = 20.0
 
     init() {
         self.ocrService = LocalOCRService()
@@ -78,44 +77,59 @@ class RecommendationViewModel: ObservableObject {
         serverResponse = nil
         apiError = nil
         currentError = nil
+        showErrorAlert = false
     }
     
     /// 1. Menjalankan OCR dan ekstraksi AI
     func processImage() {
         guard let image = selectedImage else { return }
         
-        isProcessing = true
-        currentStep = "Running OCR..."
+        // Reset states (but don't start loading yet)
+        currentStep = ""
         serverResponse = nil
         apiError = nil
         
         Task {
             do {
+                // Step A: OCR (without showing loading yet)
                 let ocrResult = try await ocrService.performOCR(on: image)
                 
                 self.recognizedText = ocrResult
-                self.currentStep = "Validating size chart..."
                 
                 print("\n📝 OCR Result:")
                 print(ocrResult)
                 
+                // Validate OCR text first (this may throw OCRError)
                 try await ocrService.validateOCRText(ocrResult)
                 
-                self.currentStep = "Sending to Gemini API..."
+                // If validation passes, NOW show loading
+                self.isProcessing = true
+                self.currentStep = "Validating size chart..."
+                
+                // Ensure loading stops when function finishes
+                defer {
+                    self.isProcessing = false
+                }
+                
+                // Step B: Gemini API
+                self.currentStep = "Analyzing with AI..."
                 
                 let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 
                 self.extractedJSON = jsonResult
-                self.currentStep = ""
-                self.isProcessing = false
+                self.currentStep = "Finalizing..."
 
                 print("\n✅ Final JSON Result:")
                 print(jsonResult)
                 
+                // Note: isProcessing becomes false automatically via 'defer' here
+                
             } catch let error as OCRError {
-                handleError(error)
+                await MainActor.run {
+                    handleError(error)
+                }
             } catch {
-                handleError(OCRError.recognitionFailed) // Error umum
+                handleError(OCRError.recognitionFailed)
                 print("❌ Error: \(error)")
             }
         }
@@ -164,11 +178,14 @@ class RecommendationViewModel: ObservableObject {
     // MARK: - Private Helper Functions
     
     private func handleError(_ error: OCRError) {
+        print("\n🚨 [handleError] Called with error: \(error)")
         recognizedText = "Error: \(error.localizedDescription)"
         currentStep = ""
         isProcessing = false
         currentError = error
         showErrorAlert = true
+        print("🚨 [handleError] showErrorAlert set to: \(showErrorAlert)")
+        print("🚨 [handleError] currentError set to: \(String(describing: currentError))")
     }
     
     private func transformOCRResponseToClothesData(ocrResponse: OCRResponse, clothingType: String) -> ClothesData {
@@ -383,60 +400,91 @@ class RecommendationViewModel: ObservableObject {
             print("   \(size.padding(toLength: 5, withPad: " ", startingAt: 0)): \(String(format: "%.2f", score))%")
         }
         
-        // CONSTRAINT: Filter sizes yang >= minimumSize (untuk menjaga hierarki fit)
-        var eligibleSizes = sizeScores
-        if let minSize = minimumSize {
-            eligibleSizes = sizeScores.filter { size, _ in
-                compareSizes(minSize, size) || minSize == size // size >= minSize
-            }
-            
-            if eligibleSizes.isEmpty {
-                print("⚠️ [DEBUG] No sizes meet minimum constraint ('\(minSize)'). Using minimum size.")
-                eligibleSizes = [minSize: sizeScores[minSize] ?? 0]
-            } else if eligibleSizes.count < sizeScores.count {
-                print("🔒 [DEBUG] Constraint applied: size must be >= '\(minSize)' (filtered \(sizeScores.count - eligibleSizes.count) smaller sizes)")
-            }
-        }
-
         let bestSize: String?
-        let hasGoodScore = eligibleSizes.values.contains(where: { $0 >= MIN_ACCEPTABLE_SCORE })
+        let hasGoodScore = sizeScores.values.contains(where: { $0 >= MIN_ACCEPTABLE_SCORE })
         
         if hasGoodScore {
+            // ✅ Ada size dengan score bagus (>= 30%), terapkan constraint ordering
+            var eligibleSizes = sizeScores
+            if let minSize = minimumSize {
+                eligibleSizes = sizeScores.filter { size, _ in
+                    compareSizes(minSize, size) || minSize == size // size >= minSize
+                }
+                
+                if eligibleSizes.isEmpty {
+                    print("⚠️ [DEBUG] No sizes meet minimum constraint ('\(minSize)'). Using minimum size.")
+                    eligibleSizes = [minSize: sizeScores[minSize] ?? 0]
+                } else if eligibleSizes.count < sizeScores.count {
+                    print("🔒 [DEBUG] Constraint applied: size must be >= '\(minSize)' (filtered \(sizeScores.count - eligibleSizes.count) smaller sizes)")
+                }
+            }
+            
             bestSize = eligibleSizes
                 .filter { $0.value >= MIN_ACCEPTABLE_SCORE }
                 .max { a, b in
                     if abs(a.value - b.value) < 0.01 {
+                        // Jika score sama, pilih yang terdekat dari previousSize
+                        if let minSize = minimumSize {
+                            let distA = abs((SIZE_ORDER[a.key.uppercased()] ?? 0) - (SIZE_ORDER[minSize.uppercased()] ?? 0))
+                            let distB = abs((SIZE_ORDER[b.key.uppercased()] ?? 0) - (SIZE_ORDER[minSize.uppercased()] ?? 0))
+                            if distA != distB {
+                                return distA > distB // Prefer closer to previousSize
+                            }
+                        }
+                        // Fallback: gunakan preference
                         if desired_fit.contains("loose") {
-                            return compareSizes(a.key, b.key) // Pilih size besar untuk loose
+                            return compareSizes(a.key, b.key)
                         } else {
-                            return !compareSizes(a.key, b.key) // Pilih size kecil untuk tight/regular
+                            return !compareSizes(a.key, b.key)
                         }
                     }
                     return a.value < b.value
                 }?.key
         } else {
-            print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%). Selecting fallback...")
+            // ✅ SEMUA size score buruk (< 30%)
+            // ABAIKAN constraint ordering, SELALU pilih size dengan score TERTINGGI (closest fit)
+            print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%). Selecting closest fit (highest score)...")
+            print("   ℹ️ Constraint ordering is IGNORED for low confidence fits")
             
-            if !eligibleSizes.isEmpty {
-                // Untuk loose/slightly-loose: pilih size TERBESAR dari eligible sizes
-                if desired_fit.contains("loose") {
-                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
-                    bestSize = sortedEligible.last  // Terbesar
-                    print("   → Fallback: Largest eligible size '\(bestSize ?? "nil")' (loose preference)")
-                }
-                // Untuk tight/slightly-tight: pilih size TERKECIL dari eligible sizes
-                else if desired_fit.contains("tight") {
-                    let sortedEligible = eligibleSizes.keys.sorted(by: compareSizes)
-                    bestSize = sortedEligible.first  // Terkecil
-                    print("   → Fallback: Smallest eligible size '\(bestSize ?? "nil")' (tight preference)")
-                }
-                // Untuk regular: pilih yang score tertinggi
-                else {
-                    bestSize = eligibleSizes.max { a, b in
-                        a.value < b.value
+            if !sizeScores.isEmpty {
+                // Find max score
+                let maxScore = sizeScores.values.max() ?? 0
+                
+                // Get all sizes with max score (in case of ties)
+                let tieSizes = sizeScores.filter { abs($0.value - maxScore) < 0.01 }
+                
+                if tieSizes.count == 1 {
+                    // No tie, simple case
+                    bestSize = tieSizes.first?.key
+                } else {
+                    // Multiple sizes with same score, apply tie-breaker
+                    bestSize = tieSizes.max { a, b in
+                        // Tie-breaker berdasarkan preference
+                        if desired_fit.contains("loose") {
+                            return compareSizes(a.key, b.key) // Prefer larger
+                        } else if desired_fit.contains("tight") {
+                            return !compareSizes(a.key, b.key) // Prefer smaller
+                        } else {
+                            // Regular: prefer middle size or smaller when all equal
+                            let sortedTieSizes = tieSizes.keys.sorted(by: compareSizes)
+                            let firstSize = sortedTieSizes.first ?? a.key
+                            
+                            // Prefer smaller size (closer to user's measurements)
+                            if a.key == firstSize {
+                                return false // a wins
+                            }
+                            if b.key == firstSize {
+                                return true // b wins
+                            }
+                            return compareSizes(a.key, b.key) // fallback
+                        }
                     }?.key
-                    if let bestSize = bestSize {
-                        print("   → Fallback: Size '\(bestSize)' with highest score (\(String(format: "%.1f", eligibleSizes[bestSize] ?? 0))%)")
+                }
+                
+                if let bestSize = bestSize {
+                    print("   → Fallback: Size '\(bestSize)' with highest score (\(String(format: "%.1f", sizeScores[bestSize] ?? 0))%)")
+                    if let minSize = minimumSize, compareSizes(bestSize, minSize) {
+                        print("   ⚠️ Note: Selected size '\(bestSize)' is smaller than previous fit's size '\(minSize)' (all scores < 30%, prioritizing closest fit)")
                     }
                 }
             } else {

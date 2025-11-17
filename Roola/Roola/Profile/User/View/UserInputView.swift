@@ -15,43 +15,65 @@ struct UserInputView: View {
     
     @State private var isEditing = false
     @State private var showMeasureGuide = false
-    
-    // --- ADD STATE FOR MODAL ---
     @State private var isShowingAIMeasurement = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if existingUsers.isEmpty {
-                createUserView
-            } else {
-                updateUserView
+        ZStack {
+            // MARK: - Main Content
+            VStack(alignment: .leading, spacing: 0) {
+                if existingUsers.isEmpty {
+                    createUserView
+                } else {
+                    updateUserView
+                }
+            }
+            .background(FirstGradientBackground().ignoresSafeArea())
+            
+            // MARK: - Success Popup Overlay
+            if viewModel.showSuccessPopup {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .zIndex(1)
+                
+                SuccessPopupView {
+                    // Allow manual dismiss on tap
+                    handleSuccessDismissal()
+                }
+                .zIndex(2)
+                .onAppear {
+                    // Auto-dismiss after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        // Check if it is still showing to avoid redundant calls
+                        if viewModel.showSuccessPopup {
+                            handleSuccessDismissal()
+                        }
+                    }
+                }
             }
         }
-        .background(FirstGradientBackground().ignoresSafeArea())
         .onAppear(perform: loadExistingUserData)
-        .alert(isPresented: $viewModel.showingAlert) {
-            Alert(
-                title: Text(viewModel.alertTitle),
-                message: Text(viewModel.alertMessage),
-                dismissButton: .default(
-                    Text("OK")) {
-                    if viewModel.shouldDismiss { dismiss() }
-                })
-        }
-        .onChange(of: viewModel.shouldDismiss) { _, new in
-            if new { dismiss() }
-        }
         .sheet(isPresented: $showMeasureGuide) {
             MeasureGuideModal()
                 .presentationDetents([.fraction(0.75)])
                 .presentationDragIndicator(.visible)
         }
-        // --- ADD FULL SCREEN COVER MODIFIER ---
         .fullScreenCover(isPresented: $isShowingAIMeasurement) {
-            // This presents the entire AI flow.
-            // When it's dismissed, the user will be
-            // right back on this screen.
             CameraFlowContainerView()
+        }
+    }
+    
+    // Helper to handle navigation after success
+    private func handleSuccessDismissal() {
+        withAnimation {
+            viewModel.showSuccessPopup = false
+            
+            if existingUsers.isEmpty {
+                // If creating for the first time, dismiss the screen
+                dismiss()
+            } else {
+                // If updating, just exit edit mode
+                isEditing = false
+            }
         }
     }
 }
@@ -59,7 +81,6 @@ struct UserInputView: View {
 // MARK: - Create / Update UI
 private extension UserInputView {
     var createUserView: some View {
-        // ... This view remains unchanged ...
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
                 title: "Your Measurements",
@@ -82,13 +103,15 @@ private extension UserInputView {
                 validationErrors
                 
                 Spacer()
-                RoolaButton(buttonTitle: "Save",
-                            buttonColor: AppColors.primaryPurple,
-                            action: saveUser)
-                    .frame(width: UIScreen.main.bounds.width * 0.8)
-                    .padding(.bottom, 40)
+                RoolaButton(
+                    buttonTitle: "Save",
+                    buttonColor: AppColors.primaryPurple,
+                    action: saveUser
+                )
+                .frame(width: UIScreen.main.bounds.width * 0.85)
+                .padding(.bottom, 25)
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, 20)
             .padding(.top, 10)
         }
     }
@@ -103,7 +126,6 @@ private extension UserInputView {
 
             VStack(spacing: 30) {
                 if isEditing {
-                    // ... This part is unchanged ...
                     MeasurementsCard(
                         chest: $viewModel.bust,
                         waist: $viewModel.waist,
@@ -120,11 +142,22 @@ private extension UserInputView {
                     
                     Spacer()
 
-                    RoolaButton(buttonTitle: "Update",
-                                buttonColor: AppColors.primaryPurple,
-                                action: saveUser)
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 40)
+                    VStack (spacing: 20){
+                        RoolaButton(
+                            buttonTitle: "Update",
+                            buttonColor: AppColors.primaryPurple,
+                            action: saveUser
+                        )
+                        RoolaButton(
+                            buttonTitle: "Cancel",
+                            buttonColor: AppColors.primaryWhite,
+                            action: {
+                                isEditing = false
+                            }
+                        )
+                    }
+                    .frame(width: UIScreen.main.bounds.width * 0.85)
+                    .padding(.bottom, 25)
                 } else {
                     MeasurementListView(
                         items: [
@@ -136,11 +169,10 @@ private extension UserInputView {
                     )
                     Spacer()
                     
-                    VStack(spacing:10){
+                    VStack(spacing:20){
                         RoolaButton(
                             buttonTitle: "Measure with AI",
                             buttonColor: AppColors.primaryPurple,
-                            // --- UPDATE THE ACTION HERE ---
                             action: {
                                 isShowingAIMeasurement = true
                             }
@@ -156,52 +188,18 @@ private extension UserInputView {
                             }
                         )
                     }
-                    .frame(width: UIScreen.main.bounds.width * 0.8)
-                    .padding(.bottom, 40)
+                    .frame(width: UIScreen.main.bounds.width * 0.85)
+                    .padding(.bottom, 25)
                 }
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, 20)
             .padding(.top, 10)
-        }
-    }
-    
-    // ... This function is unchanged ...
-    func contentView(title: String, button: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            RoolaHeader(title: title, onInfo: {}, isLargeTitle: true)
-
-            ScrollView {
-                VStack(spacing: 30) {
-                    MeasurementsCard(
-                        chest: $viewModel.bust,
-                        waist: $viewModel.waist,
-                        armLength: $viewModel.armsLength,
-                        torsoLength: $viewModel.torso,
-                        isChestError: viewModel.isBustError,
-                        isWaistError: viewModel.isWaistError,
-                        isArmLengthError: viewModel.isArmsLengthError,
-                        isTorsoLengthError: viewModel.isTorsoError,
-                        hasAnyError: viewModel.hasError
-                    )
-
-                    validationErrors
-
-                    RoolaButton(buttonTitle: button,
-                                buttonColor: AppColors.primaryPurple,
-                                action: saveUser)
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 40)
-                }
-                .padding(.horizontal, 30)
-                .padding(.top, 10)
-            }
         }
     }
 }
 
 // MARK: - Validation UI
 private extension UserInputView {
-    // ... This is unchanged ...
     var validationErrors: some View {
         VStack(alignment: .leading, spacing: 4) {
             if viewModel.hasEmptyError {
@@ -223,7 +221,6 @@ private extension UserInputView {
 
 // MARK: - Load existing data
 private extension UserInputView {
-    // ... This is unchanged ...
     func loadExistingUserData() {
         if let user = existingUsers.first {
             viewModel.loadData(from: user)
@@ -231,30 +228,26 @@ private extension UserInputView {
     }
 }
 
-// MARK: - SAVE LOGIC (fixed!)
+// MARK: - SAVE LOGIC
 private extension UserInputView {
-    // ... This is unchanged ...
     func saveUser() {
         guard viewModel.validateInputs() else { return }
 
-        // Existing user → update, otherwise create new one
-        let user = existingUsers.first ?? User(waist: 0)   // waist required
-
+        let user = existingUsers.first ?? User(waist: 0)
         user.bust        = viewModel.bust        ?? 0
         user.waist       = viewModel.waist       ?? 0
         user.torso       = viewModel.torso       ?? 0
         user.arms_length = viewModel.armsLength  ?? 0
 
-        do {
-            if existingUsers.isEmpty {
-                modelContext.insert(user)
-            }
-            try modelContext.save()
-            viewModel.showSaveSuccess()
-        } catch {
-            viewModel.showSaveError(error)
+        if existingUsers.isEmpty {
+            modelContext.insert(user)
         }
-        isEditing.toggle()
+        
+        try? modelContext.save()
+        
+        withAnimation {
+            viewModel.triggerSuccess()
+        }
     }
 }
 
