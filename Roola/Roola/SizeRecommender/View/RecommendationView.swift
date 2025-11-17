@@ -202,7 +202,7 @@ struct RecommendationView: View {
             if showClothingTypeError || showFitPreferenceError {
                 HStack {
                     Text("• Please fill in this field")
-                        .font(.caption)
+                        .font(.body14Regular)
                         .foregroundColor(.red)
                     Spacer()
                 }

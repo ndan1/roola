@@ -71,7 +71,7 @@ struct HistoryView: View {
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 20)
                             .padding(.vertical, 12)
                         }
                     }
@@ -191,7 +191,7 @@ struct HistoryCard: View {
                 Text(formatDate(history.createdAt))
                     .font(.caption)
                     .foregroundColor(.gray)
-                
+                Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.gray)

@@ -54,6 +54,9 @@ extension Font {
     static var body15Regular: Font {
         .custom("HelveticaNeue", size: 15, relativeTo: .callout)
     }
+    static var body14Regular: Font {
+        .custom("HelveticaNeue", size: 14, relativeTo: .callout)
+    }
     
     // MARK: Caption
     static var caption14Italic: Font {
