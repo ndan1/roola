@@ -179,7 +179,7 @@ struct ResultsView: View {
                         }
                         
                         Text("Recommended Size")
-                            .font(.heading32Medium)
+                            .font(isFromHistory ? .system(size: 30): .heading32Medium)
                             .fontWeight(.medium)
                         
                         Spacer()

@@ -151,7 +151,7 @@ struct RecommendationView: View {
     
     private var headerSection: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 20)
+            Spacer().frame(height: 15)
             
             HStack {
                 Text("Find your fit")
@@ -163,12 +163,12 @@ struct RecommendationView: View {
                     showFitGuide = true
                 }) {
                     Image(systemName: "info.circle")
-                        .font(.title2)
+                        .resizable()
+                        .frame(width: 24, height: 24)
                         .foregroundColor(AppColors.primaryPurple)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 60)
+            .padding(.horizontal, 20)
             .padding(.bottom, 8)
             
             Text("Fill your product details to get your best match")

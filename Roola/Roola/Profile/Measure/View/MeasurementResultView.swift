@@ -88,7 +88,7 @@ struct MeasurementResultView: View {
                         }
                         .padding(.bottom, UIScreen.main.bounds.height * 0.05)
                     }
-                    .padding(.horizontal, 30)
+//                    .padding(.horizontal, 16)
                     .padding(.top,10)
                 } else {
                     VStack(spacing: 10) {

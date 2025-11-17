@@ -59,7 +59,7 @@ struct HistoryView: View {
                                     .foregroundColor(AppColors.primaryPurple)
                             }
                             .buttonStyle(.plain)
-                            .padding(.trailing, 16)
+                            .padding(.trailing, 18)
                         }
                         
                         ScrollView {
@@ -71,7 +71,7 @@ struct HistoryView: View {
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, 24)
                             .padding(.vertical, 12)
                         }
                     }
