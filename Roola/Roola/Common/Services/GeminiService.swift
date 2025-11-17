@@ -64,6 +64,7 @@ struct GeminiService {
         - For single measurements like "64", use the same value for both min and max, e.g., 64 for min and 64 for max, include if the size chart written "up to" just use both value for min and max
         - If a measurement is not available, use null
         - Don't insert INT as size label, it's just column header
+        - If there are 2 measurement like Allsize, Oversize, Bigsize and M, L, XL, or other size, ignore Allsize and use M, L, XL sizes, but if there are no M, L, XL sizes, use Allsize and other as size label
         - Common measurement names: "LINGKAR DADA" = bust, "PINGGANG" = waist, "PANJANG BAJU" = torso, "PANJANG LENGAN" = arm_length
         - All measurements should be in centimeters (cm)
         - Return ONLY the JSON, no additional text 
