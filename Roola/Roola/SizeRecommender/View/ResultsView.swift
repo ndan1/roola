@@ -310,12 +310,19 @@ struct ResultsView: View {
     }
     
     private func getBustImageName(recommendation: FitRecommendation) -> String {
+        // 🔍 DEBUG: Log data untuk troubleshooting
+        print("🔍 [CHEST DEBUG] partFits[bust]: \(recommendation.partFits["bust"] ?? "nil")")
+        print("🔍 [CHEST DEBUG] fitIssues[bust]: \(recommendation.fitIssues?["bust"]?.issue.rawValue ?? "nil")")
+        print("🔍 [CHEST DEBUG] currentFitPreference: \(currentFitPreference)")
+        
         // Check if there's a fit issue for bust
         if let bustIssue = recommendation.fitIssues?["bust"] {
             switch bustIssue.issue {
             case .tooTight:
+                print("🔍 [CHEST DEBUG] → Returning chest_red (too tight)")
                 return "chest_red" // Too tight = red
             case .tooLoose:
+                print("🔍 [CHEST DEBUG] → Returning chest_blue (too loose)")
                 return "chest_blue" // Too loose = blue
             }
         }
@@ -324,6 +331,7 @@ struct ResultsView: View {
         if let bustFit = recommendation.partFits["bust"] {
             // If the fit matches the current preference, it's green (perfect)
             if bustFit == currentFitPreference {
+                print("🔍 [CHEST DEBUG] → Returning chest_green (perfect fit: \(bustFit) == \(currentFitPreference))")
                 return "chest_green"
             }
             
@@ -334,14 +342,17 @@ struct ResultsView: View {
             
             if actualIndex > currentIndex {
                 // Actual fit is tighter than preference → yellow warning
+                print("🔍 [CHEST DEBUG] → Returning chest_yellow (tighter: \(bustFit))")
                 return "chest_yellow"
             } else if actualIndex < currentIndex {
                 // Actual fit is looser than preference → blue
+                print("🔍 [CHEST DEBUG] → Returning chest_blue (looser: \(bustFit))")
                 return "chest_blue"
             }
         }
         
         // Default: green (just right)
+        print("🔍 [CHEST DEBUG] → Returning chest_green (default fallback)")
         return "chest_green"
     }
     
@@ -354,12 +365,19 @@ struct ResultsView: View {
             return "arm_length_empty"
         }
         
+        // 🔍 DEBUG: Log data untuk troubleshooting
+        print("🔍 [ARM DEBUG] partFits[arm_length]: \(recommendation.partFits["arm_length"] ?? "nil")")
+        print("🔍 [ARM DEBUG] fitIssues[arm_length]: \(recommendation.fitIssues?["arm_length"]?.issue.rawValue ?? "nil")")
+        print("🔍 [ARM DEBUG] currentFitPreference: \(currentFitPreference)")
+        
         // Check if there's a fit issue for arm_length
         if let armIssue = recommendation.fitIssues?["arm_length"] {
             switch armIssue.issue {
             case .tooTight:
+                print("🔍 [ARM DEBUG] → Returning arm_length_red (too tight)")
                 return "arm_length_red"
             case .tooLoose:
+                print("🔍 [ARM DEBUG] → Returning arm_length_blue (too loose)")
                 return "arm_length_blue"
             }
         }
@@ -367,6 +385,7 @@ struct ResultsView: View {
         // Check partFits for arm_length
         if let armFit = recommendation.partFits["arm_length"] {
             if armFit == currentFitPreference {
+                print("🔍 [ARM DEBUG] → Returning arm_length_green (perfect fit: \(armFit) == \(currentFitPreference))")
                 return "arm_length_green"
             }
             
@@ -375,12 +394,15 @@ struct ResultsView: View {
             let actualIndex = fitOrder.firstIndex(of: armFit) ?? 2
             
             if actualIndex > currentIndex {
+                print("🔍 [ARM DEBUG] → Returning arm_length_yellow (tighter: \(armFit))")
                 return "arm_length_yellow"
             } else if actualIndex < currentIndex {
+                print("🔍 [ARM DEBUG] → Returning arm_length_blue (looser: \(armFit))")
                 return "arm_length_blue"
             }
         }
         
+        print("🔍 [ARM DEBUG] → Returning arm_length_green (default fallback)")
         return "arm_length_green"
     }
     
@@ -390,6 +412,11 @@ struct ResultsView: View {
     private func statusIndicators(recommendation: FitRecommendation) -> some View {
         let status = getOverallStatus(recommendation: recommendation)
         
+        // Determine message based on clothing type
+        let shortSleevedTypes = ["short_sleeved_shirt", "t-shirt", "t_shirt"]
+        let isShortSleeved = shortSleevedTypes.contains(viewModel.clothingType.lowercased())
+        let perfectMessage = isShortSleeved ? "Chest area is just right" : "Chest and arm area is just right"
+        
         VStack(alignment: .leading, spacing: 8) {
             if status.isAllGood {
                 HStack {
@@ -397,7 +424,7 @@ struct ResultsView: View {
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, AppColors.successGreen)
                         .font(.system(size: 24))
-                    Text("All parts just right")
+                    Text(perfectMessage)
                         .font(.caption14Italic)
                         .foregroundStyle(Color(hex: "838383"))
                 }
@@ -422,12 +449,16 @@ struct ResultsView: View {
         // Fit hierarchy untuk calculate distance
         let fitHierarchy = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
         
-        // Group issues by type and severity
-        var tooTightParts: [String] = []
-        var tooLooseParts: [String] = []
-        var slightlyOffParts: [(part: String, fit: String, distance: Int)] = []
+        // Determine which parts to show based on clothing type
+        // Short-sleeved & T-shirt: only chest (1 baris)
+        // Long-sleeved & Blouse: chest + arm (2 baris terpisah, kecuali keduanya perfect)
+        let shortSleevedTypes = ["short_sleeved_shirt", "t-shirt", "t_shirt"]
+        let isShortSleeved = shortSleevedTypes.contains(viewModel.clothingType.lowercased())
         
-        let parts = ["bust", "torso", "arm_length"]
+        let parts = isShortSleeved ? ["bust"] : ["bust", "arm_length"]
+        
+        // Track status for each part individually
+        var partStatuses: [String: (distance: Int, direction: String, isPerfect: Bool)] = [:]
         
         for part in parts {
             // Skip if part not used
@@ -435,14 +466,14 @@ struct ResultsView: View {
                 continue
             }
             
-            let displayName = part == "bust" ? "Chest" : part.replacingOccurrences(of: "_", with: " ").capitalized
+            let displayName = part == "bust" ? "Chest" : "Arm"
             
             // Check fit issues first (too tight/too loose)
             if let fitIssue = recommendation.fitIssues?[part] {
                 if fitIssue.issue == .tooTight {
-                    tooTightParts.append(displayName)
+                    partStatuses[displayName] = (distance: 2, direction: "tight", isPerfect: false)
                 } else {
-                    tooLooseParts.append(displayName)
+                    partStatuses[displayName] = (distance: 2, direction: "loose", isPerfect: false)
                 }
             }
             // Check if fit doesn't match preference (slightly off)
@@ -452,83 +483,93 @@ struct ResultsView: View {
                 let partIndex = fitHierarchy.firstIndex(of: partFit) ?? 2
                 let distance = abs(currentIndex - partIndex)
                 
-                let fitDisplay = partFit.replacingOccurrences(of: "-", with: " ").capitalized
-                slightlyOffParts.append((part: displayName, fit: fitDisplay, distance: distance))
+                // Determine if it's tighter or looser
+                if partIndex > currentIndex {
+                    partStatuses[displayName] = (distance: distance, direction: "tight", isPerfect: false)
+                } else {
+                    partStatuses[displayName] = (distance: distance, direction: "loose", isPerfect: false)
+                }
+            } else {
+                // Perfect fit
+                partStatuses[displayName] = (distance: 0, direction: "", isPerfect: true)
             }
         }
         
         var issues: [StatusIssue] = []
         
-        // Combine too tight parts into one message (RED - critical)
-        if !tooTightParts.isEmpty {
-            let partsText = formatPartsList(tooTightParts)
-            issues.append(StatusIssue(
-                part: "tight",
-                message: "\(partsText) will be too tight for this fit preference",
-                icon: "xmark.circle.fill",
-                iconForeground: .white,
-                iconBackground: Color.red
-            ))
+        // Check if both parts are perfect (for long-sleeved)
+        let allPerfect = partStatuses.values.allSatisfy { $0.isPerfect }
+        
+        if allPerfect {
+            // Already handled in statusIndicators() view - isAllGood
+            return (isAllGood: true, issues: [])
         }
         
-        // Combine too loose parts into one message (RED - critical)
-        if !tooLooseParts.isEmpty {
-            let partsText = formatPartsList(tooLooseParts)
-            issues.append(StatusIssue(
-                part: "loose",
-                message: "\(partsText) will be too loose for this fit preference",
-                icon: "xmark.circle.fill",
-                iconForeground: .white,
-                iconBackground: Color.red
-            ))
-        }
-        
-        // Group slightly off parts by fit type AND distance
-        if !slightlyOffParts.isEmpty {
-            // Separate by distance: 1 step vs 2+ steps
-            let oneStepOff = slightlyOffParts.filter { $0.distance == 1 }
-            let farOff = slightlyOffParts.filter { $0.distance > 1 }
+        // Process each part SEPARATELY (2 baris untuk long-sleeved)
+        // Order: Chest first, then Arm
+        for partName in ["Chest", "Arm"] {
+            guard let status = partStatuses[partName] else { continue }
             
-            // Process 1-step differences (ORANGE - warning)
-            if !oneStepOff.isEmpty {
-                var groupedByFit: [String: [String]] = [:]
-                for item in oneStepOff {
-                    if groupedByFit[item.fit] == nil {
-                        groupedByFit[item.fit] = []
-                    }
-                    groupedByFit[item.fit]?.append(item.part)
-                }
+            // ✅ FIX: Jika ada part yang perfect DAN ada part lain yang tidak perfect,
+            // tetap tampilkan yang perfect dengan message "just right"
+            if status.isPerfect {
+                // Check if there are other parts that are NOT perfect
+                let hasOtherIssues = partStatuses.values.contains { !$0.isPerfect }
                 
-                for (fitType, parts) in groupedByFit {
-                    let partsText = formatPartsList(parts)
+                if hasOtherIssues {
+                    // Show "just right" message for this perfect part
                     issues.append(StatusIssue(
-                        part: "slightly-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
-                        message: "\(partsText) will be \(fitType)",
+                        part: "\(partName.lowercased())-perfect",
+                        message: "\(partName) area is just right",
+                        icon: "checkmark.circle.fill",
+                        iconForeground: .white,
+                        iconBackground: AppColors.successGreen
+                    ))
+                }
+                continue
+            }
+            
+            let distance = status.distance
+            let direction = status.direction
+            
+            if direction == "tight" {
+                if distance == 1 {
+                    // Yellow warning
+                    issues.append(StatusIssue(
+                        part: "\(partName.lowercased())-tight-1",
+                        message: "\(partName) area is slightly tight",
                         icon: "exclamationmark.circle.fill",
                         iconForeground: .black,
                         iconBackground: Color(hex: "FEC901").opacity(0.5)
                     ))
-                }
-            }
-            
-            // Process 2+ step differences (RED - critical)
-            if !farOff.isEmpty {
-                var groupedByFit: [String: [String]] = [:]
-                for item in farOff {
-                    if groupedByFit[item.fit] == nil {
-                        groupedByFit[item.fit] = []
-                    }
-                    groupedByFit[item.fit]?.append(item.part)
-                }
-                
-                for (fitType, parts) in groupedByFit {
-                    let partsText = formatPartsList(parts)
+                } else if distance >= 2 {
+                    // Red X
                     issues.append(StatusIssue(
-                        part: "far-off-\(fitType.lowercased().replacingOccurrences(of: " ", with: "-"))",
-                        message: "\(partsText) will be \(fitType)",
+                        part: "\(partName.lowercased())-tight-2",
+                        message: "\(partName) area is too tight",
                         icon: "xmark.circle.fill",
                         iconForeground: .white,
                         iconBackground: Color.red
+                    ))
+                }
+            } else if direction == "loose" {
+                if distance == 1 {
+                    // Yellow warning
+                    issues.append(StatusIssue(
+                        part: "\(partName.lowercased())-loose-1",
+                        message: "\(partName) area slightly loose",
+                        icon: "exclamationmark.circle.fill",
+                        iconForeground: .black,
+                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                    ))
+                } else if distance >= 2 {
+                    // Blue arrow (very loose)
+                    issues.append(StatusIssue(
+                        part: "\(partName.lowercased())-loose-2",
+                        message: "\(partName) area is very loose",
+                        icon: "arrow.left.arrow.right.circle.fill",
+                        iconForeground: .black,
+                        iconBackground: Color(hex: "A7DCFF")
                     ))
                 }
             }
