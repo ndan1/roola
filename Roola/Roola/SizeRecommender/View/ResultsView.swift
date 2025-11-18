@@ -184,7 +184,8 @@ struct ResultsView: View {
                         }
                         
                         Text("Recommended Size")
-                            .font(isFromHistory ? .heading24Medium : .heading32Medium )
+                            .font(isFromHistory ? .system(size: 30): .heading32Medium)
+                            .fontWeight(.medium)
                         
                         Spacer()
                     }
@@ -199,7 +200,7 @@ struct ResultsView: View {
                                 .overlay(
                                     Text(recommendation.bestSize)
                                         .foregroundColor(.white)
-                                        .font(.system(size: (recommendation.bestSize == "XXL") ? 28 : recommendation.bestSize == "XXXL" ? 24 : recommendation.bestSize == "All Size" ? 18 : 48))
+                                        .font(.system(size: (recommendation.bestSize == "XXL") ? 28 : recommendation.bestSize == "XXXL" ? 24 : recommendation.bestSize == "XL" ? 36 : recommendation.bestSize == "L" ? 48 : recommendation.bestSize == "M" ? 48 : recommendation.bestSize == "S" ? 48 : recommendation.bestSize == "XS" ? 36 : 18))
                                         .fontWeight(.bold)
                                 )
                         }

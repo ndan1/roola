@@ -151,13 +151,26 @@ struct RecommendationView: View {
     
     private var headerSection: some View {
         VStack(spacing: 0) {
-            RoolaHeader(
-                title: "Find your fit",
-                onInfo: {
+            Spacer().frame(height: 15)
+            
+            HStack {
+                Text("Find your fit")
+                    .font(.heading32Medium)
+                
+                Spacer()
+                
+                Button(action: {
                     showFitGuide = true
-                },
-                isLargeTitle: true
-            )
+                }) {
+                    Image(systemName: "info.circle")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+            
             Text("Fill your product details to get your best match")
                 .font(.body)
                 .foregroundColor(.primary)
