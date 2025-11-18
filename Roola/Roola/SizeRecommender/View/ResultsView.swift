@@ -335,13 +335,13 @@ struct ResultsView: View {
                 return "chest_green"
             }
             
-            // ✅ FIX: Array order must be consistent
+            // Array order must be consistent
             // tight(0) → slightly-tight(1) → regular(2) → slightly-loose(3) → loose(4)
             let fitOrder = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
             let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
             let actualIndex = fitOrder.firstIndex(of: bustFit) ?? 2
             
-            // ✅ FIX: Correct direction logic
+            // Correct direction logic
             // actualIndex > currentIndex → actual fit is LOOSER (higher index)
             // actualIndex < currentIndex → actual fit is TIGHTER (lower index)
             if actualIndex > currentIndex {
@@ -405,13 +405,13 @@ struct ResultsView: View {
                 return "arm_length_green"
             }
             
-            // ✅ FIX: Fit order harus konsisten dengan fitHierarchy
+            // Fit order harus konsisten dengan fitHierarchy
             // tight(0) → slightly-tight(1) → regular(2) → slightly-loose(3) → loose(4)
             let fitOrder = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
             let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
             let actualIndex = fitOrder.firstIndex(of: armFit) ?? 2
             
-            // ✅ FIX: Logic direction
+            // Logic direction
             // actualIndex < currentIndex → actual fit lebih TIGHT (index lebih kecil)
             // actualIndex > currentIndex → actual fit lebih LOOSE (index lebih besar)
             if actualIndex < currentIndex {
@@ -433,10 +433,17 @@ struct ResultsView: View {
     private func statusIndicators(recommendation: FitRecommendation) -> some View {
         let status = getOverallStatus(recommendation: recommendation)
         
-        // Determine message based on clothing type
+        // ✅ FIX: Determine message based on clothing type AND actual arm_length data availability
         let shortSleevedTypes = ["short_sleeved_shirt", "t-shirt", "t_shirt"]
         let isShortSleeved = shortSleevedTypes.contains(viewModel.clothingType.lowercased())
-        let perfectMessage = isShortSleeved ? "Chest area is just right" : "Chest and arm area is just right"
+        
+        // Check if arm_length data actually exists in the recommendation
+        let hasArmLengthData = recommendation.partFits["arm_length"] != nil || 
+                               recommendation.fitIssues?["arm_length"] != nil
+        
+        // Only mention "arm" if it's long-sleeved AND has arm_length data
+        let shouldMentionArm = !isShortSleeved && hasArmLengthData
+        let perfectMessage = shouldMentionArm ? "Chest and arm area is just right" : "Chest area is just right"
         
         VStack(alignment: .leading, spacing: 8) {
             if status.isAllGood {
@@ -504,7 +511,7 @@ struct ResultsView: View {
                 let partIndex = fitHierarchy.firstIndex(of: partFit) ?? 2
                 let distance = abs(currentIndex - partIndex)
                 
-                // ✅ FIX: Determine if it's tighter or looser
+                // Determine if it's tighter or looser
                 // fitHierarchy = ["tight"(0), "slightly-tight"(1), "regular"(2), "slightly-loose"(3), "loose"(4)]
                 // partIndex > currentIndex → part actual fit lebih LOOSE (index lebih besar)
                 // partIndex < currentIndex → part actual fit lebih TIGHT (index lebih kecil)
@@ -536,7 +543,7 @@ struct ResultsView: View {
         for partName in ["Chest", "Arm"] {
             guard let status = partStatuses[partName] else { continue }
             
-            // ✅ FIX: Jika ada part yang perfect DAN ada part lain yang tidak perfect,
+            // Jika ada part yang perfect DAN ada part lain yang tidak perfect,
             // tetap tampilkan yang perfect dengan message "just right"
             if status.isPerfect {
                 // Check if there are other parts that are NOT perfect
