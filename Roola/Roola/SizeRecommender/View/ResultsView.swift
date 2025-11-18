@@ -335,19 +335,35 @@ struct ResultsView: View {
                 return "chest_green"
             }
             
-            // If fit is tighter than preference
-            let fitOrder = ["loose", "slightly-loose", "regular", "slightly-tight", "tight"]
+            // ✅ FIX: Array order must be consistent
+            // tight(0) → slightly-tight(1) → regular(2) → slightly-loose(3) → loose(4)
+            let fitOrder = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
             let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
             let actualIndex = fitOrder.firstIndex(of: bustFit) ?? 2
             
+            // ✅ FIX: Correct direction logic
+            // actualIndex > currentIndex → actual fit is LOOSER (higher index)
+            // actualIndex < currentIndex → actual fit is TIGHTER (lower index)
             if actualIndex > currentIndex {
-                // Actual fit is tighter than preference → yellow warning
-                print("🔍 [CHEST DEBUG] → Returning chest_yellow (tighter: \(bustFit))")
-                return "chest_yellow"
+                // Actual fit is LOOSER than preference → yellow warning (distance 1) or blue (distance 2+)
+                let distance = actualIndex - currentIndex
+                if distance == 1 {
+                    print("🔍 [CHEST DEBUG] → Returning chest_yellow (slightly looser: \(bustFit))")
+                    return "chest_yellow"
+                } else {
+                    print("🔍 [CHEST DEBUG] → Returning chest_blue (much looser: \(bustFit))")
+                    return "chest_blue"
+                }
             } else if actualIndex < currentIndex {
-                // Actual fit is looser than preference → blue
-                print("🔍 [CHEST DEBUG] → Returning chest_blue (looser: \(bustFit))")
-                return "chest_blue"
+                // Actual fit is TIGHTER than preference → yellow (distance 1) or red (distance 2+)
+                let distance = currentIndex - actualIndex
+                if distance == 1 {
+                    print("🔍 [CHEST DEBUG] → Returning chest_yellow (slightly tighter: \(bustFit))")
+                    return "chest_yellow"
+                } else {
+                    print("🔍 [CHEST DEBUG] → Returning chest_red (too tight: \(bustFit))")
+                    return "chest_red"
+                }
             }
         }
         
@@ -389,14 +405,19 @@ struct ResultsView: View {
                 return "arm_length_green"
             }
             
-            let fitOrder = ["loose", "slightly-loose", "regular", "slightly-tight", "tight"]
+            // ✅ FIX: Fit order harus konsisten dengan fitHierarchy
+            // tight(0) → slightly-tight(1) → regular(2) → slightly-loose(3) → loose(4)
+            let fitOrder = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
             let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
             let actualIndex = fitOrder.firstIndex(of: armFit) ?? 2
             
-            if actualIndex > currentIndex {
+            // ✅ FIX: Logic direction
+            // actualIndex < currentIndex → actual fit lebih TIGHT (index lebih kecil)
+            // actualIndex > currentIndex → actual fit lebih LOOSE (index lebih besar)
+            if actualIndex < currentIndex {
                 print("🔍 [ARM DEBUG] → Returning arm_length_yellow (tighter: \(armFit))")
                 return "arm_length_yellow"
-            } else if actualIndex < currentIndex {
+            } else if actualIndex > currentIndex {
                 print("🔍 [ARM DEBUG] → Returning arm_length_blue (looser: \(armFit))")
                 return "arm_length_blue"
             }
@@ -483,11 +504,16 @@ struct ResultsView: View {
                 let partIndex = fitHierarchy.firstIndex(of: partFit) ?? 2
                 let distance = abs(currentIndex - partIndex)
                 
-                // Determine if it's tighter or looser
+                // ✅ FIX: Determine if it's tighter or looser
+                // fitHierarchy = ["tight"(0), "slightly-tight"(1), "regular"(2), "slightly-loose"(3), "loose"(4)]
+                // partIndex > currentIndex → part actual fit lebih LOOSE (index lebih besar)
+                // partIndex < currentIndex → part actual fit lebih TIGHT (index lebih kecil)
                 if partIndex > currentIndex {
-                    partStatuses[displayName] = (distance: distance, direction: "tight", isPerfect: false)
-                } else {
+                    // Part actual fit lebih loose dari preference
                     partStatuses[displayName] = (distance: distance, direction: "loose", isPerfect: false)
+                } else {
+                    // Part actual fit lebih tight dari preference
+                    partStatuses[displayName] = (distance: distance, direction: "tight", isPerfect: false)
                 }
             } else {
                 // Perfect fit
