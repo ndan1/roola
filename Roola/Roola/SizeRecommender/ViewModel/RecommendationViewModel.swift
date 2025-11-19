@@ -456,47 +456,18 @@ class RecommendationViewModel: ObservableObject {
                     return a.value < b.value
                 }?.key
         } else {
-            // ✅ SEMUA size score buruk (< 20%)
-            // PRIORITAS: Pilih previousSize atau size yang lebih besar (jangan pilih yang lebih kecil)
+            // ✅ SEMUA size score buruk (< 30%)
+            // SOLUSI: LANGSUNG gunakan previousSize tanpa membandingkan dengan size lain
             print("⚠️ [DEBUG] No good fit found (all scores < \(MIN_ACCEPTABLE_SCORE)%).")
             
             if let minSize = minimumSize {
-                // Ada constraint dari fit sebelumnya
-                print("   ℹ️ Applying soft constraint: prefer size >= '\(minSize)' (previous fit's size)")
-                
-                // Filter hanya size yang >= minSize
-                let eligibleSizes = sizeScores.filter { size, _ in
-                    compareSizes(minSize, size) || minSize == size // size >= minSize
-                }
-                
-                if !eligibleSizes.isEmpty {
-                    // Ada size yang >= minSize, pilih yang score tertinggi dari eligible sizes
-                    let maxScore = eligibleSizes.values.max() ?? 0
-                    let tieSizes = eligibleSizes.filter { abs($0.value - maxScore) < 0.01 }
-                    
-                    if tieSizes.count == 1 {
-                        bestSize = tieSizes.first?.key
-                    } else {
-                        // Tie-breaker: prefer larger size untuk loose fit
-                        bestSize = tieSizes.max { a, b in
-                            if desired_fit.contains("loose") {
-                                return compareSizes(a.key, b.key) // Prefer larger
-                            } else {
-                                return !compareSizes(a.key, b.key) // Prefer smaller/middle
-                            }
-                        }?.key
-                    }
-                    
-                    if let bestSize = bestSize {
-                        print("   → Selected: Size '\(bestSize)' (score: \(String(format: "%.1f", sizeScores[bestSize] ?? 0))%) from eligible sizes >= '\(minSize)'")
-                    }
-                } else {
-                    // ✅ TIDAK ada size yang >= minSize
-                    // SOLUSI: Gunakan previousSize (minSize) sebagai fallback
-                    bestSize = minSize
-                    let scoreAtMinSize = sizeScores[minSize] ?? 0.0
-                    print("   → Fallback: No sizes >= '\(minSize)' available. Using previous size '\(minSize)' (score: \(String(format: "%.1f", scoreAtMinSize))%)")
-                }
+                // ✅ Ada previousSize → LANGSUNG gunakan previousSize
+                // JANGAN pilih size lain meskipun scorenya lebih tinggi
+                // Ini mencegah loncat ke size yang terlalu jauh (misal M → XL)
+                bestSize = minSize
+                let scoreAtMinSize = sizeScores[minSize] ?? 0.0
+                print("   ℹ️ Low confidence: Using previous size '\(minSize)' (score: \(String(format: "%.1f", scoreAtMinSize))%)")
+                print("   → Reason: All scores below threshold, maintaining size consistency")
             } else {
                 // Tidak ada constraint, pilih size dengan score tertinggi
                 print("   ℹ️ No previous constraint. Selecting size with highest score...")
