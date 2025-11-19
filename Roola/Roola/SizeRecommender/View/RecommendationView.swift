@@ -5,6 +5,25 @@
 //  Created by Lin Dan Christiano on 04/11/25.
 //
 
+/*
+ 
+ STRUCTURE OF RecommendationView
+ 
+ body
+ ├── mainContent (VStack)
+ │   ├── headerSection
+ │   ├── formSection
+ │   │   ├── formInputs
+ │   │   └── formValidationErrors
+ │   ├── uploadSection
+ │   │   ├── uploadContent
+ │   │   └── uploadValidationError
+ │   └── bottomButton
+ ├── loadingOverlay
+ └── errorModals
+ 
+*/
+
 import SwiftUI
 import Vision
 import PhotosUI
@@ -31,87 +50,94 @@ struct RecommendationView: View {
     
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                headerSection
-                formSection
-                uploadSection
-                Spacer()
-                bottomButton
-                Color.clear.frame(height: 0)
-            }
-            .ignoresSafeArea(edges: .bottom)
-            .onAppear {
-                if let user = users.first {
-                    viewModel.loadUserMeasurements(user: user)
-                }
-            } // <-- 1. Closed .onAppear block
-            .background( // <-- 2. .background now correctly modifies the VStack
-                FirstGradientBackground().ignoresSafeArea()
-            )
-            // 3. All these modifiers are now correctly attached to the VStack
-            .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
-                if !newValue.isEmpty && !viewModel.isCallingAPI {
-                    viewModel.getRecommendation()
-                }
-            }
-            .onChange(of: viewModel.serverResponse) { oldValue, newValue in
-                if newValue != nil && !viewModel.isCallingAPI {
-                    showResults = true
-                }
-            }
-            .onChange(of: viewModel.clothingType) { oldValue, newValue in
-                if !newValue.isEmpty {
-                    showClothingTypeError = false
-                }
-            }
-            .onChange(of: fitPreference) { oldValue, newValue in
-                if !newValue.isEmpty {
-                    showFitPreferenceError = false
-                }
-            }
-            .onChange(of: viewModel.selectedImage) { oldValue, newValue in
-                if newValue != nil {
-                    showImageError = false
-                }
-            }
-            .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
-                if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
-                    showNoInternetPage = true
-                }
-            }
-            .fullScreenCover(isPresented: $showResults) {
-                ResultsView(
-                    viewModel: viewModel,
-                    showResults: $showResults,
-                    onTryAgain: {
-                        resetAllFields()
-                    },
-                    initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference
-                )
-            }
-            .sheet(isPresented: $showFitGuide) {
-                FitGuideView(showFitGuide: $showFitGuide)
-                    .presentationDetents([.fraction(0.75)])
-                    .presentationDragIndicator(.visible)
-            }
-            
-            // 4. This block is now a sibling to the VStack, correctly overlaying it
-            if viewModel.isProcessing {
-                Color.black.opacity(0.5)
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                
-                ProgressLoading(
-                    title: "Hang Tight...",
-                    subtitle: "We're tailoring this for you.",
-                    duration: 3.0
-                )
-                .zIndex(1)
-                .transition(.scale.combined(with: .opacity))
+            mainContent
+            loadingOverlay
+            errorModals
+        }
+        .fullScreenCover(isPresented: $showNoInternetPage) {
+            NoInternetPage(onRetry: {
+                showNoInternetPage = false
+                resetAllFields()
+            })
+        }
+        .animation(.spring(), value: viewModel.isProcessing)
+        .animation(.spring(), value: viewModel.showErrorAlert)
+    }
+    
+    // MARK: - Main Content
+    
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            headerSection
+            formSection
+            uploadSection
+            Spacer()
+            bottomButton
+            Color.clear.frame(height: 0)
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .background(
+            FirstGradientBackground().ignoresSafeArea()
+        )
+        .onAppear {
+            loadUserData()
+        }
+        .onChange(of: viewModel.extractedJSON) { oldValue, newValue in
+            handleExtractedJSONChange(oldValue: oldValue, newValue: newValue)
+        }
+        .onChange(of: viewModel.serverResponse) { oldValue, newValue in
+            handleServerResponseChange(oldValue: oldValue, newValue: newValue)
+        }
+        .onChange(of: viewModel.clothingType) { oldValue, newValue in
+            if !newValue.isEmpty {
+                showClothingTypeError = false
             }
         }
-        .overlay {
-            // OCRErrorModal di-render sebagai overlay untuk memastikan muncul di atas semua konten
+        .onChange(of: fitPreference) { oldValue, newValue in
+            if !newValue.isEmpty {
+                showFitPreferenceError = false
+            }
+        }
+        .onChange(of: viewModel.selectedImage) { oldValue, newValue in
+            if newValue != nil {
+                showImageError = false
+            }
+        }
+        .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
+            handleNetworkChange(oldValue: oldValue, newValue: newValue)
+        }
+        .fullScreenCover(isPresented: $showResults) {
+            resultsView
+        }
+        .sheet(isPresented: $showFitGuide) {
+            fitGuideView
+        }
+    }
+    
+    // MARK: - Loading Overlay
+    
+    @ViewBuilder
+    private var loadingOverlay: some View {
+        if viewModel.isProcessing {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+                .transition(.opacity)
+            
+            ProgressLoading(
+                title: "Hang Tight...",
+                subtitle: "We're tailoring this for you.",
+                duration: 3.0
+            )
+            .zIndex(1)
+            .transition(.scale.combined(with: .opacity))
+        }
+    }
+    
+    // MARK: - Error Modals
+    
+    @ViewBuilder
+    private var errorModals: some View {
+        Group {
             if viewModel.showErrorAlert, let error = viewModel.currentError {
                 OCRErrorModal(
                     error: error,
@@ -126,7 +152,6 @@ struct RecommendationView: View {
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
             }
             
-            // NoInternetModal untuk validasi sebelum processing
             if showNoInternetModal {
                 NoInternetModal(
                     isPresented: $showNoInternetModal,
@@ -138,16 +163,29 @@ struct RecommendationView: View {
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
             }
         }
-        .fullScreenCover(isPresented: $showNoInternetPage) {
-            NoInternetPage(onRetry: {
-                showNoInternetPage = false
-                resetAllFields()
-            })
-        }
-        // Animation for state changes in the ZStack
-        .animation(.spring(), value: viewModel.isProcessing)
-        .animation(.spring(), value: viewModel.showErrorAlert)
     }
+    
+    // MARK: - Results & Fit Guide Views
+    
+    private var resultsView: some View {
+        ResultsView(
+            recommendationViewModel: viewModel,
+            showResults: $showResults,
+            initialFitPreference: fitPreference.isEmpty ? "standard" : fitPreference,
+            isFromHistory: false,
+            onTryAgain: {
+                resetAllFields()
+            }
+        )
+    }
+    
+    private var fitGuideView: some View {
+        FitGuideView(showFitGuide: $showFitGuide)
+            .presentationDetents([.fraction(0.75)])
+            .presentationDragIndicator(.visible)
+    }
+    
+    // MARK: - Header Section
     
     private var headerSection: some View {
         VStack(spacing: 0) {
@@ -180,37 +218,46 @@ struct RecommendationView: View {
         }
     }
     
+    // MARK: - Form Section
+    
     private var formSection: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                clothingTypeRow
-                
-                Rectangle()
-                    .fill(AppColors.grayScale400.opacity(0.36))
-                    .frame(height: 0.5)
-                
-                fitPreferenceRow
-            }
-            .background(AppColors.primaryWhite.opacity(0.5))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-            )
-            
-            // Validation errors
-            if showClothingTypeError || showFitPreferenceError {
-                HStack {
-                    Text("• Please fill in this field")
-                        .font(.body14Regular)
-                        .foregroundColor(.red)
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-            }
+            formInputs
+            formValidationErrors
         }
         .padding(.horizontal, 24)
+    }
+    
+    private var formInputs: some View {
+        VStack(spacing: 0) {
+            clothingTypeRow
+            
+            Rectangle()
+                .fill(AppColors.grayScale400.opacity(0.36))
+                .frame(height: 0.5)
+            
+            fitPreferenceRow
+        }
+        .background(AppColors.primaryWhite.opacity(0.5))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+        )
+    }
+    
+    @ViewBuilder
+    private var formValidationErrors: some View {
+        if showClothingTypeError || showFitPreferenceError {
+            HStack {
+                Text("• Please fill in this field")
+                    .font(.body14Regular)
+                    .foregroundColor(.red)
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+        }
     }
     
     private var clothingTypeRow: some View {
@@ -266,45 +313,54 @@ struct RecommendationView: View {
         .padding(.vertical, 16)
     }
     
+    // MARK: - Upload Section
+    
     private var uploadSection: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 16) {
-                Text("Upload size chart screenshot")
-                    .font(.body)
-                    .foregroundColor(AppColors.grayScale400)
-                
-                if viewModel.selectedImage == nil {
-                    uploadButton
-                }
-                
-                if let image = viewModel.selectedImage {
-                    imagePreview(image: image)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
-            .padding(.horizontal, 24)
-            .background(AppColors.primaryWhite.opacity(0.5))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-            )
-            
-            // Validation error for image
-            if showImageError {
-                HStack {
-                    Text("• Please fill in this field")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-            }
+            uploadContent
+            uploadValidationError
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
+    }
+    
+    private var uploadContent: some View {
+        VStack(spacing: 16) {
+            Text("Upload size chart screenshot")
+                .font(.body)
+                .foregroundColor(AppColors.grayScale400)
+            
+            if viewModel.selectedImage == nil {
+                uploadButton
+            }
+            
+            if let image = viewModel.selectedImage {
+                imagePreview(image: image)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 24)
+        .background(AppColors.primaryWhite.opacity(0.5))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+        )
+    }
+    
+    @ViewBuilder
+    private var uploadValidationError: some View {
+        if showImageError {
+            HStack {
+                Text("• Please fill in this field")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+        }
     }
     
     private var uploadButton: some View {
@@ -357,6 +413,8 @@ struct RecommendationView: View {
         }
     }
     
+    // MARK: - Bottom Button
+    
     private var bottomButton: some View {
         RoolaButton(
             buttonTitle: "Find your fit",
@@ -368,6 +426,32 @@ struct RecommendationView: View {
         .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
         .padding(.horizontal, 24)
         .padding(.bottom, 110)
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func loadUserData() {
+        if let user = users.first {
+            viewModel.loadUserMeasurements(user: user)
+        }
+    }
+    
+    private func handleExtractedJSONChange(oldValue: String, newValue: String) {
+        if !newValue.isEmpty && !viewModel.isCallingAPI {
+            viewModel.getRecommendation()
+        }
+    }
+    
+    private func handleServerResponseChange(oldValue: ServerResponse?, newValue: ServerResponse?) {
+        if newValue != nil && !viewModel.isCallingAPI {
+            showResults = true
+        }
+    }
+    
+    private func handleNetworkChange(oldValue: Bool, newValue: Bool) {
+        if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+            showNoInternetPage = true
+        }
     }
     
     private func handleFindYourFit() {
