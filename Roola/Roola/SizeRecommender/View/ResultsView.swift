@@ -209,15 +209,6 @@ struct ResultsView: View {
                         .zIndex(1)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            if recommendation.bestScore < 30 {
-                                Text("Looser fit may not be available for this item")
-                                    .font(.caption14Italic)
-                                    .foregroundColor(AppColors.grayScale300)
-                            }
-                            else{
-                                Text("")
-                                    .font(.caption14Italic)
-                            }
                             Text("Fit Preference")
                                 .font(.body16Regular)
                             
@@ -228,6 +219,15 @@ struct ResultsView: View {
                                 .padding(.bottom, -42)
                                 .padding(.leading, UIScreen.main.bounds.width * 0.05)
                             
+                            if recommendation.bestScore < 30 {
+                                Text("The selected size may not fit well on your preferences because...")
+                                    .font(.caption14Italic)
+                                    .foregroundColor(AppColors.grayScale300)
+                            }
+                            else{
+                                Text("")
+                                    .font(.caption14Italic)
+                            }
                             statusIndicators(recommendation: recommendation)
                         }
                         .padding(8)
@@ -405,21 +405,35 @@ struct ResultsView: View {
                 return "arm_length_green"
             }
             
-            // Fit order harus konsisten dengan fitHierarchy
+            // ✅ FIX: Fit order must be consistent
             // tight(0) → slightly-tight(1) → regular(2) → slightly-loose(3) → loose(4)
             let fitOrder = ["tight", "slightly-tight", "regular", "slightly-loose", "loose"]
             let currentIndex = fitOrder.firstIndex(of: currentFitPreference) ?? 2
             let actualIndex = fitOrder.firstIndex(of: armFit) ?? 2
             
-            // Logic direction
-            // actualIndex < currentIndex → actual fit lebih TIGHT (index lebih kecil)
-            // actualIndex > currentIndex → actual fit lebih LOOSE (index lebih besar)
+            // ✅ FIX: Check distance to determine proper color
+            // actualIndex < currentIndex → actual fit is TIGHTER (lower index)
+            // actualIndex > currentIndex → actual fit is LOOSER (higher index)
             if actualIndex < currentIndex {
-                print("🔍 [ARM DEBUG] → Returning arm_length_yellow (tighter: \(armFit))")
-                return "arm_length_yellow"
+                // Actual fit is TIGHTER than preference
+                let distance = currentIndex - actualIndex
+                if distance == 1 {
+                    print("🔍 [ARM DEBUG] → Returning arm_length_yellow (slightly tighter: \(armFit))")
+                    return "arm_length_yellow"
+                } else {
+                    print("🔍 [ARM DEBUG] → Returning arm_length_red (too tight: \(armFit))")
+                    return "arm_length_red"
+                }
             } else if actualIndex > currentIndex {
-                print("🔍 [ARM DEBUG] → Returning arm_length_blue (looser: \(armFit))")
-                return "arm_length_blue"
+                // Actual fit is LOOSER than preference
+                let distance = actualIndex - currentIndex
+                if distance == 1 {
+                    print("🔍 [ARM DEBUG] → Returning arm_length_yellow (slightly looser: \(armFit))")
+                    return "arm_length_yellow"
+                } else {
+                    print("🔍 [ARM DEBUG] → Returning arm_length_blue (much looser: \(armFit))")
+                    return "arm_length_blue"
+                }
             }
         }
         
@@ -438,7 +452,7 @@ struct ResultsView: View {
         let isShortSleeved = shortSleevedTypes.contains(viewModel.clothingType.lowercased())
         
         // Check if arm_length data actually exists in the recommendation
-        let hasArmLengthData = recommendation.partFits["arm_length"] != nil || 
+        let hasArmLengthData = recommendation.partFits["arm_length"] != nil ||
                                recommendation.fitIssues?["arm_length"] != nil
         
         // Only mention "arm" if it's long-sleeved AND has arm_length data
@@ -570,7 +584,7 @@ struct ResultsView: View {
                     // Yellow warning
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-tight-1",
-                        message: "\(partName) area is slightly tight",
+                        message: "\(partName) area will be slightly tight",
                         icon: "exclamationmark.circle.fill",
                         iconForeground: .black,
                         iconBackground: Color(hex: "FEC901").opacity(0.5)
@@ -579,7 +593,7 @@ struct ResultsView: View {
                     // Red X
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-tight-2",
-                        message: "\(partName) area is too tight",
+                        message: "\(partName) area will be too tight",
                         icon: "xmark.circle.fill",
                         iconForeground: .white,
                         iconBackground: Color.red
@@ -590,7 +604,7 @@ struct ResultsView: View {
                     // Yellow warning
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-loose-1",
-                        message: "\(partName) area slightly loose",
+                        message: "\(partName) will be slightly loose",
                         icon: "exclamationmark.circle.fill",
                         iconForeground: .black,
                         iconBackground: Color(hex: "FEC901").opacity(0.5)
@@ -599,7 +613,7 @@ struct ResultsView: View {
                     // Blue arrow (very loose)
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-loose-2",
-                        message: "\(partName) area is very loose",
+                        message: "\(partName) area will be very loose",
                         icon: "arrow.left.arrow.right.circle.fill",
                         iconForeground: .black,
                         iconBackground: Color(hex: "A7DCFF")
