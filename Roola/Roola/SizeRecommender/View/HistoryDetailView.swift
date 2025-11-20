@@ -53,7 +53,7 @@ struct HistoryDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .tabBar)  // Hide tab bar in detail view
+        .toolbar(.hidden, for: .tabBar)
         .onAppear {
             loadHistoryData()
         }

@@ -65,7 +65,7 @@ struct MainTabView: View {
                         Text("History")
                     }
                 }
-//                .tag(2)
+                .tag(2)
         }
     }
 }

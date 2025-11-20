@@ -42,6 +42,10 @@ struct HistoryView: View {
         NavigationStack {
             VStack {
                 if allHistories.isEmpty {
+                    RoolaHeader(
+                        title: "History",
+                        isLargeTitle: true
+                    )
                     EmptyHistoryView()
                 } else {
                     VStack {

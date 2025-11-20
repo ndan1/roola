@@ -6,23 +6,30 @@
 //
 
 import SwiftUI
+import Lottie
 
 struct EmptyHistoryView: View {
+    @State private var animationTrigger = false
+
     var body: some View {
         VStack {
             Spacer()
-                .frame(height: UIScreen.main.bounds.height * 0.15)
+            
             VStack(spacing: 64) {
                 Spacer()
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 65))
-                    .foregroundColor(AppColors.primaryPurple)
-                    .background(
-                        Circle()
-                            .fill(Color.purple.opacity(0.1))
-                            .frame(width: 120, height: 120)
-                    )
+                    .frame(height: UIScreen.main.bounds.height * 0.1)
+                LottieView {
+                    try await DotLottieFile.named("hanger")
+                }
+                .configure({ lottieAnimationView in
+                    lottieAnimationView.contentMode = .scaleAspectFill
+                    lottieAnimationView.shouldRasterizeWhenIdle = true
+                })
+                .playbackMode(.playing(.toProgress(1, loopMode: .playOnce)))
+                .id(animationTrigger)
                 
+                .padding(.top, -92)
+            
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         Text("Start inputing your desire outfit and \nget recommendations")
@@ -40,7 +47,15 @@ struct EmptyHistoryView: View {
                     
                     Spacer()
                 }
+                .padding(.top, -192)
             }
         }
+        .onAppear {
+            animationTrigger.toggle()
+        }
     }
+}
+
+#Preview {
+    EmptyHistoryView()
 }

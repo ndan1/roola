@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A50723352EA6A54C00AD4C68 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A50723342EA6A54C00AD4C68 /* Supabase */; };
+		A5CF11252ECEA5B50030B2BA /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = A5CF11242ECEA5B50030B2BA /* Lottie */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +27,19 @@
 			remoteInfo = Roola;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A57162522ECEA87500292F6F /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		6AE509F62EA1EC4700756E64 /* Roola.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roola.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,6 +84,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A50723352EA6A54C00AD4C68 /* Supabase in Frameworks */,
+				A5CF11252ECEA5B50030B2BA /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -120,6 +135,7 @@
 				6AE509F22EA1EC4700756E64 /* Sources */,
 				6AE509F32EA1EC4700756E64 /* Frameworks */,
 				6AE509F42EA1EC4700756E64 /* Resources */,
+				A57162522ECEA87500292F6F /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -131,6 +147,7 @@
 			name = Roola;
 			packageProductDependencies = (
 				A50723342EA6A54C00AD4C68 /* Supabase */,
+				A5CF11242ECEA5B50030B2BA /* Lottie */,
 			);
 			productName = Roola;
 			productReference = 6AE509F62EA1EC4700756E64 /* Roola.app */;
@@ -216,6 +233,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A50723332EA6A4F500AD4C68 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				A5CF11232ECEA5B50030B2BA /* XCRemoteSwiftPackageReference "lottie-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6AE509F72EA1EC4700756E64 /* Products */;
@@ -602,6 +620,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		A5CF11232ECEA5B50030B2BA /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -609,6 +635,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A50723332EA6A4F500AD4C68 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		A5CF11242ECEA5B50030B2BA /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A5CF11232ECEA5B50030B2BA /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
