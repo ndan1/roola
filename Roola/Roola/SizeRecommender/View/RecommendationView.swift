@@ -517,12 +517,10 @@ struct RecommendationView: View {
     }
     
     private func handleFindYourFit() {
-        // Reset error states
         showClothingTypeError = false
         showFitPreferenceError = false
         showImageError = false
         
-        // Validate inputs
         var hasError = false
         
         if viewModel.clothingType.isEmpty {
@@ -540,31 +538,22 @@ struct RecommendationView: View {
             hasError = true
         }
         
-        // If there are validation errors, don't proceed
         if hasError {
             return
         }
         
-        // Check internet connection
         if !networkMonitor.isConnected {
             showNoInternetModal = true
             return
         }
         
-        // All validations passed, process the image
-        viewModel.processImage()
-        
-        // Reset flags
         isAnimationFinished = false
-        
-        // MULAI LOADING VISUAL
-        isVisualLoading = true
-        
-        // Start Process Data (ViewModel)
-        viewModel.processImage()
-        
-        // Mulai Timer Timeout
-        startTimeoutTimer()
+                
+        viewModel.processImage {
+            self.isVisualLoading = true
+            
+            self.startTimeoutTimer()
+        }
     }
     
     private var displayClothingType: String {

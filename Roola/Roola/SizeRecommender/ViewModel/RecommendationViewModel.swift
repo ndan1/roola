@@ -78,59 +78,50 @@ class RecommendationViewModel: ObservableObject {
         apiError = nil
         currentError = nil
         showErrorAlert = false
+        isProcessing = false
     }
     
     /// 1. Menjalankan OCR dan ekstraksi AI
-    func processImage() {
+    func processImage(onValidationSuccess: @escaping () -> Void) {
         guard let image = selectedImage else { return }
         
-        // Reset states (but don't start loading yet)
+        // Reset states
         currentStep = ""
         serverResponse = nil
         apiError = nil
         
+        // Tandai sedang memproses agar tombol disable (tapi loading overlay belum muncul)
+        self.isProcessing = true
+        
         Task {
             do {
-                // Step A: OCR (without showing loading yet)
                 let ocrResult = try await ocrService.performOCR(on: image)
-                
                 self.recognizedText = ocrResult
                 
-                print("\n📝 OCR Result:")
-                print(ocrResult)
-                
-                // Validate OCR text first (this may throw OCRError)
+                print("🔍 Validating OCR Text...")
                 try await ocrService.validateOCRText(ocrResult)
                 
-                // If validation passes, NOW show loading
-                self.isProcessing = true
-                self.currentStep = "Validating size chart..."
-                
-                // Ensure loading stops when function finishes
-                defer {
-                    self.isProcessing = false
+                await MainActor.run {
+                    onValidationSuccess()
                 }
                 
-                // Step B: Gemini API
                 self.currentStep = "Analyzing with AI..."
-                
                 let jsonResult = try await geminiService.extractSizeChart(from: ocrResult)
                 
                 self.extractedJSON = jsonResult
                 self.currentStep = "Finalizing..."
-
-                print("\n✅ Final JSON Result:")
-                print(jsonResult)
                 
-                // Note: isProcessing becomes false automatically via 'defer' here
+                self.isProcessing = false
                 
             } catch let error as OCRError {
                 await MainActor.run {
                     handleError(error)
                 }
             } catch {
-                handleError(OCRError.recognitionFailed)
-                print("❌ Error: \(error)")
+                await MainActor.run {
+                    handleError(OCRError.recognitionFailed)
+                    print("❌ Error: \(error)")
+                }
             }
         }
     }
