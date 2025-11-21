@@ -12,6 +12,8 @@ struct ResultsView: View {
     @Binding var showResults: Bool
     var isFromHistory: Bool = false
     
+    var historyProductName: String? = nil
+    
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
@@ -20,10 +22,13 @@ struct ResultsView: View {
         showResults: Binding<Bool>,
         initialFitPreference: String = "standard",
         isFromHistory: Bool = false,
+        historyProductName: String? = nil,
         onTryAgain: (() -> Void)? = nil
     ) {
         self._showResults = showResults
         self.isFromHistory = isFromHistory
+        
+        self.historyProductName = historyProductName
         
         let vm = ResultsViewModel(
             recommendationViewModel: recommendationViewModel,
@@ -49,6 +54,32 @@ struct ResultsView: View {
                 errorView(message: apiError)
             } else if let recommendation = viewModel.currentRecommendation {
                 resultContent(recommendation: recommendation)
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            // 2. Buat Custom Title di Kiri (Leading)
+            ToolbarItem(placement: .topBarLeading) {
+                if isFromHistory {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                .fill(AppColors.primaryPurple)
+                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    )}
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Text("Recommended Size")
+                    .font(.heading32Medium)
+                    .foregroundStyle(.primary)
             }
         }
         .onAppear {
@@ -86,19 +117,15 @@ struct ResultsView: View {
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
         ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    headerSection
-                    recommendationSection(recommendation: recommendation)
-                    
-                    Spacer()
-                        .frame(height: 140)
-                }
-                .padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: 16) {
+                recommendationSection(recommendation: recommendation)
+                    .padding(.top, isFromHistory ? 86 : 64)
             }
+            .padding(.horizontal, 16)
             
             if !isFromHistory {
                 actionButtons
+                    .padding(.bottom, 48)
             }
             
             if viewModel.showSaveModal {
@@ -122,36 +149,6 @@ struct ResultsView: View {
         }
     }
     
-    // MARK: - Header Section
-    
-    @ViewBuilder
-    private var headerSection: some View {
-        HStack(alignment: .center, spacing: 8) {
-            if isFromHistory {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "chevron.left.circle.fill")
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        .foregroundColor(AppColors.primaryWhite)
-                        .background(
-                            Circle()
-                                .fill(AppColors.primaryPurple)
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                        )
-                }
-            }
-            
-            Text("Recommended Size")
-                .font(isFromHistory ? .system(size: 30): .heading32Medium)
-                .fontWeight(.medium)
-            
-            Spacer()
-        }
-        .padding(.top, 60)
-    }
-    
     // MARK: - Recommendation Section
     
     @ViewBuilder
@@ -160,6 +157,12 @@ struct ResultsView: View {
             sizeBadge(recommendation: recommendation)
             
             VStack(alignment: .leading, spacing: 8) {
+                if isFromHistory, let name = historyProductName {
+                    Text(name)
+                        .font(.heading24Medium)
+                        .foregroundColor(.black)
+                        .padding(.bottom, 4)
+                }
                 Text("Fit Preference")
                     .font(.body16Regular)
                 
@@ -181,6 +184,7 @@ struct ResultsView: View {
             .cornerRadius(12)
             
             noteText
+            Spacer()
         }
     }
     
@@ -236,7 +240,7 @@ struct ResultsView: View {
     @ViewBuilder
     private func warningText(recommendation: FitRecommendation) -> some View {
         if recommendation.bestScore < 30 {
-            Text("The selected size may not fit well on your preferences because...")
+            Text("Selected size may not fit well on your preferences.")
                 .font(.caption14Italic)
                 .foregroundColor(AppColors.grayScale300)
         } else {

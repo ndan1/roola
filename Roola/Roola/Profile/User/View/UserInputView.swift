@@ -18,47 +18,71 @@ struct UserInputView: View {
     @State private var isShowingAIMeasurement = false
     
     var body: some View {
-        ZStack {
-            // MARK: - Main Content
-            VStack(alignment: .leading, spacing: 0) {
-                if existingUsers.isEmpty {
-                    createUserView
-                } else {
-                    updateUserView
+        NavigationStack {
+            ZStack {
+                // MARK: - Main Content
+                VStack(alignment: .leading, spacing: 0) {
+                    if existingUsers.isEmpty {
+                        createUserView
+                    } else {
+                        updateUserView
+                    }
                 }
-            }
-            .background(FirstGradientBackground().ignoresSafeArea())
-            
-            // MARK: - Success Popup Overlay
-            if viewModel.showSuccessPopup {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .zIndex(1)
+                .padding(.top, 16)
                 
-                SuccessPopupView {
-                    // Allow manual dismiss on tap
-                    handleSuccessDismissal()
-                }
-                .zIndex(2)
-                .onAppear {
-                    // Auto-dismiss after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        // Check if it is still showing to avoid redundant calls
-                        if viewModel.showSuccessPopup {
-                            handleSuccessDismissal()
+                .onAppear(perform: loadExistingUserData)
+                // MARK: - Success Popup Overlay
+                if viewModel.showSuccessPopup {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .zIndex(1)
+                    
+                    SuccessPopupView {
+                        // Allow manual dismiss on tap
+                        handleSuccessDismissal()
+                    }
+                    .zIndex(2)
+                    .onAppear {
+                        // Auto-dismiss after 2 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            // Check if it is still showing to avoid redundant calls
+                            if viewModel.showSuccessPopup {
+                                handleSuccessDismissal()
+                            }
                         }
                     }
                 }
             }
-        }
-        .onAppear(perform: loadExistingUserData)
-        .sheet(isPresented: $showMeasureGuide) {
-            MeasureGuideModal()
-                .presentationDetents([.fraction(0.75)])
-                .presentationDragIndicator(.visible)
-        }
-        .fullScreenCover(isPresented: $isShowingAIMeasurement) {
-            CameraFlowContainerView()
+            .background(FirstGradientBackground().ignoresSafeArea())
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // 2. Buat Custom Title di Kiri (Leading)
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Your Measurements")
+                        .font(.heading32Medium)
+                        .foregroundStyle(.primary)
+                }
+                
+                // 3. Tombol Info tetap di Kanan (Trailing)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showMeasureGuide.toggle() }) {
+                        Image(systemName: "info.circle")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(AppColors.primaryPurple)
+                    }
+                }
+            }
+            .onAppear(perform: loadExistingUserData)
+            .sheet(isPresented: $showMeasureGuide) {
+                MeasureGuideModal()
+                    .presentationDetents([.fraction(0.75)])
+                    .presentationDragIndicator(.visible)
+            }
+            .fullScreenCover(isPresented: $isShowingAIMeasurement) {
+                CameraFlowContainerView()
+            }
         }
     }
     
@@ -82,10 +106,10 @@ struct UserInputView: View {
 private extension UserInputView {
     var createUserView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            RoolaHeader(
-                title: "Your Measurements",
-                onBack: { dismiss() },
-                onInfo: {showMeasureGuide.toggle()})
+//            RoolaHeader(
+//                title: "Your Measurements",
+//                onBack: { dismiss() },
+//                onInfo: {showMeasureGuide.toggle()})
 
             VStack(spacing: 30) {
                 MeasurementsCard(
@@ -118,11 +142,11 @@ private extension UserInputView {
     
     var updateUserView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            RoolaHeader(
-                title: "Your Measurements",
-                onInfo: {showMeasureGuide.toggle()},
-                isLargeTitle: true
-            )
+//            RoolaHeader(
+//                title: "Your Measurements",
+//                onInfo: {showMeasureGuide.toggle()},
+//                isLargeTitle: true
+//            )
 
             VStack(spacing: 30) {
                 if isEditing {

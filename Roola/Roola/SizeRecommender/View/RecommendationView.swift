@@ -54,39 +54,68 @@ struct RecommendationView: View {
     @State private var isVisualLoading = false
     
     var body: some View {
-        ZStack {
-            mainContent
-            loadingOverlay
-            errorModals
-        }
-        .alert("Request Timeout", isPresented: $showTimeoutAlert) {
-            Button("OK") {
-                resetProcessingState()
+        NavigationStack {
+            ZStack {
+                mainContent
+                loadingOverlay
+                errorModals
             }
-        } message: {
-            Text("The request took too long to process. Please try again.")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // 2. Buat Custom Title di Kiri (Leading)
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Find Your Fit")
+                        .font(.heading32Medium)
+                        .foregroundStyle(.primary)                }
+                
+                // 3. Tombol Info tetap di Kanan (Trailing)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showFitGuide.toggle() }) {
+                        Image(systemName: "info.circle")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(AppColors.primaryPurple)
+                    }
+                }
+            }
+            .alert("Request Timeout", isPresented: $showTimeoutAlert) {
+                Button("OK") {
+                    resetProcessingState()
+                }
+            } message: {
+                Text("The request took too long to process. Please try again.")
+            }
+            .fullScreenCover(isPresented: $showNoInternetPage) {
+                NoInternetPage(onRetry: {
+                    showNoInternetPage = false
+                    resetAllFields()
+                })
+            }
+            .animation(.spring(), value: viewModel.isProcessing)
+            .animation(.spring(), value: viewModel.showErrorAlert)
         }
-        .fullScreenCover(isPresented: $showNoInternetPage) {
-            NoInternetPage(onRetry: {
-                showNoInternetPage = false
-                resetAllFields()
-            })
-        }
-        .animation(.spring(), value: viewModel.isProcessing)
-        .animation(.spring(), value: viewModel.showErrorAlert)
     }
     
     // MARK: - Main Content
     
     private var mainContent: some View {
         VStack(spacing: 0) {
-            headerSection
+//            headerSection
+            Text("Fill your product details to get your best match")
+                .font(.body)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+                .padding(.top, 10)
             formSection
             uploadSection
             Spacer()
             bottomButton
             Color.clear.frame(height: 0)
         }
+        .padding(.top, 16)
         .ignoresSafeArea(edges: .bottom)
         .background(
             FirstGradientBackground().ignoresSafeArea()
@@ -119,7 +148,9 @@ struct RecommendationView: View {
             handleNetworkChange(oldValue: oldValue, newValue: newValue)
         }
         .fullScreenCover(isPresented: $showResults) {
-            resultsView
+            NavigationStack {
+                resultsView
+            }
         }
         .sheet(isPresented: $showFitGuide) {
             fitGuideView
@@ -200,39 +231,6 @@ struct RecommendationView: View {
         FitGuideView(showFitGuide: $showFitGuide)
             .presentationDetents([.fraction(0.75)])
             .presentationDragIndicator(.visible)
-    }
-    
-    // MARK: - Header Section
-    
-    private var headerSection: some View {
-        VStack(spacing: 0) {
-            Spacer().frame(height: 15)
-            
-            HStack {
-                Text("Find your fit")
-                    .font(.heading32Medium)
-                
-                Spacer()
-                
-                Button(action: {
-                    showFitGuide = true
-                }) {
-                    Image(systemName: "info.circle")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(AppColors.primaryPurple)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
-            
-            Text("Fill your product details to get your best match")
-                .font(.body)
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-        }
     }
     
     // MARK: - Form Section

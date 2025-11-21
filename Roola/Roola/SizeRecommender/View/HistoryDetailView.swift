@@ -47,13 +47,11 @@ struct HistoryDetailView: View {
                 .padding()
             } else if viewModel.serverResponse != nil {
                 ResultsView(
-                    recommendationViewModel: viewModel, showResults: .constant(true), initialFitPreference: history.selectedFitPreference, isFromHistory: true, onTryAgain: nil
+                    recommendationViewModel: viewModel, showResults: .constant(true), initialFitPreference: history.selectedFitPreference, isFromHistory: true, historyProductName: history.productName ,onTryAgain: nil
                 )
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .tabBar)
         .onAppear {
             loadHistoryData()
         }
