@@ -67,7 +67,8 @@ struct RecommendationView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Text("Find Your Fit")
                         .font(.heading32Medium)
-                        .foregroundStyle(.primary)                }
+                        .foregroundStyle(.primary)
+                }
                 
                 // 3. Tombol Info tetap di Kanan (Trailing)
                 ToolbarItem(placement: .topBarTrailing) {
@@ -79,6 +80,8 @@ struct RecommendationView: View {
                     }
                 }
             }
+            .toolbar(isVisualLoading ? .hidden : .visible, for: .navigationBar)
+            .toolbar(isVisualLoading ? .hidden : .visible, for: .tabBar)
             .alert("Request Timeout", isPresented: $showTimeoutAlert) {
                 Button("OK") {
                     resetProcessingState()

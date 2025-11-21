@@ -158,10 +158,15 @@ struct ResultsView: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 if isFromHistory, let name = historyProductName {
-                    Text(name)
-                        .font(.heading24Medium)
-                        .foregroundColor(.black)
-                        .padding(.bottom, 4)
+                    HStack {
+                        Spacer()
+                        Text(name)
+                            .font(.heading24Medium)
+                            .foregroundColor(.black)
+                            .padding(.bottom, 4)
+                        Spacer()
+                    }
+                    .frame(width: .infinity)
                 }
                 Text("Fit Preference")
                     .font(.body16Regular)
