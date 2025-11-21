@@ -48,11 +48,23 @@ struct RecommendationView: View {
     @State private var showFitPreferenceError = false
     @State private var showImageError = false
     
+    @State private var isAnimationFinished = false
+    @State private var timeoutTask: Task<Void, Never>? = nil
+    @State private var showTimeoutAlert = false
+    @State private var isVisualLoading = false
+    
     var body: some View {
         ZStack {
             mainContent
             loadingOverlay
             errorModals
+        }
+        .alert("Request Timeout", isPresented: $showTimeoutAlert) {
+            Button("OK") {
+                resetProcessingState()
+            }
+        } message: {
+            Text("The request took too long to process. Please try again.")
         }
         .fullScreenCover(isPresented: $showNoInternetPage) {
             NoInternetPage(onRetry: {
@@ -118,7 +130,7 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var loadingOverlay: some View {
-        if viewModel.isProcessing {
+        if isVisualLoading {
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
                 .transition(.opacity)
@@ -126,7 +138,10 @@ struct RecommendationView: View {
             ProgressLoading(
                 title: "Hang Tight...",
                 subtitle: "We're tailoring this for you.",
-                duration: 3.0
+                duration: 4.0,
+                onFinish: {
+                    handleAnimationFinished()
+                }
             )
             .zIndex(1)
             .transition(.scale.combined(with: .opacity))
@@ -145,6 +160,8 @@ struct RecommendationView: View {
                         viewModel.resetAllStates()
                         selectedPhoto = nil
                         viewModel.selectedImage = nil
+                        isVisualLoading = false
+                        timeoutTask?.cancel()
                     },
                     isPresented: $viewModel.showErrorAlert
                 )
@@ -428,6 +445,59 @@ struct RecommendationView: View {
         .padding(.bottom, 110)
     }
     
+    // MARK: - LOGIC FUNCTIONS
+        
+    private func handleAnimationFinished() {
+        isAnimationFinished = true
+        checkAndShowResults()
+    }
+    
+    private func handleServerResponseChange(oldValue: ServerResponse?, newValue: ServerResponse?) {
+        if newValue != nil && !viewModel.isCallingAPI {
+            checkAndShowResults()
+        }
+    }
+    
+    private func checkAndShowResults() {
+        if viewModel.serverResponse != nil && isAnimationFinished {
+            timeoutTask?.cancel()
+            isVisualLoading = false
+            showResults = true
+        }
+    }
+    
+    private func startTimeoutTimer() {
+        timeoutTask?.cancel()
+        
+        timeoutTask = Task {
+            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+            
+            if !Task.isCancelled {
+                await MainActor.run {
+                    if !showResults {
+                        handleTimeout()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func handleTimeout() {
+        // Hentikan semua proses
+//        resetProcessingState()
+        viewModel.resetAllStates()
+        isVisualLoading = false
+        isAnimationFinished = false
+        showTimeoutAlert = true
+    }
+    
+    private func resetProcessingState() {
+        viewModel.isProcessing = false
+        viewModel.isCallingAPI = false
+        isAnimationFinished = false
+        }
+
+    
     // MARK: - Helper Functions
     
     private func loadUserData() {
@@ -439,12 +509,6 @@ struct RecommendationView: View {
     private func handleExtractedJSONChange(oldValue: String, newValue: String) {
         if !newValue.isEmpty && !viewModel.isCallingAPI {
             viewModel.getRecommendation()
-        }
-    }
-    
-    private func handleServerResponseChange(oldValue: ServerResponse?, newValue: ServerResponse?) {
-        if newValue != nil && !viewModel.isCallingAPI {
-            showResults = true
         }
     }
     
@@ -491,6 +555,18 @@ struct RecommendationView: View {
         
         // All validations passed, process the image
         viewModel.processImage()
+        
+        // Reset flags
+        isAnimationFinished = false
+        
+        // MULAI LOADING VISUAL
+        isVisualLoading = true
+        
+        // Start Process Data (ViewModel)
+        viewModel.processImage()
+        
+        // Mulai Timer Timeout
+        startTimeoutTimer()
     }
     
     private var displayClothingType: String {
