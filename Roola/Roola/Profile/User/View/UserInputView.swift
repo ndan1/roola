@@ -18,70 +18,94 @@ struct UserInputView: View {
     @State private var isShowingAIMeasurement = false
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // MARK: - Main Content
-                VStack(alignment: .leading, spacing: 0) {
-                    if existingUsers.isEmpty {
-                        createUserView
-                    } else {
-                        updateUserView
-                    }
+        ZStack {
+            // MARK: - Main Content
+            VStack(alignment: .leading, spacing: 0) {
+                if existingUsers.isEmpty {
+                    createUserView
+                } else {
+                    updateUserView
                 }
-                .padding(.top, 16)
+            }
+//            .padding(.top, 16)
+            
+            .onAppear(perform: loadExistingUserData)
+            // MARK: - Success Popup Overlay
+            if viewModel.showSuccessPopup {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .zIndex(1)
                 
-                .onAppear(perform: loadExistingUserData)
-                // MARK: - Success Popup Overlay
-                if viewModel.showSuccessPopup {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                        .zIndex(1)
-                    
-                    SuccessPopupView {
-                        // Allow manual dismiss on tap
-                        handleSuccessDismissal()
-                    }
-                    .zIndex(2)
-                    .onAppear {
-                        // Auto-dismiss after 2 seconds
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            // Check if it is still showing to avoid redundant calls
-                            if viewModel.showSuccessPopup {
-                                handleSuccessDismissal()
-                            }
+                SuccessPopupView {
+                    // Allow manual dismiss on tap
+                    handleSuccessDismissal()
+                }
+                .zIndex(2)
+                .onAppear {
+                    // Auto-dismiss after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        // Check if it is still showing to avoid redundant calls
+                        if viewModel.showSuccessPopup {
+                            handleSuccessDismissal()
                         }
                     }
                 }
             }
-            .background(FirstGradientBackground().ignoresSafeArea())
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // 2. Buat Custom Title di Kiri (Leading)
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("Your Measurements")
-                        .font(.heading32Medium)
-                        .foregroundStyle(.primary)
-                }
-                
-                // 3. Tombol Info tetap di Kanan (Trailing)
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: { showMeasureGuide.toggle() }) {
-                        Image(systemName: "info.circle")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(AppColors.primaryPurple)
+        }
+        .background(FirstGradientBackground().ignoresSafeArea())
+        .sheet(isPresented: $showMeasureGuide) {
+            MeasureGuideModal()
+                .presentationDetents([.fraction(0.75)])
+                .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(isPresented: $isShowingAIMeasurement) {
+            CameraFlowContainerView()
+        }
+        
+        // MARK: - AKTIFKAN NAVIGATION BAR DISINI
+        .navigationBarBackButtonHidden(true)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            
+            // BAGIAN KIRI (LEADING)
+            ToolbarItem(placement: .topBarLeading) {
+                if existingUsers.isEmpty {
+                    HStack(spacing: 12) {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 24)
+                                .foregroundColor(AppColors.primaryWhite)
+                                .background(
+                                    Circle()
+                                        .fill(AppColors.primaryPurple)
+                                        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                )
+                        }
+                        
+                        Text("Your Measurements")
+                            .font(.heading28Medium)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
+                } else {
+                    Text("Your Measurements")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.leading, 4)
                 }
             }
-            .onAppear(perform: loadExistingUserData)
-            .sheet(isPresented: $showMeasureGuide) {
-                MeasureGuideModal()
-                    .presentationDetents([.fraction(0.75)])
-                    .presentationDragIndicator(.visible)
-            }
-            .fullScreenCover(isPresented: $isShowingAIMeasurement) {
-                CameraFlowContainerView()
+                
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showMeasureGuide.toggle() }) {
+                    Image(systemName: "info.circle")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
             }
         }
     }
@@ -106,12 +130,16 @@ struct UserInputView: View {
 private extension UserInputView {
     var createUserView: some View {
         VStack(alignment: .leading, spacing: 0) {
-//            RoolaHeader(
-//                title: "Your Measurements",
-//                onBack: { dismiss() },
-//                onInfo: {showMeasureGuide.toggle()})
 
             VStack(spacing: 30) {
+                BodySizeCard(
+                    height: $viewModel.height,
+                    weight: $viewModel.weight,
+                    isHeightError: viewModel.isHeightError,
+                    isWeightError: viewModel.isWeightError,
+                    hasAnyError: viewModel.hasError
+                )
+                
                 MeasurementsCard(
                     chest: $viewModel.bust,
                     waist: $viewModel.waist,
@@ -142,14 +170,17 @@ private extension UserInputView {
     
     var updateUserView: some View {
         VStack(alignment: .leading, spacing: 0) {
-//            RoolaHeader(
-//                title: "Your Measurements",
-//                onInfo: {showMeasureGuide.toggle()},
-//                isLargeTitle: true
-//            )
 
             VStack(spacing: 30) {
                 if isEditing {
+                    BodySizeCard(   
+                        height: $viewModel.height,
+                        weight: $viewModel.weight,
+                        isHeightError: viewModel.isHeightError,
+                        isWeightError: viewModel.isWeightError,
+                        hasAnyError: viewModel.hasError
+                    )
+                    
                     MeasurementsCard(
                         chest: $viewModel.bust,
                         waist: $viewModel.waist,
@@ -183,6 +214,13 @@ private extension UserInputView {
                     .frame(width: UIScreen.main.bounds.width * 0.85)
                     .padding(.bottom, 25)
                 } else {
+                    MeasurementListView(
+                        items: [
+                            MeasurementItem(label: "Height", value: viewModel.height),
+                            MeasurementItem(label: "Weight", value: viewModel.weight)
+                        ]
+                    )
+                    
                     MeasurementListView(
                         items: [
                             MeasurementItem(label: "Chest", value: viewModel.bust),
@@ -277,8 +315,10 @@ private extension UserInputView {
 
 // MARK: - Previews
 #Preview("Create Mode") {
-    UserInputView()
-        .modelContainer(for: User.self, inMemory: true)
+    NavigationStack {
+        UserInputView()
+            .modelContainer(for: User.self, inMemory: true)
+    }
 }
 
 #Preview("Update Mode") {
@@ -287,6 +327,9 @@ private extension UserInputView {
     let ctx = container.mainContext
     let mock = User(bust: 95, waist: 80, torso: 60, arms_length: 55)
     ctx.insert(mock)
-    return UserInputView()
-        .modelContainer(container)
+    
+    return NavigationStack {
+        UserInputView()
+            .modelContainer(container)
+    }
 }

@@ -33,7 +33,7 @@ struct MainTabView: View {
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithTransparentBackground() // Transparan agar gradient background terlihat
         
-        // Ganti font ini sesuai dengan font Custom Anda (.heading32Medium dan .body17Semibold)
+        // Ganti font ini sesuai dengan font Custom Anda (.heading28Medium dan .body17Semibold)
         // Pastikan nama font ("PlusJakartaSans-Medium" dsb) sesuai dengan Info.plist Anda
         let largeFont = UIFont(name: "HelveticaNeue-Medium", size: 32) ?? UIFont.systemFont(ofSize: 32, weight: .medium)
         let inlineFont = UIFont(name: "HelveticaNeue-Bold", size: 17) ?? UIFont.systemFont(ofSize: 17, weight: .semibold)
@@ -72,14 +72,17 @@ struct MainTabView: View {
         TabView(
             selection: $selectedTab
         ) {
-            UserInputView()
-                .tabItem {
-                    VStack {
-                        smallSymbol("pencil.and.ruler", size: 14)
-                        Text("Measurements")
-                    }
+            NavigationStack{
+                UserInputView()
+            }
+            .tabItem {
+                VStack {
+                    smallSymbol("pencil.and.ruler", size: 14)
+                    Text("Measurements")
                 }
-                .tag(0)
+            }
+            .tag(0)
+            
 
             RecommendationView()
                 .tabItem {

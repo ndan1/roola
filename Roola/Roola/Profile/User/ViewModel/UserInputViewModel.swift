@@ -13,6 +13,8 @@ final class UserInputViewModel: ObservableObject {
     @Published var waist: Int?
     @Published var torso: Int?
     @Published var armsLength: Int?
+    @Published var height: Int?
+    @Published var weight: Int?
 
     // Replaced generic alert with specific success state
     @Published var showSuccessPopup = false
@@ -24,6 +26,8 @@ final class UserInputViewModel: ObservableObject {
         waist      = user.waist
         torso      = user.torso
         armsLength = user.arms_length
+        height     = user.height
+        weight     = user.weight
     }
 
     // MARK: - Validation helpers
@@ -35,13 +39,15 @@ final class UserInputViewModel: ObservableObject {
     var isWaistError: Bool      { isFieldInvalid(waist) }
     var isTorsoError: Bool      { isFieldInvalid(torso) }
     var isArmsLengthError: Bool { isFieldInvalid(armsLength) }
+    var isHeightError: Bool      { isFieldInvalid(height) }
+    var isWeightError: Bool     { isFieldInvalid(weight) }
 
     var hasError: Bool {
-        isBustError || isWaistError || isTorsoError || isArmsLengthError
+        isBustError || isWaistError || isTorsoError || isArmsLengthError || isHeightError || isWeightError
     }
 
     var hasEmptyError: Bool {
-        hasAttemptedSave && (bust == nil || waist == nil || torso == nil || armsLength == nil)
+        hasAttemptedSave && (bust == nil || waist == nil || torso == nil || armsLength == nil || height == nil || weight == nil)
     }
 
     // MARK: - Intent

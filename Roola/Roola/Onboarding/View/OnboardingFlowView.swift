@@ -53,7 +53,7 @@ struct OnboardingFlowView: View {
                             .navigationBarHidden(true)
                         case .manual:
                             UserInputView()
-                            .navigationBarHidden(true)
+//                            .navigationBarHidden(true)
                         }
                     }
                     .navigationDestination(for: FlowStep.self) { step in

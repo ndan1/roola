@@ -19,7 +19,7 @@ struct NoInternetPage: View {
                     .font(.system(size: 96))
                     .foregroundStyle(AppColors.primaryPurple)
                 Text("No Internet")
-                    .font(.heading32Medium)
+                    .font(.heading28Medium)
                     .foregroundStyle(Color.red)
                 Text("You're offline. Please check your connection.")
                     .multilineTextAlignment(.center)

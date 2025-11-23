@@ -78,7 +78,7 @@ struct ResultsView: View {
             }
             ToolbarItem(placement: .principal) {
                 Text("Recommended Size")
-                    .font(.heading32Medium)
+                    .font(.heading28Medium)
                     .foregroundStyle(.primary)
             }
         }
