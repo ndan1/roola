@@ -64,7 +64,7 @@ struct MeasurementRow: View {
     var body: some View {
         MeasurementField(label: label, unit: unit, value: $value, isError: isError)
             .overlay(
-                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
+                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
             )
     }
 }
