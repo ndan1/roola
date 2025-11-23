@@ -381,6 +381,8 @@ private extension UserInputView {
         user.waist       = viewModel.waist       ?? 0
         user.torso       = viewModel.torso       ?? 0
         user.arms_length = viewModel.armsLength  ?? 0
+        user.height      = viewModel.height ?? 0
+        user.weight      = viewModel.weight ?? 0
 
         if existingUsers.isEmpty {
             modelContext.insert(user)
