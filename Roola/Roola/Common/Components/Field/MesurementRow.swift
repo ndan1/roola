@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MeasurementField: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     
@@ -59,7 +59,7 @@ struct MeasurementField: View {
 
 struct MeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
 
@@ -74,7 +74,7 @@ struct MeasurementRow: View {
 
 struct TopMeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     var cornerRadius: CGFloat = 12
@@ -108,7 +108,7 @@ struct RoundedCorner: Shape {
 }
 struct BottomMeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     var cornerRadius: CGFloat = 12
@@ -140,13 +140,13 @@ struct BottomMeasurementRow: View {
             VStack(spacing: 30) {
                 
                 VStack(spacing: 0) {
-                    TopMeasurementRow(label: "Chest", value: $topValue)
+                    TopMeasurementRow(label: "Chest", unit: "cm" ,value: $topValue)
                     Divider()
-                    MeasurementRow(label: "Waist", value: $midValue)
+                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
                     Divider()
-                    MeasurementRow(label: "Waist", value: $midValue)
+                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
                     Divider()
-                    BottomMeasurementRow(label: "Arm Length", value: $botValue)
+                    BottomMeasurementRow(label: "Arm Length", unit: "cm" ,value: $botValue)
                 }
                 .cornerRadius(12)
                 .overlay(

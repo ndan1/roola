@@ -158,9 +158,9 @@ struct BodySizeCard: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            TopMeasurementRow(label: "Height", value: $height, isError: isHeightError)
+            TopMeasurementRow(label: "Height", unit: "cm", value: $height, isError: isHeightError)
             
-            BottomMeasurementRow(label: "Weight", value: $weight, isError: isWeightError)
+            BottomMeasurementRow(label: "Weight", unit: "cm", value: $weight, isError: isWeightError)
         }
     }
 }
@@ -182,19 +182,19 @@ struct MeasurementsCard: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            TopMeasurementRow(label: "Chest", value: $chest, isError: isChestError)
+            TopMeasurementRow(label: "Chest", unit:"cm", value: $chest, isError: isChestError)
             
             
             
-            MeasurementRow(label: "Waist", value: $waist, isError: isWaistError)
+            MeasurementRow(label: "Waist", unit:"cm", value: $waist, isError: isWaistError)
             
             
             
-            MeasurementRow(label: "Arm length", value: $armLength, isError: isArmLengthError)
+            MeasurementRow(label: "Arm length", unit:"cm", value: $armLength, isError: isArmLengthError)
             
             
             
-            BottomMeasurementRow(label: "Torso length", value: $torsoLength, isError: isTorsoLengthError)
+            BottomMeasurementRow(label: "Torso length", unit:"cm", value: $torsoLength, isError: isTorsoLengthError)
         }
     }
 }
