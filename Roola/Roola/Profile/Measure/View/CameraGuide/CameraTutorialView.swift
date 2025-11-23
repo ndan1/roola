@@ -31,12 +31,13 @@ struct CameraTutorialView: View {
         let width = UIScreen.main.bounds.width
 
         VStack(alignment: .center, spacing: 0) {
-            RoolaHeader(
-                title: "Instructions",
-                onBack: { dismiss() },
-                isLargeTitle: true
-            )
-
+//            RoolaHeader(
+//                title: "Instructions",
+//                onBack: { dismiss() },
+//                isLargeTitle: true
+//            )
+//            Spacer().frame(height: 10)
+            
             VStack (alignment: .center, spacing: width * 0.01) {
                 ForEach(tutorialSteps) { step in
                     VStack(alignment:.leading, spacing: 5) {
@@ -83,6 +84,7 @@ struct CameraTutorialView: View {
                         .padding(.bottom, 15)
                 }
             }
+            .padding(.top, 10)
 
         }
         .sheet(isPresented: $isShowPolicy) {
@@ -91,6 +93,40 @@ struct CameraTutorialView: View {
                 .presentationDragIndicator(.visible)
         }
         .background(FirstGradientBackground().ignoresSafeArea())
+                
+        // MARK: - SETUP NAVIGATION BAR
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline) // Agar font besar seperti RoolaHeader
+        .navigationBarBackButtonHidden(true)   // Sembunyikan back button biru default
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                // 2. Gabungkan Tombol Back & Judul dalam HStack
+                HStack(spacing: 12) {
+                    
+                    // Tombol Back (Chevron)
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 24)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                    .fill(AppColors.primaryPurple)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                            )
+                    }
+                    
+                    // Teks Judul (Disamping Chevron)
+                    Text("Instructions")
+                        .font(.heading28Medium) // Font custom permintaanmu
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false) // Agar teks tidak terpotong
+                }
+                // Tambahkan padding negatif sedikit di kiri jika terasa terlalu menjorok ke dalam (opsional)
+                // .padding(.leading, -8)
+            }
+        }
     }
 }
 

@@ -23,7 +23,7 @@ struct CameraFlowContainerView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+//            .navigationBarHidden(true)
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
                 case .capture:

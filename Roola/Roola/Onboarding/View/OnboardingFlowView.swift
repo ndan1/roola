@@ -50,7 +50,7 @@ struct OnboardingFlowView: View {
                                     }
                                 }
                             }
-                            .navigationBarHidden(true)
+//                            .navigationBarHidden(true)
                         case .manual:
                             UserInputView()
 //                            .navigationBarHidden(true)
