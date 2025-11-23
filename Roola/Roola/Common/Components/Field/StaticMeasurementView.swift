@@ -18,7 +18,7 @@ struct TopStaticMeasurementRow: View {
 
     var body: some View {
         StaticRowContent(label: label, value: value, unit: unit, isError: isError)
-            .background(AppColors.primaryWhite.opacity(0.5))
+            .background(AppColors.primaryPurple.opacity(0.01))
             .clipShape(RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight]))
             .overlay(
                 RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
@@ -36,7 +36,7 @@ struct MidStaticMeasurementRow: View {
 
     var body: some View {
         StaticRowContent(label: label, value: value, unit: unit, isError: isError)
-            .background(AppColors.primaryWhite.opacity(0.5))
+            .background(AppColors.primaryPurple.opacity(0.01))
             .overlay(
                 Rectangle()
                     .stroke(isError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
@@ -54,7 +54,7 @@ struct BottomStaticMeasurementRow: View {
 
     var body: some View {
         StaticRowContent(label: label, value: value, unit: unit, isError: isError)
-            .background(AppColors.primaryWhite.opacity(0.5))
+            .background(AppColors.primaryPurple.opacity(0.01))
             .clipShape(RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight]))
             .overlay(
                 RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
@@ -88,20 +88,22 @@ private struct StaticRowContent: View {
 
             if let value = value {
                 Text("\(value)")
-                    .font(.body)
-                    .foregroundColor(AppColors.grayScale300)
+                    .font(.body16Regular)
+                    .foregroundColor(AppColors.primaryBlack)
+                    .fontWeight(.medium)
             } else {
                 Text("—")
-                    .font(.body)
+                    .font(.body16Regular)
                     .foregroundColor(AppColors.grayScale300)
             }
 
             Text(unit)
                 .font(.body)
                 .foregroundColor(AppColors.grayScale300)
+                .fontWeight(.medium)
         }
         .padding()
-        .background(AppColors.primaryWhite.opacity(0.5))
+        .background(AppColors.primaryWhite.opacity(0.8))
     }
 }
 
@@ -149,7 +151,7 @@ struct MeasurementListView: View {
                 }
             }
         }
-        .background(AppColors.primaryWhite.opacity(0.5))
+        .background(AppColors.primaryPurple.opacity(0.5))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)

@@ -38,10 +38,12 @@ struct MeasurementField: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .focused($isFocused)
+                    .fontWeight(.medium)
 
                 Text(unit)
                     .font(.body16Regular)
                     .foregroundColor(AppColors.grayScale300)
+                    .fontWeight(.medium)
             }
             .frame(width: 120, alignment: .trailing)
             .contentShape(Rectangle())      // Enlarges tappable area
@@ -50,7 +52,7 @@ struct MeasurementField: View {
             }
         }
         .padding()
-        .background(AppColors.primaryWhite.opacity(0.5))
+        .background(AppColors.primaryWhite.opacity(0.8))
     }
 }
 
