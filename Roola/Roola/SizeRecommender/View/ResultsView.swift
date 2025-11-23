@@ -166,7 +166,7 @@ struct ResultsView: View {
                             .padding(.bottom, 4)
                         Spacer()
                     }
-                    .frame(width: .infinity)
+                    .frame(maxWidth: .infinity)
                 }
                 Text("Fit Preference")
                     .font(.body16Regular)
@@ -341,7 +341,7 @@ struct StatusIssue {
 
 struct SliderWithLabels: View {
     @Binding var sliderValue: Float
-    let labels = ["Tight", "Slim", "Standard", "Relaxed", "Loose"]
+    let labels = ["Tight", "", "Standard", "", "Loose"]
 
     var body: some View {
         VStack {

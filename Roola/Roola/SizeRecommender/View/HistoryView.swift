@@ -42,50 +42,27 @@ struct HistoryView: View {
         NavigationStack {
             VStack {
                 if allHistories.isEmpty {
-//                    RoolaHeader(
-//                        title: "History",
-//                        isLargeTitle: true
-//                    )
                     EmptyHistoryView()
                 } else {
-                    VStack {
-//                        HStack {
-//                            RoolaHeader(
-//                                title: "History",
-//                                isLargeTitle: true
-//                            )
-//                            
-//                            Button(action: {
-//                                showSortSheet = true
-//                            }) {
-//                                Image(systemName: "line.3.horizontal.decrease.circle")
-//                                    .font(.system(size: 24))
-//                                    .foregroundColor(AppColors.primaryPurple)
-//                            }
-//                            .buttonStyle(.plain)
-//                            .padding(.trailing, 18)
-//                        }
-                        
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                ForEach(filteredHistories) { history in
-                                    NavigationLink(destination: HistoryDetailView(history: history)) {
-                                        HistoryCard(history: history)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(filteredHistories) { history in
+                                NavigationLink(destination: HistoryDetailView(history: history)) {
+                                    HistoryCard(history: history)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 24)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 24)
                     }
+                    .clipped()
                 }
             }
             .background(FirstGradientBackground().ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // 2. Buat Custom Title di Kiri (Leading)
                 ToolbarItem(placement: .topBarLeading) {
                     Text("History")
                         .font(.heading32Medium)
@@ -104,7 +81,6 @@ struct HistoryView: View {
                     }
                 }
             }
-//            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showSortSheet) {
             SortSheet(selectedSort: $selectedSort)
@@ -114,7 +90,6 @@ struct HistoryView: View {
     
     private func deleteHistory(_ history: MeasurementHistory) {
         modelContext.delete(history)
-        
         do {
             try modelContext.save()
             print("✅ History deleted successfully")
