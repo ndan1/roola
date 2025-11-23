@@ -25,4 +25,8 @@ public class User {
         self.height = height
         self.weight = weight
     }
+    
+    var isOnboardingFinished: Bool {
+        return bust > 0 && waist > 0
+    }
 }

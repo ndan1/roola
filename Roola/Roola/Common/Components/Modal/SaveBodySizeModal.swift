@@ -13,6 +13,11 @@ struct SaveBodySizeModal: View {
     @Binding var weight: Int?
     var onSave: () -> Void
     
+    @State private var showValidationError: Bool = false
+    
+    private var isHeightValid: Bool { height != nil && height! > 0 }
+    private var isWeightValid: Bool { weight != nil && weight! > 0 }
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
@@ -51,17 +56,37 @@ struct SaveBodySizeModal: View {
                 .padding(.top, 8)
                 
                 // Form fields
-                VStack(spacing: 0) {
-                    
-                    TopMeasurementRow(label: "Height", unit:"cm" ,value: $height)
-                    BottomMeasurementRow(label: "Weight", unit:"kg" ,value: $weight)
-
+                VStack(alignment: .leading, spacing: 0) {
+                        TopMeasurementRow(
+                            label: "Height",
+                            unit: "cm",
+                            value: $height,
+                            isError: showValidationError && !isHeightValid // Merah jika tombol ditekan & kosong
+                        )
+                        .zIndex(showValidationError && !isHeightValid ? 1 : 0)
+                        BottomMeasurementRow(
+                            label: "Weight",
+                            unit: "kg",
+                            value: $weight,
+                            isError: showValidationError && !isWeightValid // Merah jika tombol ditekan & kosong
+                        )
+                    if showValidationError && (!isHeightValid || !isWeightValid) {
+                        Text("Please fill out this field")
+                            .font(.caption)
+                            .foregroundColor(AppColors.errorRed)
+                            .padding(.top, 4)
+                            .padding(.leading, 16)
+                            .transition(.opacity)
+                    }
                 }
                 
                 // Buttons
                 HStack(spacing: 12) {
                     Button(action: {
-                        if height != nil && weight != nil {
+                        showValidationError = true
+                                                
+                        // 2. Cek apakah valid
+                        if isHeightValid && isWeightValid {
                             onSave()
                             isPresented = false
                         }
@@ -71,13 +96,9 @@ struct SaveBodySizeModal: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(
-                                (height != nil && weight != nil) ?
-                                AppColors.primaryPurple : Color.gray
-                            )
+                            .background(AppColors.primaryPurple)
                             .cornerRadius(25)
                     }
-                    .disabled(height == nil || weight == nil)
                 }
                 .padding(.top, 8)
             }

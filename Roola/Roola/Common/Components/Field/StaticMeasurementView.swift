@@ -85,22 +85,24 @@ private struct StaticRowContent: View {
             }
 
             Spacer()
-
-            if let value = value {
-                Text("\(value)")
-                    .font(.body16Regular)
-                    .foregroundColor(AppColors.primaryBlack)
-                    .fontWeight(.medium)
-            } else {
-                Text("—")
+            HStack(spacing: 4) {
+                if let value = value {
+                    Text("\(value)")
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.primaryBlack)
+                        .fontWeight(.medium)
+                } else {
+                    Text("—")
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.grayScale300)
+                }
+                
+                Text(unit)
                     .font(.body16Regular)
                     .foregroundColor(AppColors.grayScale300)
+                    .fontWeight(.medium)
             }
-
-            Text(unit)
-                .font(.body)
-                .foregroundColor(AppColors.grayScale300)
-                .fontWeight(.medium)
+            .frame(width: 120, alignment: .trailing)
         }
         .padding()
         .background(AppColors.primaryWhite.opacity(0.8))

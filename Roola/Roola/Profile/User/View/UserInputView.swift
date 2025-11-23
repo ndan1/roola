@@ -21,11 +21,21 @@ struct UserInputView: View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
     
+    private var shouldShowCreateFlow: Bool {
+        // Tampilkan Create Flow jika:
+        // 1. Tidak ada user sama sekali
+        // 2. ADA user, tapi data intinya (bust/waist) masih kosong (User Draft dari AI Flow)
+        if let user = existingUsers.first {
+            return user.bust == 0 && user.waist == 0
+        }
+        return true
+    }
+    
     var body: some View {
         ZStack {
             // MARK: - Main Content
             VStack(alignment: .leading, spacing: 0) {
-                if existingUsers.isEmpty {
+                if shouldShowCreateFlow {
                     createUserView
                 } else {
                     updateUserView
@@ -88,7 +98,7 @@ struct UserInputView: View {
             
             // BAGIAN KIRI (LEADING)
             ToolbarItem(placement: .topBarLeading) {
-                if existingUsers.isEmpty {
+                if shouldShowCreateFlow{
                     HStack(spacing: 12) {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left.circle.fill")
@@ -306,7 +316,7 @@ private extension UserInputView {
                                 
                                 validationErrors
                                 
-                                Spacer(minLength: 103)
+                                Spacer(minLength: 108)
                                 
                                 VStack(spacing:20){
                                     RoolaButton(
