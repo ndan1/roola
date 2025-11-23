@@ -184,7 +184,7 @@ private extension UserInputView {
 
                         validationErrors
                         
-                        Spacer(minLength: 172)
+                        Spacer(minLength: 105)
                         VStack(spacing: 8) {
                             Text("Not sure with your measurements?")
                                 .font(.body15Regular)
