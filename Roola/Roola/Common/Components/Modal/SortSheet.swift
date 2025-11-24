@@ -76,3 +76,7 @@ struct SortSheet: View {
         }
     }
 }
+
+#Preview {
+    SortSheet(selectedSort: .constant("Newest"))
+}

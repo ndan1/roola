@@ -15,37 +15,67 @@ struct HistoryView: View {
     
     @State private var showSortSheet = false
     @State private var selectedSort = "Last 7 days"
+    @State private var showFilterSheet = false
     @State private var searchText = ""
+    
+    // FILTER STATES
+    // Default "All Time" agar logic switch case mudah handle defaultnya
+    @State private var selectedTimeRange = "All Time"
+    // Set kosong berarti "Show All", kalau ada isinya berarti filter aktif
+    @State private var selectedClothesTypes: Set<String> = []
     
     private var filteredHistories: [MeasurementHistory] {
         let now = Date()
         let calendar = Calendar.current
         
-        var dateFiltered: [MeasurementHistory]
+        // 1. Filter by Time Range
+        var timeFiltered: [MeasurementHistory]
         
-        switch selectedSort {
-        case "Newest":
-            return allHistories
+        switch selectedTimeRange {
         case "Last 7 days":
-            if let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
-                    dateFiltered = allHistories.filter { $0.createdAt >= sevenDaysAgo }
-                } else {
-                    dateFiltered = allHistories
-                }
+            if let date = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
         case "Last 30 days":
-            if let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) {
-                    dateFiltered = allHistories.filter { $0.createdAt >= thirtyDaysAgo }
-                } else {
-                    dateFiltered = allHistories
-                }
-        default:
-            return allHistories
+            if let date = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
+        case "Last 90 days":
+            if let date = calendar.date(byAdding: .day, value: -90, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
+        case "This month":
+            let currentMonth = calendar.component(.month, from: now)
+            let currentYear = calendar.component(.year, from: now)
+            timeFiltered = allHistories.filter {
+                let month = calendar.component(.month, from: $0.createdAt)
+                let year = calendar.component(.year, from: $0.createdAt)
+                return month == currentMonth && year == currentYear
+            }
+            
+        default: // "All Time" atau string lain
+            timeFiltered = allHistories
         }
-        if searchText.isEmpty {
-            return dateFiltered
+        // 2. Filter by Clothes Type
+        // Jika Set kosong, dianggap pilih semua. Jika ada isinya, filter yang match saja.
+        var typeFiltered: [MeasurementHistory]
+        if selectedClothesTypes.isEmpty {
+            typeFiltered = timeFiltered
         } else {
-            return dateFiltered.filter { history in
-                // Case insensitive search
+            typeFiltered = timeFiltered.filter { history in
+                // Pastikan history.clothingType sesuai dengan ID yang kita simpan di Set (t_shirt, blouse, dll)
+                selectedClothesTypes.contains(history.clothingType)
+            }
+        }
+        
+        // 3. Filter by Search Text
+        if searchText.isEmpty {
+            return typeFiltered
+        } else {
+            return typeFiltered.filter { history in
                 history.productName.localizedCaseInsensitiveContains(searchText)
             }
         }
@@ -64,12 +94,22 @@ struct HistoryView: View {
                             .submitLabel(.search)
                         
                         Button(action: {
-                            showSortSheet = true
+                            showFilterSheet = true
                         }) {
-                            Image(systemName: "slider.horizontal.3")
-                                .resizable()
-                                .frame(width: 22, height: 22)
-                                .foregroundColor(AppColors.primaryPurple)
+                            // Tampilkan indikator dot jika ada filter aktif
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "slider.horizontal.3")
+                                    .resizable()
+                                    .frame(width: 22, height: 22)
+                                    .foregroundColor(isFilterActive ? AppColors.primaryPurple : .gray)
+                                
+                                if isFilterActive {
+                                    Circle()
+                                        .fill(.red)
+                                        .frame(width: 8, height: 8)
+                                        .offset(x: 2, y: -2)
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -126,10 +166,17 @@ struct HistoryView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSortSheet) {
-            SortSheet(selectedSort: $selectedSort)
-                .presentationDetents([.height(350)])
+        .sheet(isPresented: $showFilterSheet) {
+            FilterSheet(
+                activeTimeRange: $selectedTimeRange,
+                activeClothesTypes: $selectedClothesTypes
+            )
+            .presentationDetents([.fraction(0.9)])
         }
+    }
+    
+    private var isFilterActive: Bool {
+        return selectedTimeRange != "All Time" || !selectedClothesTypes.isEmpty
     }
     
     private func deleteHistory(_ history: MeasurementHistory) {
