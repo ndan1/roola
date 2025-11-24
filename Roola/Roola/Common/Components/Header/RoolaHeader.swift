@@ -31,7 +31,7 @@ struct RoolaHeader: View {
             }
 
             Text(title)
-                .font(isLargeTitle ? .heading32Medium : .heading24Medium)
+                .font(isLargeTitle ? .heading28Medium : .heading24Medium)
                 .lineLimit(1)
                 .multilineTextAlignment(.leading)
             

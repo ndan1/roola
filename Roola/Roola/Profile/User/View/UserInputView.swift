@@ -17,17 +17,31 @@ struct UserInputView: View {
     @State private var showMeasureGuide = false
     @State private var isShowingAIMeasurement = false
     
+    private func endEditing() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
+    private var shouldShowCreateFlow: Bool {
+        // Tampilkan Create Flow jika:
+        // 1. Tidak ada user sama sekali
+        // 2. ADA user, tapi data intinya (bust/waist) masih kosong (User Draft dari AI Flow)
+        if let user = existingUsers.first {
+            return user.bust == 0 && user.waist == 0
+        }
+        return true
+    }
+    
     var body: some View {
         ZStack {
             // MARK: - Main Content
             VStack(alignment: .leading, spacing: 0) {
-                if existingUsers.isEmpty {
+                if shouldShowCreateFlow {
                     createUserView
                 } else {
                     updateUserView
                 }
             }
-            .background(FirstGradientBackground().ignoresSafeArea())
+            .onAppear(perform: loadExistingUserData)
             
             // MARK: - Success Popup Overlay
             if viewModel.showSuccessPopup {
@@ -51,7 +65,12 @@ struct UserInputView: View {
                 }
             }
         }
-        .onAppear(perform: loadExistingUserData)
+        .background(FirstGradientBackground()
+            .ignoresSafeArea()
+            .onTapGesture {
+                endEditing()
+            }
+        )
         .sheet(isPresented: $showMeasureGuide) {
             MeasureGuideModal()
                 .presentationDetents([.fraction(0.75)])
@@ -59,6 +78,63 @@ struct UserInputView: View {
         }
         .fullScreenCover(isPresented: $isShowingAIMeasurement) {
             CameraFlowContainerView()
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    endEditing()
+                }
+                .fontWeight(.semibold)
+                .foregroundColor(AppColors.primaryPurple)
+            }
+        }
+        
+        // MARK: - AKTIFKAN NAVIGATION BAR DISINI
+        .navigationBarBackButtonHidden(true)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            
+            // BAGIAN KIRI (LEADING)
+            ToolbarItem(placement: .topBarLeading) {
+                if shouldShowCreateFlow{
+                    HStack(spacing: 12) {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 24)
+                                .foregroundColor(AppColors.primaryWhite)
+                                .background(
+                                    Circle()
+                                        .fill(AppColors.primaryPurple)
+                                        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                )
+                        }
+                        
+                        Text("Your Measurements")
+                            .font(.heading28Medium)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                } else {
+                    Text("Your Measurements")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.leading, 4)
+                }
+            }
+                
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showMeasureGuide.toggle() }) {
+                    Image(systemName: "info.circle")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(AppColors.primaryPurple)
+                }
+            }
         }
     }
     
@@ -81,120 +157,197 @@ struct UserInputView: View {
 // MARK: - Create / Update UI
 private extension UserInputView {
     var createUserView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            RoolaHeader(
-                title: "Your Measurements",
-                onBack: { dismiss() },
-                onInfo: {showMeasureGuide.toggle()})
+        
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(spacing: 30) {
+                    ScrollView(showsIndicators: false) {
+                        VStack (alignment: .leading, spacing: 4) {
+                            Text("Body size")
+                                .font(.system(size: 16, weight: .light))
+                                .foregroundStyle(Color(AppColors.grayScale400))
+                            BodySizeCard(
+                                height: $viewModel.height,
+                                weight: $viewModel.weight,
+                                isHeightError: viewModel.isHeightError,
+                                isWeightError: viewModel.isWeightError,
+                                hasAnyError: viewModel.hasError
+                            )
+                        }
+                        .padding(.vertical, 16)
+                        
+                        VStack (alignment: .leading, spacing: 4) {
+                            Text("Body measurements")
+                                .font(.system(size: 16, weight: .light))
+                                .foregroundStyle(Color(AppColors.grayScale400))
+                            MeasurementsCard(
+                                chest: $viewModel.bust,
+                                waist: $viewModel.waist,
+                                armLength: $viewModel.armsLength,
+                                torsoLength: $viewModel.torso,
+                                isChestError: viewModel.isBustError,
+                                isWaistError: viewModel.isWaistError,
+                                isArmLengthError: viewModel.isArmsLengthError,
+                                isTorsoLengthError: viewModel.isTorsoError,
+                                hasAnyError: viewModel.hasError
+                            )
+                        }
 
-            VStack(spacing: 30) {
-                MeasurementsCard(
-                    chest: $viewModel.bust,
-                    waist: $viewModel.waist,
-                    armLength: $viewModel.armsLength,
-                    torsoLength: $viewModel.torso,
-                    isChestError: viewModel.isBustError,
-                    isWaistError: viewModel.isWaistError,
-                    isArmLengthError: viewModel.isArmsLengthError,
-                    isTorsoLengthError: viewModel.isTorsoError,
-                    hasAnyError: viewModel.hasError
-                )
-
-                validationErrors
-                
-                Spacer()
-                RoolaButton(
-                    buttonTitle: "Save",
-                    buttonColor: AppColors.primaryPurple,
-                    action: saveUser
-                )
-                .frame(width: UIScreen.main.bounds.width * 0.85)
-                .padding(.bottom, 25)
+                        validationErrors
+                        
+                        Spacer(minLength: 105)
+                        VStack(spacing: 8) {
+                            Text("Not sure with your measurements?")
+                                .font(.body15Regular)
+                            
+                            RoolaButton(
+                                buttonTitle: "Measure with AI",
+                                buttonColor: AppColors.primaryButton,
+                                action: {
+                                    isShowingAIMeasurement = true
+                                }
+                            )
+                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .padding(.bottom, 8)
+                            RoolaButton(
+                                buttonTitle: "Save",
+                                buttonColor: AppColors.primaryWhite,
+                                action: saveUser
+                            )
+                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .padding(.bottom, 8)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-        }
+            .onTapGesture {
+                endEditing()
+            }
     }
     
     var updateUserView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            RoolaHeader(
-                title: "Your Measurements",
-                onInfo: {showMeasureGuide.toggle()},
-                isLargeTitle: true
-            )
+            VStack(alignment: .leading, spacing: 0) {
 
-            VStack(spacing: 30) {
-                if isEditing {
-                    MeasurementsCard(
-                        chest: $viewModel.bust,
-                        waist: $viewModel.waist,
-                        armLength: $viewModel.armsLength,
-                        torsoLength: $viewModel.torso,
-                        isChestError: viewModel.isBustError,
-                        isWaistError: viewModel.isWaistError,
-                        isArmLengthError: viewModel.isArmsLengthError,
-                        isTorsoLengthError: viewModel.isTorsoError,
-                        hasAnyError: viewModel.hasError
-                    )
-
-                    validationErrors
+                VStack(spacing: 30) {
                     
-                    Spacer()
-
-                    VStack (spacing: 20){
-                        RoolaButton(
-                            buttonTitle: "Update",
-                            buttonColor: AppColors.primaryPurple,
-                            action: saveUser
-                        )
-                        RoolaButton(
-                            buttonTitle: "Cancel",
-                            buttonColor: AppColors.primaryWhite,
-                            action: {
-                                isEditing = false
-                            }
-                        )
-                    }
-                    .frame(width: UIScreen.main.bounds.width * 0.85)
-                    .padding(.bottom, 25)
-                } else {
-                    MeasurementListView(
-                        items: [
-                            MeasurementItem(label: "Chest", value: viewModel.bust),
-                            MeasurementItem(label: "Waist", value: viewModel.waist),
-                            MeasurementItem(label: "Arm length", value: viewModel.armsLength),
-                            MeasurementItem(label: "Torso length", value: viewModel.torso)
-                        ]
-                    )
-                    Spacer()
-                    
-                    VStack(spacing:20){
-                        RoolaButton(
-                            buttonTitle: "Measure with AI",
-                            buttonColor: AppColors.primaryPurple,
-                            action: {
-                                isShowingAIMeasurement = true
-                            }
-                        )
-                        RoolaButton(
-                            buttonTitle: "Edit",
-                            buttonColor: AppColors.primaryWhite,
-                            action: {
-                                if isEditing {
-                                    loadExistingUserData()
+                        if isEditing {
+                            ScrollView(showsIndicators: false) {
+                                VStack (alignment: .leading, spacing: 4) {
+                                    Text("Body size")
+                                        .font(.system(size: 16, weight: .light))
+                                        .foregroundStyle(Color(AppColors.grayScale400))
+                                    BodySizeCard(
+                                        height: $viewModel.height,
+                                        weight: $viewModel.weight,
+                                        isHeightError: viewModel.isHeightError,
+                                        isWeightError: viewModel.isWeightError,
+                                        hasAnyError: viewModel.hasError
+                                    )
                                 }
-                                isEditing.toggle()
+                                Spacer(minLength: 30)
+                                VStack (alignment: .leading, spacing: 4) {
+                                    Text("Body measurements")
+                                        .font(.system(size: 16, weight: .light))
+                                        .foregroundStyle(Color(AppColors.grayScale400))
+                                    MeasurementsCard(
+                                        chest: $viewModel.bust,
+                                        waist: $viewModel.waist,
+                                        armLength: $viewModel.armsLength,
+                                        torsoLength: $viewModel.torso,
+                                        isChestError: viewModel.isBustError,
+                                        isWaistError: viewModel.isWaistError,
+                                        isArmLengthError: viewModel.isArmsLengthError,
+                                        isTorsoLengthError: viewModel.isTorsoError,
+                                        hasAnyError: viewModel.hasError
+                                    )
+                                }
+                                
+                                validationErrors
+                                
+                                Spacer(minLength: 100)
+                                
+                                VStack (spacing: 20){
+                                    RoolaButton(
+                                        buttonTitle: "Update",
+                                        buttonColor: AppColors.primaryPurple,
+                                        action: saveUser
+                                    )
+                                    RoolaButton(
+                                        buttonTitle: "Cancel",
+                                        buttonColor: AppColors.primaryWhite,
+                                        action: {
+                                            isEditing = false
+                                        }
+                                    )
+                                }
+                                .frame(width: UIScreen.main.bounds.width * 0.85)
+                                .padding(.bottom, 25)
                             }
-                        )
-                    }
-                    .frame(width: UIScreen.main.bounds.width * 0.85)
-                    .padding(.bottom, 25)
+                        } else {
+                            ScrollView(showsIndicators: false) {
+                                VStack (alignment: .leading, spacing: 4) {
+                                    Text("Body size")
+                                        .font(.system(size: 16, weight: .light))
+                                        .foregroundStyle(Color(AppColors.grayScale400))
+                                    MeasurementListView(
+                                        items: [
+                                            MeasurementItem(label: "Height", value: viewModel.height),
+                                            MeasurementItem(label: "Weight", value: viewModel.weight)
+                                        ]
+                                    )
+                                }
+                                
+                                Spacer(minLength: 30)
+                                
+                                VStack (alignment: .leading, spacing: 4) {
+                                    Text("Body measurements")
+                                        .font(.system(size: 16, weight: .light))
+                                        .foregroundStyle(Color(AppColors.grayScale400))
+                                    MeasurementListView(
+                                        items: [
+                                            MeasurementItem(label: "Chest", value: viewModel.bust),
+                                            MeasurementItem(label: "Waist", value: viewModel.waist),
+                                            MeasurementItem(label: "Arm length", value: viewModel.armsLength),
+                                            MeasurementItem(label: "Torso length", value: viewModel.torso)
+                                        ]
+                                    )
+                                }
+                                
+                                validationErrors
+                                
+                                Spacer(minLength: 108)
+                                
+                                VStack(spacing:20){
+                                    RoolaButton(
+                                        buttonTitle: "Measure with AI",
+                                        buttonColor: AppColors.primaryPurple,
+                                        action: {
+                                            isShowingAIMeasurement = true
+                                        }
+                                    )
+                                    RoolaButton(
+                                        buttonTitle: "Edit",
+                                        buttonColor: AppColors.primaryWhite,
+                                        action: {
+                                            if isEditing {
+                                                loadExistingUserData()
+                                            }
+                                            isEditing.toggle()
+                                        }
+                                    )
+                                }
+                                .frame(width: UIScreen.main.bounds.width * 0.85)
+                                .padding(.bottom, 25)
+                            }
+                        }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-        }
+            .onTapGesture {
+                endEditing()
+            }
     }
 }
 
@@ -238,6 +391,8 @@ private extension UserInputView {
         user.waist       = viewModel.waist       ?? 0
         user.torso       = viewModel.torso       ?? 0
         user.arms_length = viewModel.armsLength  ?? 0
+        user.height      = viewModel.height ?? 0
+        user.weight      = viewModel.weight ?? 0
 
         if existingUsers.isEmpty {
             modelContext.insert(user)
@@ -253,8 +408,10 @@ private extension UserInputView {
 
 // MARK: - Previews
 #Preview("Create Mode") {
-    UserInputView()
-        .modelContainer(for: User.self, inMemory: true)
+    NavigationStack {
+        UserInputView()
+            .modelContainer(for: User.self, inMemory: true)
+    }
 }
 
 #Preview("Update Mode") {
@@ -263,6 +420,9 @@ private extension UserInputView {
     let ctx = container.mainContext
     let mock = User(bust: 95, waist: 80, torso: 60, arms_length: 55)
     ctx.insert(mock)
-    return UserInputView()
-        .modelContainer(container)
+    
+    return NavigationStack {
+        UserInputView()
+            .modelContainer(container)
+    }
 }

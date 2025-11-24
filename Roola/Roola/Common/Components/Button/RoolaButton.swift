@@ -20,7 +20,7 @@ struct RoolaButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .font(.button16Bold)
-                .foregroundColor(buttonColor == AppColors.primaryPurple ? AppColors.primaryWhite : AppColors.grayScale400)
+                .foregroundColor(buttonColor == AppColors.primaryPurple ? AppColors.primaryWhite : AppColors.borderButton)
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.capsule)

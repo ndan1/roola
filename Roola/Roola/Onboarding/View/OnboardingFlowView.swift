@@ -13,12 +13,15 @@ struct OnboardingFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query private var users: [User]
-    @Query private var history: [MeasurementHistory]
     @Binding var isOnboardingComplete: Bool
     
-    // Navigation inside the flow
     @State private var path = NavigationPath()
     @State private var isReturningFromSettings = false
+    
+    // Modal States
+    @State private var showBodySizeModal = false
+    @State private var tempHeight: Int?
+    @State private var tempWeight: Int?
     
     init(isOnboardingComplete: Binding<Bool>) {
         self._isOnboardingComplete = isOnboardingComplete
@@ -26,77 +29,94 @@ struct OnboardingFlowView: View {
     }
     
     var body: some View {
-        VStack {
-            if !users.isEmpty {
-                // User already exists → skip onboarding
-                MainTabView()
-                    .transition(.opacity)
-            } else {
-                NavigationStack(path: $path) {
-                    OnboardingPage(
-                        onAI: { path.append(OnboardingStep.ai) },
-                        onInput: { path.append(OnboardingStep.manual) }
+        NavigationStack(path: $path) {
+            OnboardingPage(
+                onAI: { path.append(OnboardingStep.ai) },
+                onInput: { path.append(OnboardingStep.manual) }
+            )
+            .navigationBarHidden(true)
+            .navigationDestination(for: OnboardingStep.self) { step in
+                switch step {
+                case .ai:
+                    ZStack {
+                        CameraTutorialView {
+                            showBodySizeModal = true
+                        }
+                        
+                        if showBodySizeModal {
+                            SaveBodySizeModal(
+                                isPresented: $showBodySizeModal,
+                                height: $tempHeight,
+                                weight: $tempWeight,
+                                onSave: {
+                                    saveBodyDataAndProceed()
+                                }
+                            )
+                            .zIndex(1)
+                        }
+                    }
+                    // Tidak perlu navigationBarHidden(true) jika ingin navbar muncul di tutorial
+                    
+                case .manual:
+                    UserInputView()
+                }
+            }
+            .navigationDestination(for: FlowStep.self) { step in
+                switch step {
+                case .capture:
+                    MeasurementFlowView(
+                        onFlowDidFinish: {
+                            // Tidak perlu melakukan apa-apa disini secara manual,
+                            // Karena begitu MeasurementFlowView menyimpan data (bust/waist),
+                            // ContentView akan otomatis mendeteksi user.isOnboardingFinished = true
+                            // dan mengganti halaman.
+                        },
+                        onSwitchToManual: {
+                            path.removeLast(path.count)
+                            path.append(OnboardingStep.manual)
+                        })
+                    .navigationBarHidden(true)
+                    
+                case .permissionDenied:
+                    CameraPermissionDeniedView(
+                        onCancel: {
+                            if !path.isEmpty { path.removeLast() }
+                        },
+                        onOpenSettings: openSettings
                     )
                     .navigationBarHidden(true)
-                    .navigationDestination(for: OnboardingStep.self) { step in
-                        switch step {
-                        case .ai:
-                            CameraTutorialView {
-                                checkCameraPermission { granted in
-                                    if granted {
-                                        path.append(FlowStep.capture)
-                                    } else {
-                                        path.append(FlowStep.permissionDenied)
-                                    }
-                                }
-                            }
-                            .navigationBarHidden(true)
-                        case .manual:
-                            UserInputView()
-                            .navigationBarHidden(true)
-                        }
-                    }
-                    .navigationDestination(for: FlowStep.self) { step in
-                        switch step {
-                        case .capture:
-                            MeasurementFlowView(
-                                onFlowDidFinish: {},
-                                onSwitchToManual: {
-                                    path.removeLast(path.count)
-                                    path.append(OnboardingStep.manual)
-                            })
-                            .navigationBarHidden(true)
-                        case .permissionDenied:
-                            CameraPermissionDeniedView(
-                                onCancel: {
-                                    if !path.isEmpty {
-                                        path.removeLast()
-                                    }
-                                },
-                                onOpenSettings: openSettings
-                            )
-                            .navigationBarHidden(true)
-                        }
-                    }
                 }
             }
         }
-        .animation(.easeInOut, value: users.isEmpty)
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            // Detect when app returns from background (Settings)
-            if oldPhase == .background && newPhase == .active {
-                print("🔄 [OnboardingFlow] App returned from background")
-                isReturningFromSettings = true
-                
-                // Check if we're on permission denied screen and reset navigation
-                if !path.isEmpty {
-                    // Clear navigation stack safely to prevent crash
-                    DispatchQueue.main.async {
-                        path = NavigationPath()
-                        print("✅ [OnboardingFlow] Navigation path reset")
-                    }
-                }
+    }
+    // MARK: - Helper Save untuk Onboarding
+    private func saveBodyDataAndProceed() {
+        let user = users.first ?? User(waist: 0)
+        user.height = tempHeight ?? 0
+        user.weight = tempWeight ?? 0
+        
+        // Saat ini disimpan, 'user.isOnboardingFinished' MASIH FALSE (karena bust/waist 0).
+        // Jadi ContentView TIDAK AKAN pindah halaman. Aman.
+        
+        if users.isEmpty {
+            modelContext.insert(user)
+        }
+        
+        try? modelContext.save()
+        
+        checkCameraPermission { granted in
+            if granted {
+                path.append(FlowStep.capture)
+            } else {
+                path.append(FlowStep.permissionDenied)
             }
+        }
+    }
+    
+    private func finishOnboarding() {
+        // Ini dipanggil oleh MeasurementFlowView saat semua animasi selesai
+        withAnimation {
+            isOnboardingComplete = true
         }
     }
     
@@ -112,14 +132,12 @@ struct OnboardingFlowView: View {
 
     private func checkCameraPermission(completion: @escaping (Bool) -> Void) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            completion(true)
+        case .authorized: completion(true)
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async { completion(granted) }
             }
-        default:
-            completion(false)
+        default: completion(false)
         }
     }
 

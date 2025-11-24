@@ -44,41 +44,43 @@ struct HistoryView: View {
                 if allHistories.isEmpty {
                     EmptyHistoryView()
                 } else {
-                    VStack {
-                        HStack {
-                            RoolaHeader(
-                                title: "History",
-                                isLargeTitle: true
-                            )
-                            
-                            Button(action: {
-                                showSortSheet = true
-                            }) {
-                                Image(systemName: "line.3.horizontal.decrease.circle")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(AppColors.primaryPurple)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.trailing, 18)
-                        }
-                        
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                ForEach(filteredHistories) { history in
-                                    NavigationLink(destination: HistoryDetailView(history: history)) {
-                                        HistoryCard(history: history)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(filteredHistories) { history in
+                                NavigationLink(destination: HistoryDetailView(history: history)) {
+                                    HistoryCard(history: history)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 24)
+                    }
+                    .clipped()
+                }
+            }
+            .background(FirstGradientBackground().ignoresSafeArea())
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("History")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                }
+            }
+            .toolbar {
+                if !allHistories.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: { showSortSheet = true }) {
+                            Image(systemName: "line.3.horizontal.decrease.circle")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(AppColors.primaryPurple)
                         }
                     }
                 }
             }
-            .background(FirstGradientBackground().ignoresSafeArea())
-            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showSortSheet) {
             SortSheet(selectedSort: $selectedSort)
@@ -88,7 +90,6 @@ struct HistoryView: View {
     
     private func deleteHistory(_ history: MeasurementHistory) {
         modelContext.delete(history)
-        
         do {
             try modelContext.save()
             print("✅ History deleted successfully")
@@ -98,131 +99,6 @@ struct HistoryView: View {
     }
 }
 
-
-struct EmptyHistoryView: View {
-    var body: some View {
-        VStack {
-            Spacer()
-                .frame(height: UIScreen.main.bounds.height * 0.15)
-            VStack(spacing: 64) {
-                Spacer()
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 65))
-                    .foregroundColor(AppColors.primaryPurple)
-                    .background(
-                        Circle()
-                            .fill(Color.purple.opacity(0.1))
-                            .frame(width: 120, height: 120)
-                    )
-                
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        Text("Start inputing your desire outfit and \nget recommendations")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                    .padding(.leading, 30)
-                    
-                    VStack(spacing: 16) {
-                        InstructionRow(icon: "sparkles", text: "Fill in your measurements manually or use our AI")
-                        InstructionRow(icon: "sparkles", text: "Fill in your product details to get your best match")
-                    }
-                    .padding(.horizontal, 26)
-                    
-                    Spacer()
-                }
-            }
-        }
-    }
-}
-
-// MARK: - History Card (From Logic Example)
-struct HistoryCard: View {
-    let history: MeasurementHistory
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(AppColors.primaryPurple.opacity(0.1))
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: "tshirt.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(AppColors.primaryPurple)
-            }
-            
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(history.productName)
-                    .font(.body16Regular)
-                    .foregroundColor(.black)
-                    .lineLimit(1)
-                
-                Text(history.shopName)
-                    .font(.body15Regular)
-                    .foregroundColor(AppColors.grayScale300)
-                    .lineLimit(1)
-                
-                HStack(spacing: 8) {
-                    Text(displayClothingType(history.clothingType))
-                        .font(.caption)
-                        .foregroundColor(AppColors.primaryPurple)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(AppColors.primaryPurple.opacity(0.1))
-                        .cornerRadius(6)
-                    
-                    Text(displayFitPreference(history.selectedFitPreference))
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(6)
-                }
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(formatDate(history.createdAt))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-        }
-        .padding(16)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd MMM yyyy"
-        return formatter.string(from: date)
-    }
-    
-    private func displayClothingType(_ type: String) -> String {
-        switch type {
-        case "t_shirt": return "T-Shirt"
-        case "blouse": return "Blouse"
-        case "long_sleeved_shirt": return "Long Sleeve"
-        case "short_sleeved_shirt": return "Short Sleeve"
-        default: return type.capitalized
-        }
-    }
-    
-    private func displayFitPreference(_ preference: String) -> String {
-        return preference.capitalized
-    }
-}
 
 #Preview {
     HistoryView()

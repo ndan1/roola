@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MeasurementField: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     
@@ -38,10 +38,12 @@ struct MeasurementField: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .focused($isFocused)
+                    .fontWeight(.medium)
 
                 Text(unit)
                     .font(.body16Regular)
                     .foregroundColor(AppColors.grayScale300)
+                    .fontWeight(.medium)
             }
             .frame(width: 120, alignment: .trailing)
             .contentShape(Rectangle())      // Enlarges tappable area
@@ -50,21 +52,21 @@ struct MeasurementField: View {
             }
         }
         .padding()
-        .background(AppColors.primaryWhite.opacity(0.5))
+        .background(AppColors.primaryWhite.opacity(0.8))
     }
 }
 
 
 struct MeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
 
     var body: some View {
         MeasurementField(label: label, unit: unit, value: $value, isError: isError)
             .overlay(
-                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.borderButton, lineWidth: 1)
+                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
             )
     }
 }
@@ -72,7 +74,7 @@ struct MeasurementRow: View {
 
 struct TopMeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     var cornerRadius: CGFloat = 12
@@ -106,7 +108,7 @@ struct RoundedCorner: Shape {
 }
 struct BottomMeasurementRow: View {
     var label: String
-    var unit: String = "cm"
+    var unit: String
     @Binding var value: Int?
     var isError: Bool = false
     var cornerRadius: CGFloat = 12
@@ -138,13 +140,13 @@ struct BottomMeasurementRow: View {
             VStack(spacing: 30) {
                 
                 VStack(spacing: 0) {
-                    TopMeasurementRow(label: "Chest", value: $topValue)
+                    TopMeasurementRow(label: "Chest", unit: "cm" ,value: $topValue)
                     Divider()
-                    MeasurementRow(label: "Waist", value: $midValue)
+                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
                     Divider()
-                    MeasurementRow(label: "Waist", value: $midValue)
+                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
                     Divider()
-                    BottomMeasurementRow(label: "Arm Length", value: $botValue)
+                    BottomMeasurementRow(label: "Arm Length", unit: "cm" ,value: $botValue)
                 }
                 .cornerRadius(12)
                 .overlay(

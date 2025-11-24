@@ -14,6 +14,7 @@ enum OCRError: Error, LocalizedError {
     case noTextFound
     case notUpperwear
     case noSizeChartDetected
+    case incompleteSizeChart
     
     var title: String {
         switch self {
@@ -23,6 +24,8 @@ enum OCRError: Error, LocalizedError {
             return "Uh oh! Size chart uploaded wasn’t an upperwear"
         case .noSizeChartDetected:
             return "Uh oh! There wasn't any size chart in the screenshot"
+        case .incompleteSizeChart:
+            return "Size chart incomplete"
         }
     }
     
@@ -40,6 +43,8 @@ enum OCRError: Error, LocalizedError {
             return "Roola only can get your upperwear sizes for now :("
         case .noSizeChartDetected:
             return "Try another one?"
+        case .incompleteSizeChart:
+            return "We need at least 2 sizes (e.g., S & M) or an 'All Size' label to give a recommendation."
         }
     }
     

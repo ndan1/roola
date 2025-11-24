@@ -12,12 +12,12 @@ import UIKit
 extension Font {
     
     // MARK: Headings
-    static var heading32Medium: Font {
-        .custom("HelveticaNeue-Medium", size: 32, relativeTo: .largeTitle)
+    static var heading28Medium: Font {
+        .custom("HelveticaNeue-Medium", size: 28, relativeTo: .largeTitle)
     }
     
-    static var heading_32Bold: Font {
-        .custom("HelveticaNeue-Bold", size: 32, relativeTo: .largeTitle)
+    static var heading_28Bold: Font {
+        .custom("HelveticaNeue-Bold", size: 28, relativeTo: .largeTitle)
     }
     
     static var heading24Medium: Font {

@@ -14,6 +14,8 @@ struct ProgressLoading: View {
     let subtitle: String
     let duration: TimeInterval
     
+    var onFinish: (() -> Void)?
+    
     var body: some View {
         ZStack {
             Image("GradientLoading")
@@ -72,6 +74,7 @@ struct ProgressLoading: View {
         // Complete
         await MainActor.run {
             progress = 1.0
+            onFinish?()
         }
     }
 }

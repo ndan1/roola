@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct MeasurementFlowView: View {
     // 1. Create and observe the ViewModel
     @StateObject private var viewModel = MeasurementFlowViewModel()

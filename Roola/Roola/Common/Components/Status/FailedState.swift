@@ -18,7 +18,7 @@ struct FailedState: View {
             
             VStack(spacing: 5) {
                 Text("Measurement Failed")
-                    .font(.heading32Medium)
+                    .font(.heading28Medium)
                     .foregroundColor(AppColors.grayScale300)
                 
                 Text(label)

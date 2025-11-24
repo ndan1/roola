@@ -13,6 +13,8 @@ struct YourMeasurementView: View {
     @State private var waist: Int? = nil
     @State private var armLength: Int? = nil
     @State private var torsoLength: Int? = nil
+    @State private var height: Int? = nil
+    @State private var weight: Int? = nil
     
     @State private var hasAttemptedSave: Bool = false
     
@@ -39,9 +41,19 @@ struct YourMeasurementView: View {
         return (torsoLength ?? 0) > 250 || torsoLength == nil
     }
     
+    private var isHeightError: Bool {
+        if !hasAttemptedSave { return false }
+        return (height ?? 0) > 250 || height == nil
+    }
+    
+    private var isWeightError: Bool {
+        if !hasAttemptedSave { return false }
+        return (weight ?? 0) > 250 || weight == nil
+    }
+    
     // This property now only becomes true *after* save is attempted
     private var hasError: Bool {
-        isChestError || isWaistError || isArmLengthError || isTorsoLengthError
+        isChestError || isWaistError || isArmLengthError || isTorsoLengthError || isHeightError || isWeightError
     }
     
     // --- 2. UPDATED ERROR MESSAGE LOGIC ---
@@ -49,12 +61,12 @@ struct YourMeasurementView: View {
     
     private var isOver250Error: Bool {
         if !hasAttemptedSave { return false }
-        return (chest ?? 0) > 250 || (waist ?? 0) > 250 || (armLength ?? 0) > 250 || (torsoLength ?? 0) > 250
+        return (chest ?? 0) > 250 || (waist ?? 0) > 250 || (armLength ?? 0) > 250 || (torsoLength ?? 0) > 250 || (height ?? 0) > 250 || (weight ?? 0) > 250
     }
     
     private var hasEmptyError: Bool {
         if !hasAttemptedSave { return false }
-        return chest == nil || waist == nil || armLength == nil || torsoLength == nil
+        return chest == nil || waist == nil || armLength == nil || torsoLength == nil || height == nil || weight == nil
     }
 
     var body: some View {
@@ -70,6 +82,13 @@ struct YourMeasurementView: View {
                 }
 
                 Group{
+                    BodySizeCard(height: $height,
+                                 weight: $weight,
+                                 isHeightError: isHeightError,
+                                 isWeightError: isWeightError,
+                                 hasAnyError: hasError
+                    )
+                    
                     MeasurementsCard(
                         chest: $chest,
                         waist: $waist,
@@ -127,6 +146,25 @@ struct YourMeasurementView: View {
 // ... Your MeasurementsCard, MeasurementRow, TopMeasurementRow,
 // ... and BottomMeasurementRow structs would be here ...
 
+struct BodySizeCard: View {
+    
+    @Binding var height: Int?
+    @Binding var weight: Int?
+    
+    var isHeightError: Bool
+    var isWeightError: Bool
+    var hasAnyError: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            
+            TopMeasurementRow(label: "Height", unit: "cm", value: $height, isError: isHeightError)
+                .zIndex(isHeightError ? 1 : 0)
+            BottomMeasurementRow(label: "Weight", unit: "cm", value: $weight, isError: isWeightError)
+        }
+    }
+}
+
 
 struct MeasurementsCard: View {
     
@@ -144,19 +182,20 @@ struct MeasurementsCard: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            TopMeasurementRow(label: "Chest", value: $chest, isError: isChestError)
+            TopMeasurementRow(label: "Chest", unit:"cm", value: $chest, isError: isChestError)
+                .zIndex(isChestError ? 1 : 0)
             
             
             
-            MeasurementRow(label: "Waist", value: $waist, isError: isWaistError)
+            MeasurementRow(label: "Waist", unit:"cm", value: $waist, isError: isWaistError)
+                .zIndex(isWaistError ? 1 : 0)
             
             
+            MeasurementRow(label: "Arm length", unit:"cm", value: $armLength, isError: isArmLengthError)
+                .zIndex(isArmLengthError ? 1 : 0)
             
-            MeasurementRow(label: "Arm length", value: $armLength, isError: isArmLengthError)
             
-            
-            
-            BottomMeasurementRow(label: "Torso length", value: $torsoLength, isError: isTorsoLengthError)
+            BottomMeasurementRow(label: "Torso length", unit:"cm", value: $torsoLength, isError: isTorsoLengthError)
         }
     }
 }

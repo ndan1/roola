@@ -72,11 +72,7 @@ struct LocalOCRService {
             "shoulder", "bahu", "torso", "sleeve", "lengan", "waist", "pinggang", "cm", "inch"
         ]
         
-        let sizeLabels = ["xs", "s", "m", "l", "xl", "xxl"]
-        
         var hasIndicator = false
-        var hasSizeLabel = false
-        
         for indicator in sizeChartIndicators {
             if lowercasedText.contains(indicator) {
                 hasIndicator = true
@@ -84,19 +80,52 @@ struct LocalOCRService {
             }
         }
         
-        for label in sizeLabels {
-            let pattern = "\\b\(label)\\b"
-            if lowercasedText.range(of: pattern, options: .regularExpression) != nil {
-                hasSizeLabel = true
-                break
-            }
-        }
-        
-        if !hasIndicator || !hasSizeLabel {
-            print("❌ No size chart detected. hasIndicator: \(hasIndicator), hasSizeLabel: \(hasSizeLabel)")
+        if !hasIndicator {
+            print("❌ No size chart indicators detected.")
             throw OCRError.noSizeChartDetected
         }
         
-        print("✅ Size chart validation passed")
+        let allSizePatterns = ["all size", "one size", "free size", "satu ukuran", "allsize", "onesize"]
+        let specificSizeLabels = ["xxs", "xs", "s", "m", "l", "xl", "xxl", "2xl", "3xl", "xxxl"]
+        
+        var hasAllSize = false
+        var detectedSizes = Set<String>()
+        
+        for pattern in allSizePatterns {
+            if lowercasedText.contains(pattern) {
+                hasAllSize = true
+                break
+            }
+        }
+            
+        for label in specificSizeLabels {
+            let pattern = "\\b\(label)\\b"
+            
+            if lowercasedText.range(of: pattern, options: .regularExpression) != nil {
+                detectedSizes.insert(label)
+            }
+        }
+        
+        print("🔍 Validation Check:")
+        print("   - Has All Size: \(hasAllSize)")
+        print("   - Detected Sizes: \(detectedSizes) (Count: \(detectedSizes.count))")
+        
+        if hasAllSize {
+            print("✅ Size chart validation passed (Contains 'All Size')")
+            return
+        }
+        
+        if detectedSizes.count >= 2 {
+            print("✅ Size chart validation passed (Found \(detectedSizes.count) sizes)")
+            return
+        }
+        
+        if detectedSizes.isEmpty && !hasAllSize {
+                print("❌ No size label detected.")
+                throw OCRError.noSizeChartDetected
+        } else {
+            print("❌ Incomplete size chart. Found: \(detectedSizes.count) sizes, No 'All Size'.")
+            throw OCRError.incompleteSizeChart
+        }
     }
 }

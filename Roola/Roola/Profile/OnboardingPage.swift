@@ -14,7 +14,7 @@ struct OnboardingPage: View {
     var body: some View {
         VStack(alignment: .leading){
             Text("Let's get your fit right")
-                .font(.heading32Medium)
+                .font(.heading28Medium)
                 .padding(.top, UIScreen.main.bounds.height * 0.065)
             Text("Input your measurements and find your match.")
                 .font(.body15Regular)
