@@ -15,35 +15,91 @@ struct HistoryView: View {
     
     @State private var showSortSheet = false
     @State private var selectedSort = "Last 7 days"
+    @State private var searchText = ""
     
     private var filteredHistories: [MeasurementHistory] {
         let now = Date()
         let calendar = Calendar.current
         
+        var dateFiltered: [MeasurementHistory]
+        
         switch selectedSort {
         case "Newest":
             return allHistories
         case "Last 7 days":
-            guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else {
-                return allHistories
-            }
-            return allHistories.filter { $0.createdAt >= sevenDaysAgo }
+            if let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
+                    dateFiltered = allHistories.filter { $0.createdAt >= sevenDaysAgo }
+                } else {
+                    dateFiltered = allHistories
+                }
         case "Last 30 days":
-            guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) else {
-                return allHistories
-            }
-            return allHistories.filter { $0.createdAt >= thirtyDaysAgo }
+            if let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) {
+                    dateFiltered = allHistories.filter { $0.createdAt >= thirtyDaysAgo }
+                } else {
+                    dateFiltered = allHistories
+                }
         default:
             return allHistories
+        }
+        if searchText.isEmpty {
+            return dateFiltered
+        } else {
+            return dateFiltered.filter { history in
+                // Case insensitive search
+                history.productName.localizedCaseInsensitiveContains(searchText)
+            }
         }
     }
     
     var body: some View {
         NavigationStack {
             VStack {
-                if allHistories.isEmpty {
-                    EmptyHistoryView()
-                } else {
+                HStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        
+                        TextField("Search", text: $searchText)
+                            .font(.body)
+                            .submitLabel(.search)
+                        
+                        Button(action: {
+                            showSortSheet = true
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .resizable()
+                                .frame(width: 22, height: 22)
+                                .foregroundColor(AppColors.primaryPurple)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+                
+                // 3. Content List
+                if filteredHistories.isEmpty {
+                    Spacer()
+                    if searchText.isEmpty && allHistories.isEmpty {
+                        EmptyHistoryView()
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                                .padding(.bottom, 8)
+                            Text("No history found")
+                                .font(.headline)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    Spacer()
+                }else {
                     ScrollView {
                         VStack(spacing: 12) {
                             ForEach(filteredHistories) { history in
@@ -54,7 +110,7 @@ struct HistoryView: View {
                             }
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 24)
+                        .padding(.vertical, 8)
                     }
                     .clipped()
                 }
@@ -67,18 +123,6 @@ struct HistoryView: View {
                     Text("History")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
-                }
-            }
-            .toolbar {
-                if !allHistories.isEmpty {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: { showSortSheet = true }) {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(AppColors.primaryPurple)
-                        }
-                    }
                 }
             }
         }
