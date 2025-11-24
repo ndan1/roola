@@ -69,6 +69,7 @@ struct ResultsView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.large)
         .toolbar(viewModel.showSaveModal || viewModel.showSuccessModal ? .hidden : .visible, for: .navigationBar)
+        .toolbar(isFromHistory ? .hidden : .visible, for: .tabBar)
         .toolbar {
             // 2. Buat Custom Title di Kiri (Leading)
             ToolbarItem(placement: .topBarLeading) {
