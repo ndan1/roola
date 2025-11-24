@@ -61,14 +61,14 @@ struct SaveBodySizeModal: View {
                             label: "Height",
                             unit: "cm",
                             value: $height,
-                            isError: showValidationError && !isHeightValid // Merah jika tombol ditekan & kosong
+                            isError: showValidationError && !isHeightValid
                         )
                         .zIndex(showValidationError && !isHeightValid ? 1 : 0)
                         BottomMeasurementRow(
                             label: "Weight",
                             unit: "kg",
                             value: $weight,
-                            isError: showValidationError && !isWeightValid // Merah jika tombol ditekan & kosong
+                            isError: showValidationError && !isWeightValid
                         )
                     if showValidationError && (!isHeightValid || !isWeightValid) {
                         Text("Please fill out this field")

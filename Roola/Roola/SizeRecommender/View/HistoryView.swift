@@ -124,7 +124,7 @@ struct HistoryView: View {
             
             let history1 = MeasurementHistory(
                 productName: "Classic T-Shirt",
-                shopName: "The Cotton Co.",
+                brandName: "The Cotton Co.",
                 clothingType: "t_shirt",
                 selectedFitPreference: "standard",
                 recommendationsJSON: mockRecommendations,
@@ -138,7 +138,7 @@ struct HistoryView: View {
             
             let history2 = MeasurementHistory(
                 productName: "Silk Blouse",
-                shopName: "Elegant Wears",
+                brandName: "Elegant Wears",
                 clothingType: "blouse",
                 selectedFitPreference: "slim",
                 recommendationsJSON: mockRecommendations,
@@ -151,7 +151,7 @@ struct HistoryView: View {
             
             let history3 = MeasurementHistory(
                 productName: "Long Sleeve",
-                shopName: "Urban Store",
+                brandName: "Urban Store",
                 clothingType: "long_sleeved_shirt",
                 selectedFitPreference: "relaxed",
                 recommendationsJSON: mockRecommendations,

@@ -30,7 +30,7 @@ struct HistoryCard: View {
                     .foregroundColor(.black)
                     .lineLimit(1)
                 
-                Text(history.shopName)
+                Text(history.brandName)
                     .font(.body15Regular)
                     .foregroundColor(AppColors.grayScale300)
                     .lineLimit(1)

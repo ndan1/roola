@@ -10,8 +10,14 @@ import SwiftUI
 struct SaveResultModal: View {
     @Binding var isPresented: Bool
     @Binding var productName: String
-    @Binding var shopName: String
+    @Binding var brandName: String
+    @Binding var productLink: String
     var onSave: () -> Void
+    
+    @State private var showValidationError: Bool = false
+    
+    private var isProductNameValid: Bool { !productName.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var isBrandNameValid: Bool { !brandName.trimmingCharacters(in: .whitespaces).isEmpty }
     
     var body: some View {
         ZStack {
@@ -55,39 +61,44 @@ struct SaveResultModal: View {
                     TopSaveInputRow(
                         label: "Product Name",
                         value: $productName,
-                        placeholder: "Product name"
+                        placeholder: "Product name",
+                        isError: showValidationError && !isProductNameValid
                     )
+                    .zIndex(showValidationError && !isProductNameValid ? 2 : 0)
+                    
+                    MiddleSaveInputRow(
+                        label: "Brand Name",
+                        value: $brandName,
+                        placeholder: "Brand name",
+                        isError: showValidationError && !isBrandNameValid
+                    )
+                    .zIndex(showValidationError && !isBrandNameValid ? 1 : 0)
                     
                     BottomSaveInputRow(
-                        label: "Shop Name",
-                        value: $shopName,
-                        placeholder: "Shop name"
+                        label: "Item Link",
+                        value: $productLink,
+                        placeholder: "Optional"
                     )
+                    
+                    if showValidationError && (!isProductNameValid || !isBrandNameValid) {
+                        Text("Please fill in this field")
+                            .font(.caption)
+                            .foregroundColor(AppColors.errorRed)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                            .padding(.leading, 16)
+                            .transition(.opacity)
+                    }
                 }
                 
                 // Buttons
                 HStack(spacing: 12) {
-//                    Button(action: {
-//                        isPresented = false
-//                    }) {
-//                        Text("Cancel")
-//                            .fontWeight(.semibold)
-//                            .foregroundColor(AppColors.primaryPurple)
-//                            .frame(maxWidth: .infinity)
-//                            .padding(.vertical, 14)
-//                            .background(Color.white)
-//                            .cornerRadius(25)
-//                            .overlay(
-//                                RoundedRectangle(cornerRadius: 25)
-//                                    .stroke(AppColors.primaryPurple, lineWidth: 1.5)
-//                            )
-//                    }
-                    
                     Button(action: {
-                        if !productName.trimmingCharacters(in: .whitespaces).isEmpty &&
-                           !shopName.trimmingCharacters(in: .whitespaces).isEmpty {
+                        // Logic saat tombol ditekan
+                        showValidationError = true
+                                            
+                        if isProductNameValid && isBrandNameValid {
                             onSave()
-                            isPresented = false
                         }
                     }) {
                         Text("Save")
@@ -95,15 +106,9 @@ struct SaveResultModal: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(
-                                (!productName.trimmingCharacters(in: .whitespaces).isEmpty &&
-                                 !shopName.trimmingCharacters(in: .whitespaces).isEmpty) ?
-                                AppColors.primaryPurple : Color.gray
-                            )
+                            .background(AppColors.primaryPurple)
                             .cornerRadius(25)
                     }
-                    .disabled(productName.trimmingCharacters(in: .whitespaces).isEmpty ||
-                              shopName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
                 .padding(.top, 8)
             }
@@ -125,6 +130,7 @@ struct BottomSaveInputRow: View {
         HStack {
             Text(label)
                 .font(.body)
+                .frame(width: 120, alignment: .leading)
             
             Spacer()
             
@@ -147,12 +153,13 @@ struct TopSaveInputRow: View {
     let label: String
     @Binding var value: String
     let placeholder: String
+    var isError: Bool = false
     
     var body: some View {
         HStack {
             Text(label)
                 .font(.body)
-                .frame(width: 120)
+                .frame(width: 120, alignment: .leading)
             
             Spacer()
             
@@ -166,11 +173,44 @@ struct TopSaveInputRow: View {
         .cornerRadius(12, corners: [.topLeft, .topRight])
         .overlay(
             RoundedCorner(radius: 12, corners: [.topLeft, .topRight])
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                .stroke(isError ? AppColors.errorRed : Color.gray.opacity(0.2), lineWidth: 1)
         )
     }
 }
 
+struct MiddleSaveInputRow: View {
+    let label: String
+    @Binding var value: String
+    let placeholder: String
+    var isError: Bool = false
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.body)
+                .frame(width: 120, alignment: .leading)
+            
+            Spacer()
+            
+            TextField(placeholder, text: $value)
+                .font(.body)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 200)
+        }
+        .padding()
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .stroke(isError ? AppColors.errorRed : Color.gray.opacity(0.2), lineWidth: 1)
+                // Trik: Jika tidak error, mungkin kamu mau border bawah/atas saja atau border tipis.
+                // Jika user code sebelumnya tidak pakai border di middle, gunakan:
+                // .stroke(isError ? AppColors.errorRed : Color.clear, lineWidth: 1)
+                // Tapi agar konsisten kotak, lebih baik dikasih border tipis atau stroke clear.
+        )
+    }
+}
+
+
 #Preview{
-    SaveResultModal(isPresented: .constant(true), productName: .constant("Cotton Blouse"), shopName: .constant("Zara"), onSave: {})
+    SaveResultModal(isPresented: .constant(true), productName: .constant("Cotton Blouse"), brandName: .constant("Zara"), productLink: .constant(""), onSave: {})
 }

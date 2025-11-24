@@ -12,7 +12,8 @@ import SwiftData
 public class MeasurementHistory: Identifiable {
     public var id: UUID
     var productName: String
-    var shopName: String
+    var brandName: String
+    var productLink: String?
     var clothingType: String
     var selectedFitPreference: String
     var createdAt: Date
@@ -28,7 +29,8 @@ public class MeasurementHistory: Identifiable {
     
     init(
         productName: String,
-        shopName: String,
+        brandName: String,
+        productLink: String? = nil,
         clothingType: String,
         selectedFitPreference: String,
         recommendationsJSON: String,
@@ -39,7 +41,8 @@ public class MeasurementHistory: Identifiable {
     ) {
         self.id = UUID()
         self.productName = productName
-        self.shopName = shopName
+        self.brandName = brandName
+        self.productLink = productLink
         self.clothingType = clothingType
         self.selectedFitPreference = selectedFitPreference
         self.createdAt = Date()

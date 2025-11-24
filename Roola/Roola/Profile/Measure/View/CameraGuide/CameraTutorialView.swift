@@ -59,7 +59,7 @@ struct CameraTutorialView: View {
                             .font(.subheadline)
                     }
                     
-                    Spacer()
+                    Spacer(minLength: 30)
                     
                     Button {
                         isShowPolicy = true

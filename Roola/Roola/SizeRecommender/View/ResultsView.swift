@@ -132,7 +132,8 @@ struct ResultsView: View {
                 SaveResultModal(
                     isPresented: $viewModel.showSaveModal,
                     productName: $viewModel.productName,
-                    shopName: $viewModel.shopName,
+                    brandName: $viewModel.brandName,
+                    productLink: $viewModel.productLink,
                     onSave: {
                         viewModel.saveToHistory()
                     }

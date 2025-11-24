@@ -15,7 +15,8 @@ class ResultsViewModel: ObservableObject {
     @Published var showSaveModal = false
     @Published var showSuccessModal = false
     @Published var productName = ""
-    @Published var shopName = ""
+    @Published var brandName = ""
+    @Published var productLink = ""
     
     // MARK: - Dependencies
     private var modelContext: ModelContext?
@@ -100,10 +101,13 @@ class ResultsViewModel: ObservableObject {
             return
         }
         
+        let linkToSave = productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : productLink
+        
         // Create history entry
         let history = MeasurementHistory(
             productName: productName,
-            shopName: shopName,
+            brandName: brandName,
+            productLink: linkToSave,
             clothingType: recommendationViewModel.clothingType,
             selectedFitPreference: initialFitPreference,
             recommendationsJSON: recommendationsJSON,
@@ -141,7 +145,8 @@ class ResultsViewModel: ObservableObject {
     
     func resetForm() {
         productName = ""
-        shopName = ""
+        brandName = ""
+        productLink = ""
     }
     
     // MARK: - Body Part Visualization Logic
