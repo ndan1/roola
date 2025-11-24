@@ -13,6 +13,7 @@ struct ResultsView: View {
     var isFromHistory: Bool = false
     
     var historyProductName: String? = nil
+    var historyProductLink: String? = nil
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -23,17 +24,26 @@ struct ResultsView: View {
         initialFitPreference: String = "standard",
         isFromHistory: Bool = false,
         historyProductName: String? = nil,
+        historyProductLink: String? = nil,
         onTryAgain: (() -> Void)? = nil
     ) {
         self._showResults = showResults
         self.isFromHistory = isFromHistory
         
         self.historyProductName = historyProductName
+        self.historyProductLink = historyProductLink
+        print("🔍 INIT ResultsView - Link diterima: '\(historyProductLink ?? "NIL")'")
         
         let vm = ResultsViewModel(
             recommendationViewModel: recommendationViewModel,
             initialFitPreference: initialFitPreference
         )
+        if let link = historyProductLink {
+            vm.productLink = link
+            print("✅ ViewModel Link set to: \(vm.productLink)")
+        } else {
+            print("⚠️ historyProductLink is NIL")
+        }
         vm.onTryAgain = onTryAgain
         vm.onClose = {
             showResults.wrappedValue = false
@@ -127,7 +137,33 @@ struct ResultsView: View {
             if !isFromHistory {
                 actionButtons
                     .padding(.bottom, 48)
-            }
+            } else {
+                // Bungkus dengan VStack agar Spacer berfungsi mendorong ke bawah
+                VStack {
+                    Spacer()
+                    
+                    if !viewModel.productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        
+                        let urlString = viewModel.productLink
+                        // Logic simple untuk handle https
+                        let urlToOpen = URL(string: urlString.lowercased().hasPrefix("http") ? urlString : "https://\(urlString)")
+                        
+                        if let url = urlToOpen {
+                            RoolaButton(
+                                buttonTitle: "View Product",
+                                buttonColor: AppColors.primaryPurple,
+                                action: {
+                                    UIApplication.shared.open(url)
+                                }
+                            )
+                            .transition(.opacity)
+                            // Tambahkan padding agar sama dengan tombol 'Save'
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                }
+                .padding(.bottom, 128) // Samakan padding bawah dengan actionButtons
+                        }
             
             if viewModel.showSaveModal {
                 SaveResultModal(

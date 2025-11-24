@@ -47,7 +47,7 @@ struct HistoryDetailView: View {
                 .padding()
             } else if viewModel.serverResponse != nil {
                 ResultsView(
-                    recommendationViewModel: viewModel, showResults: .constant(true), initialFitPreference: history.selectedFitPreference, isFromHistory: true, historyProductName: history.productName ,onTryAgain: nil
+                    recommendationViewModel: viewModel, showResults: .constant(true), initialFitPreference: history.selectedFitPreference, isFromHistory: true, historyProductName: history.productName , historyProductLink: history.productLink ,onTryAgain: nil
                 )
             }
         }
