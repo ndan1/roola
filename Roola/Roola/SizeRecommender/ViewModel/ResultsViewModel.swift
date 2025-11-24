@@ -109,7 +109,7 @@ class ResultsViewModel: ObservableObject {
             brandName: brandName,
             productLink: linkToSave,
             clothingType: recommendationViewModel.clothingType,
-            selectedFitPreference: initialFitPreference,
+            selectedFitPreference: currentFitPreference,
             recommendationsJSON: recommendationsJSON,
             userBust: userMeasurements.bust,
             userWaist: userMeasurements.waist,

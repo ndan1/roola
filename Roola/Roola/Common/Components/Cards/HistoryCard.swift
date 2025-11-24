@@ -15,12 +15,12 @@ struct HistoryCard: View {
             // Icon
             ZStack {
                 Circle()
-                    .fill(AppColors.primaryPurple.opacity(0.1))
+                    .fill(AppColors.primaryPurple)
                     .frame(width: 50, height: 50)
                 
-                Image(systemName: "tshirt.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(AppColors.primaryPurple)
+                Text(history.bestSize ?? "N/A")
+                    .font(.heading28Medium)
+                    .foregroundColor(Color.white)
             }
             
             // Info
@@ -52,18 +52,16 @@ struct HistoryCard: View {
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(6)
                 }
+                
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
                 Text(formatDate(history.createdAt))
                     .font(.caption)
                     .foregroundColor(.gray)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.gray)
             }
         }
         .padding(16)
@@ -91,4 +89,30 @@ struct HistoryCard: View {
     private func displayFitPreference(_ preference: String) -> String {
         return preference.capitalized
     }
+}
+
+#Preview {
+    let sampleJSON = """
+    {
+        "recommendations": {
+            "loose": {"bestScore": 85.0, "bestSize": "L", "partFits": {}},
+            "regular": {"bestScore": 90.0, "bestSize": "M", "partFits": {}},
+            "slightly-loose": {"bestScore": 88.0, "bestSize": "M", "partFits": {}},
+            "slightly-tight": {"bestScore": 87.0, "bestSize": "S", "partFits": {}},
+            "tight": {"bestScore": 82.0, "bestSize": "S", "partFits": {}}
+        }
+    }
+    """
+    
+    return HistoryCard(history: MeasurementHistory(
+        productName: "Classic T-Shirt",
+        brandName: "Roola",
+        clothingType: "short_sleeved_shirt",
+        selectedFitPreference: "slightly-loose",
+        recommendationsJSON: sampleJSON,
+        userBust: 90.0,
+        userWaist: 75.0,
+        userTorso: 60.0,
+        userArmLength: 55.0
+    ))
 }

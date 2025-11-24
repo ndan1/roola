@@ -52,4 +52,46 @@ public class MeasurementHistory: Identifiable {
         self.userTorso = userTorso
         self.userArmLength = userArmLength
     }
+    
+    // Computed property to extract best size from recommendations JSON
+    var bestSize: String? {
+        guard let jsonData = recommendationsJSON.data(using: .utf8) else {
+            print("❌ [bestSize] Failed to convert recommendationsJSON to Data")
+            return nil
+        }
+        
+        do {
+            // Decode as ServerResponse (which has "recommendations" wrapper)
+            let serverResponse = try JSONDecoder().decode(ServerResponse.self, from: jsonData)
+            let recommendations = serverResponse.recommendations
+            print("✅ [bestSize] Successfully decoded recommendations")
+            
+            // Get the recommendation based on selected fit preference
+            let fitRecommendation: FitRecommendation
+            print("🔍 [bestSize] selectedFitPreference: '\(selectedFitPreference)'")
+            
+            switch selectedFitPreference.lowercased() {
+            case "loose":
+                fitRecommendation = recommendations.loose
+            case "regular", "standard":
+                fitRecommendation = recommendations.regular
+            case "slightly-loose", "slightly loose", "relaxed":
+                fitRecommendation = recommendations.slightlyLoose
+            case "slightly-tight", "slightly tight", "slim":
+                fitRecommendation = recommendations.slightlyTight
+            case "tight":
+                fitRecommendation = recommendations.tight
+            default:
+                print("⚠️ [bestSize] Unknown fit preference '\(selectedFitPreference)', using regular")
+                fitRecommendation = recommendations.regular
+            }
+            
+            print("✅ [bestSize] Best size: '\(fitRecommendation.bestSize)'")
+            return fitRecommendation.bestSize
+        } catch {
+            print("❌ [bestSize] Error decoding recommendations JSON: \(error)")
+            print("📄 [bestSize] JSON preview: \(String(recommendationsJSON.prefix(200)))")
+            return nil
+        }
+    }
 }
