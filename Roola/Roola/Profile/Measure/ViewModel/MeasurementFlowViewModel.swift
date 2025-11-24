@@ -5,7 +5,6 @@
 //  Created by Hendrik Nicolas Carlo on 10/11/25.
 //
 
-
 import Foundation
 import SwiftUI
 import SwiftData
@@ -14,21 +13,11 @@ import SwiftData
 class MeasurementFlowViewModel: ObservableObject {
     
     // MARK: - State
-    
-    // The View will listen to this property for all UI changes
     @Published var flowState: FlowState = .capturing
-//    @Published var flowState: FlowState = .loading(videoURL: URL(fileURLWithPath: "/path/to/video.mp4"))
-//    @Published var flowState: FlowState = .success(data: MeasurementData(
-//                    armsLength: 49.21,
-//                    chestCircumference: 92,
-//                    height: 169,
-//                    torsoLength: 54,
-//                    waistCircumference: 82))
     
-    // This enum now lives inside the ViewModel for encapsulation
     enum FlowState: Equatable {
         case capturing
-        case loading(videoURL: URL)
+        case loading(image: UIImage)
         case successAnimation
         case success(data: MeasurementData)
         case error(message: String)
@@ -48,134 +37,128 @@ class MeasurementFlowViewModel: ObservableObject {
     }
     
     // MARK: - Properties
-
     private var pendingMeasurementData: MeasurementData?
     private let service: MeasureService
     
-    // MARK: - Init
-    
     init(service: MeasureService = MeasureService()) {
         self.service = service
-        
-        // Uncomment this to test success/error states directly
-//        self.flowState = .success(data: MeasurementData(
-//            armsLength: 49.21,
-//            chestCircumference: 92,
-//            height: 169,
-//            torsoLength: 54,
-//            waistCircumference: 82)
-//        )
     }
     
-    // MARK: - Public Methods (Intents from View)
+    // MARK: - Public Methods
     
-    /// Called by the View when video capture is complete
-    func didCaptureVideo(videoURL: URL) {
-        self.flowState = .loading(videoURL: videoURL)
+    func didCaptureImage(_ image: UIImage) {
+        self.flowState = .loading(image: image)
     }
     
-    /// Called by the View's "Try Again" button
     func retryMeasurement() {
         self.flowState = .capturing
     }
 
-    /// Called by the success animation view when it's done
     func successAnimationDidFinish() async {
-        // This is the logic from the .task in the old successAnimationView
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 sec delay for animation
         
         if let data = pendingMeasurementData {
             self.flowState = .success(data: data)
             self.pendingMeasurementData = nil
         } else {
-            // Failsafe in case data is missing
             self.flowState = .error(message: "An unexpected error occurred (missing data).")
         }
     }
 
-    /// The async function that calls the MeasureService
-    func startMeasurementTask(url: URL) async {
-        do {
-            // 1. Call your service
-            let resultDictionary = try await service.getMeasurement(from: url)
-            
-            // 2. Convert to JSON
-            let jsonData = try JSONSerialization.data(withJSONObject: resultDictionary)
-            
-            // 3. Parse
-            let response = try JSONDecoder().decode(MeasurementResponse.self, from: jsonData)
-            
-            // 4. Check status
-            if response.output.status == "success" {
-                // 5. Success! Store data and trigger animation
-                self.pendingMeasurementData = response.output.measurements
-                self.flowState = .successAnimation
-                
-            } else if response.output.status == "maintenance" {
-                // 5a. Maintenance
-                self.flowState = .error(message: "Server is under maintenance. Please try again later.")
-                
-            } else {
-                // 5b. Other API failure
-                self.flowState = .error(message: "API processing failed. Status: \(response.output.status)")
-            }
-            
-        } catch let error as MeasureServiceError {
-            // 5c. Service error
-            self.flowState = .error(message: "Service Error: \(error.localizedDescription)")
-            
-        } catch {
-            // 5d. Any other error
-            self.flowState = .error(message: "An unknown error occurred: \(error.localizedDescription)")
+    /// Process the image and call API
+    /// - Parameters:
+    ///   - image: The captured UIImage
+    ///   - userHeight: The height (in cm) from the User model
+    func startMeasurementTask(image: UIImage, userHeight: Double) async {
+        
+        // 1. Convert UIImage to Data
+        // Compression 0.8 is usually a good balance for API uploads
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            self.flowState = .error(message: "Failed to process image data.")
+            return
         }
         
-        // Clean up the captured video file from the temp directory
-        try? FileManager.default.removeItem(at: url)
+        do {
+            // 2. Call the API (using your new MeasureService signature)
+            let responseDict = try await service.getMeasurement(imageData: imageData, height: userHeight)
+            
+            // 3. Parse the Dictionary Response
+            // We need to drill down into the JSON structure.
+            // Assuming structure: { "output": { "chest": 90, ... }, "status": "COMPLETED" }
+            
+            guard let output = responseDict["output"] as? [String: Any] else {
+                // If status is not success, check for error message
+                if let status = responseDict["status"] as? String, status == "FAILED" {
+                    self.flowState = .error(message: "Analysis failed. Please try a clearer photo.")
+                } else {
+                    self.flowState = .error(message: "Invalid response from server.")
+                }
+                return
+            }
+            
+            // 4. Map JSON to MeasurementData
+            // Use helper to safely extract Double/Int from JSON
+            let data = MeasurementData(
+                        armsLength: parseDouble(output["arms_length"]),
+                        chestCircumference: parseDouble(output["chest_circumference"]),
+                        height: userHeight,
+                        torsoLength: parseDouble(output["torso_length"]),
+                        waistCircumference: parseDouble(output["waist_circumference"])
+                    )
+            
+            self.pendingMeasurementData = data
+            self.flowState = .successAnimation
+            
+        } catch let error as MeasureServiceError {
+            switch error {
+            case .timeout:
+                self.flowState = .error(message: "The process timed out. Please try again.")
+            case .serverError(let msg):
+                self.flowState = .error(message: "Server Error: \(msg)")
+            default:
+                self.flowState = .error(message: "Connection error. Please check internet.")
+            }
+        } catch {
+            self.flowState = .error(message: "An unknown error occurred: \(error.localizedDescription)")
+        }
+    }
+    
+    // Helper to handle JSON numbers which might be Int or Double
+    private func parseDouble(_ value: Any?) -> Double {
+        if let double = value as? Double { return double }
+        if let int = value as? Int { return Double(int) }
+        if let str = value as? String, let d = Double(str) { return d }
+        return 0.0
     }
 
+    func measurementDidFinish(data: MeasurementData, modelContext: ModelContext) async {
+        saveOrUpdateUser(with: data, in: modelContext)
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        self.flowState = .capturing
+    }
+    
     private func saveOrUpdateUser(with data: MeasurementData, in context: ModelContext) {
         let descriptor = FetchDescriptor<User>()
-        
         do {
             if let userToUpdate = try context.fetch(descriptor).first {
-                // --- CASE 2: UPDATE EXISTING USER ---
-                print("Updating existing user...")
-                
-//                userToUpdate.height = Int(data.height.rounded())
                 userToUpdate.bust = Int(data.chestCircumference.rounded())
                 userToUpdate.waist = Int(data.waistCircumference.rounded())
                 userToUpdate.torso = Int(data.torsoLength.rounded())
                 userToUpdate.arms_length = Int(data.armsLength.rounded())
             } else {
-                // --- CASE 1: NO PREVIOUS DATA (CREATE NEW) ---
-                print("Creating new user...")
-                
+                // Fallback creation (shouldn't happen if flow is correct)
                 let newUser = User(
-//                    height: Int(data.height.rounded()),
                     bust: Int(data.chestCircumference.rounded()),
                     waist: Int(data.waistCircumference.rounded()),
                     torso: Int(data.torsoLength.rounded()),
                     arms_length: Int(data.armsLength.rounded())
                 )
-                // Insert the new object into the context
+                newUser.height = Int(data.height)
                 context.insert(newUser)
             }
-            
-            // Explicitly save for reliability on real devices
             try context.save()
-            print("Save successful")
-            
         } catch {
-            print("Failed to fetch or save user: \(error)")
+            print("Failed to save user: \(error)")
         }
-    }
-
-    func measurementDidFinish(data: MeasurementData, modelContext: ModelContext) async {
-        saveOrUpdateUser(with: data, in: modelContext)
-        
-        // Sleep here to give the popup time to show before resetting state
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        
-        self.flowState = .capturing
     }
 }

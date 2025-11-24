@@ -9,8 +9,10 @@ import UIKit
 import AVFoundation
 import Vision
 
+// MARK: - Delegate Protocol Updated
 protocol PoseCaptureDelegate: AnyObject {
-    func didCaptureVideo(videoURL: URL, measurements: BodyMeasurements)
+    // Changed from videoURL to image
+    func didCapture(image: UIImage, measurements: BodyMeasurements)
 }
 
 struct BodyMeasurements {
@@ -27,16 +29,17 @@ class PoseCaptureViewController: UIViewController {
     
     private var captureSession: AVCaptureSession!
     private var previewLayer: AVCaptureVideoPreviewLayer!
-    private let videoDataOutput = AVCaptureVideoDataOutput()
+    
+    // Outputs
+    private let videoDataOutput = AVCaptureVideoDataOutput() // Keeps running for Vision
+    private let photoOutput = AVCapturePhotoOutput()         // New: For capturing the image
     
     private var overlayView: PoseValidationOverlay!
-    private var isRecording = false
+    
+    // State
+    private var isCapturingPhoto = false // Replaces isRecording
     private var isCountingDown = false
-    private var videoWriter: AVAssetWriter?
-    private var videoWriterInput: AVAssetWriterInput?
     private var measurementsToSave: BodyMeasurements?
-    private var videoURLToSave: URL?
-    private var isSettingUpWriter = false
     
     private var validPoseCount = 0
     private let requiredValidFrames = 15
@@ -71,7 +74,7 @@ class PoseCaptureViewController: UIViewController {
     
     private func setupCamera() {
         captureSession = AVCaptureSession()
-        captureSession.sessionPreset = .medium
+        captureSession.sessionPreset = .photo // Optimized for high res photos
         
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera,
                                                   for: .video,
@@ -86,11 +89,18 @@ class PoseCaptureViewController: UIViewController {
                 captureSession.addInput(input)
             }
             
+            // 1. Vision Output (Data Stream)
             videoDataOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "videoQueue"))
             videoDataOutput.alwaysDiscardsLateVideoFrames = true
-            
             if captureSession.canAddOutput(videoDataOutput) {
                 captureSession.addOutput(videoDataOutput)
+            }
+            
+            // 2. Photo Output (Capture)
+            if captureSession.canAddOutput(photoOutput) {
+                captureSession.addOutput(photoOutput)
+                // Optional: Enable high-res if needed
+                photoOutput.isHighResolutionCaptureEnabled = true
             }
             
             previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
@@ -104,174 +114,57 @@ class PoseCaptureViewController: UIViewController {
             }
             
         } catch {
-            showFeedback("Error setup kamera: \(error.localizedDescription)", color: .systemRed)
+            showFeedback("Error setup camera: \(error.localizedDescription)", color: .systemRed)
         }
     }
     
     // MARK: - Feedback (GUARDED)
     private func showFeedback(_ message: String, color: UIColor = .systemOrange) {
-        guard !isCountingDown && !isRecording else { return }
+        guard !isCountingDown && !isCapturingPhoto else { return }
         overlayView.showFeedback(message, color: color)
     }
     
     private func showValidPoseIndicator(_ show: Bool) {
-        guard !isCountingDown && !isRecording else { return }
+        guard !isCountingDown && !isCapturingPhoto else { return }
         overlayView.showValidPoseIndicator(show)
         overlayView.setStencil(image: show ? stencilImageB : stencilImageA)
     }
     
     @objc private func handleBackButton() {
         print("Back tapped")
-        cancelRecording()
-        validPoseCount = 0
-        
+        cancelCapture()
         onBackButtonTapped?()
     }
     
-    private func cancelRecording() {
-        isRecording = false
+    private func cancelCapture() {
+        isCapturingPhoto = false
         isCountingDown = false
-        isSettingUpWriter = false
-        
-        videoWriterInput?.markAsFinished()
-        videoWriter?.cancelWriting()
-        videoWriter = nil
-        videoWriterInput = nil
-        
-        if let url = videoURLToSave {
-            try? FileManager.default.removeItem(at: url)
-        }
-        videoURLToSave = nil
+        validPoseCount = 0
         measurementsToSave = nil
+    }
+    
+    // MARK: - Photo Capture Logic
+    private func takePhoto() {
+        guard let connection = photoOutput.connection(with: .video) else { return }
+        
+        // Ensure orientation matches UI (Portrait)
+        connection.videoRotationAngle = 90
+        
+        // Setup Settings
+        let settings = AVCapturePhotoSettings()
+        // If you need flash: settings.flashMode = .auto
+        
+        // Capture
+        photoOutput.capturePhoto(with: settings, delegate: self)
     }
 }
 
-// MARK: - Video Capture Delegate
+// MARK: - Vision / Video Data Delegate
 extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     
-    private func setupVideoWriter(with buffer: CMSampleBuffer) {
-        guard let formatDesc = CMSampleBufferGetFormatDescription(buffer) else {
-            print("Error: No format description")
-            isRecording = false
-            return
-        }
-        let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
-        
-        let fileName = "poseVideo-\(UUID().uuidString).mp4"
-        let videoURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        videoURLToSave = videoURL
-        
-        do {
-            videoWriter = try AVAssetWriter(url: videoURL, fileType: .mp4)
-        } catch {
-            print("Error creating AVAssetWriter: \(error)")
-            isRecording = false
-            return
-        }
-        
-        let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: Int(dimensions.width),
-            AVVideoHeightKey: Int(dimensions.height)
-        ]
-        
-        videoWriterInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-        videoWriterInput?.expectsMediaDataInRealTime = true
-        videoWriterInput?.transform = CGAffineTransform(rotationAngle: .pi / 2)
-        
-        if let input = videoWriterInput, videoWriter!.canAdd(input) {
-            videoWriter!.add(input)
-        } else {
-            print("Error adding input")
-            isRecording = false
-            return
-        }
-        
-        videoWriter?.startWriting()
-        
-        guard videoWriter?.status == .writing else {
-            print("Failed to start writing: \(videoWriter?.error?.localizedDescription ?? "")")
-            isRecording = false
-            try? FileManager.default.removeItem(at: videoURL)
-            videoURLToSave = nil
-            return
-        }
-        
-        let startTime = CMSampleBufferGetPresentationTimeStamp(buffer)
-        videoWriter?.startSession(atSourceTime: startTime)
-        print("Video writer setup complete")
-    }
-    
-    @objc private func stopRecording() {
-        guard let writer = videoWriter,
-              let url = videoURLToSave,
-              measurementsToSave != nil else {
-            print("Stop failed: missing data")
-            resetCaptureState()
-            return
-        }
-        
-        guard !isRecording && !isCountingDown else {
-            print("Stop already in progress")
-            return
-        }
-        
-        guard writer.status == .writing else {
-            print("Writer not writing: \(writer.status.rawValue)")
-            try? FileManager.default.removeItem(at: url)
-            resetCaptureState()
-            return
-        }
-        
-        videoWriterInput?.markAsFinished()
-        
-        writer.finishWriting { [weak self] in
-            guard let self = self else { return }
-            self.videoWriter = nil
-            self.videoWriterInput = nil
-            
-            DispatchQueue.main.async {
-                if writer.status == .completed,
-                   let url = self.videoURLToSave,
-                   let sizeInfo = self.getVideoSize(at: url),
-                   sizeInfo.bytes > 1024 {
-                    
-                    print("Video saved: \(sizeInfo.formatted)")
-                    
-                    // DELEGATE FIRST (instant)
-                    self.delegate?.didCaptureVideo(videoURL: url, measurements: self.measurementsToSave!)
-                    
-                    // THEN success animation
-                    self.overlayView.showSuccessCloseAnimation {
-                        print("Success animation done")
-                    }
-                    
-                } else {
-                    let msg = writer.error?.localizedDescription ?? "Unknown error"
-                    self.handleRecordingFailure(url: url, message: msg)
-                }
-            }
-        }
-    }
-    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // STOP ALL PROCESSING DURING COUNTDOWN OR RECORDING
-        if isCountingDown || isRecording {
-            if isRecording {
-                // Setup writer on first frame
-                if videoWriter == nil && !isSettingUpWriter {
-                    isSettingUpWriter = true
-                    setupVideoWriter(with: sampleBuffer)
-                }
-                
-                // Append frame
-                if let input = videoWriterInput,
-                   let writer = videoWriter,
-                   writer.status == .writing,
-                   input.isReadyForMoreMediaData {
-                    input.append(sampleBuffer)
-                }
-            }
+        // STOP PROCESSING DURING COUNTDOWN OR CAPTURE
+        if isCountingDown || isCapturingPhoto {
             return
         }
         
@@ -311,7 +204,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             let leftAnkle = try observation.recognizedPoint(.leftAnkle)
             let rightAnkle = try observation.recognizedPoint(.rightAnkle)
             
-            // Confidence
+            // Confidence checks
             guard leftWrist.confidence > 0.4,
                   rightWrist.confidence > 0.4,
                   leftShoulder.confidence > 0.4,
@@ -324,40 +217,30 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                 return
             }
             
-            // Body height
+            // --- LOGIC: (Same as before) ---
             let bodyHeight = abs(neck.y - ((leftHip.y + rightHip.y) / 2))
             if bodyHeight < 0.16 || bodyHeight > 0.20 {
-                validPoseCount = 0
-                showValidPoseIndicator(false)
-                return
+                validPoseCount = 0; showValidPoseIndicator(false); return
             }
             
-            // Arm span
             let armSpanX = abs(leftWrist.x - rightWrist.x)
             if armSpanX < 0.40 || armSpanX > 0.90 {
-                validPoseCount = 0
-                showValidPoseIndicator(false)
-                return
+                validPoseCount = 0; showValidPoseIndicator(false); return
             }
             
-            // Arm angles
             let leftAngle = calculateArmAngle(shoulder: leftShoulder, wrist: leftWrist)
             let rightAngle = calculateArmAngle(shoulder: rightShoulder, wrist: rightWrist)
             let leftValid = leftAngle > -70 && leftAngle < -20
             let rightValid = rightAngle > -160 && rightAngle < -110
             if !leftValid || !rightValid {
-                validPoseCount = 0
-                showValidPoseIndicator(false)
-                return
+                validPoseCount = 0; showValidPoseIndicator(false); return
             }
             
-            // Symmetry
             let ySymmetry = abs(leftWrist.y - rightWrist.y)
             if ySymmetry > 0.08 {
-                validPoseCount = 0
-                showValidPoseIndicator(false)
-                return
+                validPoseCount = 0; showValidPoseIndicator(false); return
             }
+            // --------------------------------
             
             validPoseCount += 1
             showValidPoseIndicator(true)
@@ -365,13 +248,12 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             
             // TRIGGER CAPTURE
             if validPoseCount >= requiredValidFrames {
-                guard !isRecording && !isCountingDown else { return }
+                guard !isCapturingPhoto && !isCountingDown else { return }
                 
                 isCountingDown = true
                 validPoseCount = 0
-                isSettingUpWriter = false
                 
-                // Save measurements
+                // Save measurements snapshot
                 let shoulderWidth = abs(leftShoulder.x - rightShoulder.x)
                 measurementsToSave = BodyMeasurements(
                     armSpan: armSpanX * previewLayer.bounds.width,
@@ -379,38 +261,30 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                     torsoLength: bodyHeight * previewLayer.bounds.height
                 )
                 
-                // START COUNTDOWN + RECORDING
+                // START COUNTDOWN + PHOTO CAPTURE
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     
                     self.showFeedback("Hold Still", color: UIColor(AppColors.primaryPurple))
                     
+                    // Start Countdown UI
                     self.overlayView.startCountdown {
-                        print("Countdown UI finished")
-                    }
-                    
-                    // Start recording at "2"
-                    Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in
+                        // Countdown Finished (3, 2, 1, Done)
                         guard self.isCountingDown else { return }
-                        print("Recording STARTED")
-                        self.isRecording = true
-                    }
-                    
-                    // Stop after 2.7s (duration of "2" + "1")
-                    Timer.scheduledTimer(withTimeInterval: 3.1, repeats: false) { _ in
-                        guard self.isCountingDown else { return }
-                        print("Recording STOPPED")
-                        self.isRecording = false
+                        
+                        print("Countdown done. Snap photo!")
+                        self.isCapturingPhoto = true
                         self.isCountingDown = false
-                        self.isSettingUpWriter = false
-                        self.stopRecording()
+                        
+                        // SNAP!
+                        self.takePhoto()
                     }
                 }
             }
             
         } catch {
             validPoseCount = 0
-            showFeedback("Error deteksi pose", color: .systemRed)
+            showFeedback("Error detection", color: .systemRed)
             showValidPoseIndicator(false)
         }
     }
@@ -421,23 +295,54 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
         let radians = atan2(deltaY, deltaX)
         return radians * 180 / .pi
     }
+}
 
+// MARK: - AVCapturePhotoCaptureDelegate
+extension PoseCaptureViewController: AVCapturePhotoCaptureDelegate {
     
-    private func handleRecordingFailure(url: URL?, message: String) {
-        print("Recording failed: \(message)")
-        if let url = url {
-            try? FileManager.default.removeItem(at: url)
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        
+        if let error = error {
+            print("Error capturing photo: \(error)")
+            resetCaptureState()
+            return
         }
-        showFeedback("Gagal merekam video", color: .systemRed)
-        resetCaptureState()
+        
+        guard let imageData = photo.fileDataRepresentation(),
+              let image = UIImage(data: imageData) else {
+            print("Could not generate UIImage")
+            resetCaptureState()
+            return
+        }
+        
+        // Flip image if using front camera (Mirror effect)
+        let savedImage: UIImage
+        if let cgImage = image.cgImage {
+             savedImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: .leftMirrored)
+        } else {
+            savedImage = image
+        }
+        
+        // Success Flow
+        guard let measurements = measurementsToSave else {
+             print("Measurements lost")
+             resetCaptureState()
+             return
+        }
+        
+        DispatchQueue.main.async {
+            // Success Animation
+            self.overlayView.showSuccessCloseAnimation {
+                // Return to SwiftUI
+                self.delegate?.didCapture(image: savedImage, measurements: measurements)
+            }
+        }
     }
     
     private func resetCaptureState() {
-        isRecording = false
+        isCapturingPhoto = false
         isCountingDown = false
-        isSettingUpWriter = false
         validPoseCount = 0
         measurementsToSave = nil
-        videoURLToSave = nil
     }
 }
