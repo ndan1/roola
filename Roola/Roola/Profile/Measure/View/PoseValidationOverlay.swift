@@ -102,10 +102,10 @@ class PoseValidationOverlay: UIView {
             countLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             // Back button
-            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 20),
-            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            backButton.widthAnchor.constraint(equalToConstant: 44),
-            backButton.heightAnchor.constraint(equalToConstant: 44)
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 0),
+            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant:18),
+            backButton.widthAnchor.constraint(equalToConstant: 28),
+            backButton.heightAnchor.constraint(equalToConstant: 28)
         ])
 
         // Only back button receives touches
