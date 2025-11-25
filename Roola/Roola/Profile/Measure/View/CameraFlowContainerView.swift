@@ -11,14 +11,13 @@ import SwiftData
 
 struct CameraFlowContainerView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext // 2. Access Context
+    @Environment(\.modelContext) private var modelContext
     
-    // 3. Query Existing User
     @Query private var users: [User]
     
     @State private var path = NavigationPath()
     
-    // 4. State untuk Modal
+    // State untuk Modal
     @State private var showBodySizeModal = false
     @State private var tempHeight: Int?
     @State private var tempWeight: Int?
@@ -26,27 +25,25 @@ struct CameraFlowContainerView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                // 5. Content Utama
+                // Content Utama
                 CameraTutorialView {
-                    // Saat klik Continue, JANGAN langsung cek permission.
-                    // Munculkan modal dulu.
-                    showBodySizeModal = true
+                    // NEW FLOW: Check camera permission FIRST
+                    checkCameraPermissionFirst()
                 }
                 
-                // 6. Modal Overlay
+                // Modal Overlay - Muncul SETELAH permission granted
                 if showBodySizeModal {
                     SaveBodySizeModal(
                         isPresented: $showBodySizeModal,
                         height: $tempHeight,
                         weight: $tempWeight,
                         onSave: {
-                            saveBodyData()
+                            saveBodyDataAndProceed()
                         }
                     )
-                    .zIndex(1) // Pastikan di atas
+                    .zIndex(1)
                 }
             }
-            // .navigationBarHidden(true) // Opsional: Hapus/Comment jika ingin native navbar
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
                 case .capture:
@@ -68,18 +65,41 @@ struct CameraFlowContainerView: View {
             Color.clear.frame(height: 0)
         }
         .background(FirstGradientBackground().ignoresSafeArea())
-        // 7. Load data existing saat view muncul
         .onAppear {
             if let user = users.first {
                 tempHeight = user.height > 0 ? user.height : nil
                 tempWeight = user.weight > 0 ? user.weight : nil
             }
         }
+        .onChange(of: showBodySizeModal) { oldValue, newValue in
+            if !newValue {
+                resetTempData()
+            }
+        }
     }
 
-    // 8. Logic Penyimpanan Data
-    private func saveBodyData() {
-        let user = users.first ?? User(waist: 0) // Ambil user lama atau buat baru sementara
+    // MARK: - Helper Functions
+    
+    private func resetTempData() {
+        tempHeight = nil
+        tempWeight = nil
+    }
+    
+    // NEW: Check camera permission first, then show modal
+    private func checkCameraPermissionFirst() {
+        checkCameraPermission { granted in
+            if granted {
+                // Permission granted → Show body size modal
+                showBodySizeModal = true
+            } else {
+                // Permission denied → Go to denied screen
+                path.append(FlowStep.permissionDenied)
+            }
+        }
+    }
+
+    private func saveBodyDataAndProceed() {
+        let user = users.first ?? User(waist: 0)
         
         user.height = tempHeight ?? 0
         user.weight = tempWeight ?? 0
@@ -91,18 +111,8 @@ struct CameraFlowContainerView: View {
         try? modelContext.save()
         print("✅ Height & Weight Saved: \(user.height), \(user.weight)")
         
-        // 9. Setelah save sukses, BARU lanjut ke flow kamera
-        proceedToCamera()
-    }
-    
-    private func proceedToCamera() {
-        checkCameraPermission { granted in
-            if granted {
-                path.append(FlowStep.capture)
-            } else {
-                path.append(FlowStep.permissionDenied)
-            }
-        }
+        // Permission sudah checked, langsung ke capture
+        path.append(FlowStep.capture)
     }
 
     private func checkCameraPermission(completion: @escaping (Bool) -> Void) {

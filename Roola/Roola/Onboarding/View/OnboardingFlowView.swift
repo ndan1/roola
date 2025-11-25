@@ -40,7 +40,8 @@ struct OnboardingFlowView: View {
                 case .ai:
                     ZStack {
                         CameraTutorialView {
-                            showBodySizeModal = true
+                            // NEW FLOW: Check camera permission FIRST
+                            checkCameraPermissionFirst()
                         }
                         
                         if showBodySizeModal {
@@ -55,7 +56,6 @@ struct OnboardingFlowView: View {
                             .zIndex(1)
                         }
                     }
-                    // Tidak perlu navigationBarHidden(true) jika ingin navbar muncul di tutorial
                     
                 case .manual:
                     UserInputView()
@@ -88,15 +88,47 @@ struct OnboardingFlowView: View {
                 }
             }
         }
+        // Load existing data saat view muncul
+        .onAppear {
+            if let user = users.first {
+                tempHeight = user.height > 0 ? user.height : nil
+                tempWeight = user.weight > 0 ? user.weight : nil
+            }
+        }
+        // Reset temp data ketika modal ditutup
+        .onChange(of: showBodySizeModal) { oldValue, newValue in
+            if !newValue {
+                resetTempData()
+            }
+        }
     }
+    
+    // MARK: - Helper Functions
+    
+    // Reset temporary data
+    private func resetTempData() {
+        tempHeight = nil
+        tempWeight = nil
+    }
+    
+    // NEW: Check camera permission first, then show modal
+    private func checkCameraPermissionFirst() {
+        checkCameraPermission { granted in
+            if granted {
+                // Permission granted → Show body size modal
+                showBodySizeModal = true
+            } else {
+                // Permission denied → Go to denied screen
+                path.append(FlowStep.permissionDenied)
+            }
+        }
+    }
+    
     // MARK: - Helper Save untuk Onboarding
     private func saveBodyDataAndProceed() {
         let user = users.first ?? User(waist: 0)
         user.height = tempHeight ?? 0
         user.weight = tempWeight ?? 0
-        
-        // Saat ini disimpan, 'user.isOnboardingFinished' MASIH FALSE (karena bust/waist 0).
-        // Jadi ContentView TIDAK AKAN pindah halaman. Aman.
         
         if users.isEmpty {
             modelContext.insert(user)
@@ -104,13 +136,8 @@ struct OnboardingFlowView: View {
         
         try? modelContext.save()
         
-        checkCameraPermission { granted in
-            if granted {
-                path.append(FlowStep.capture)
-            } else {
-                path.append(FlowStep.permissionDenied)
-            }
-        }
+        // Permission sudah checked, langsung ke capture
+        path.append(FlowStep.capture)
     }
     
     private func finishOnboarding() {

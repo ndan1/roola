@@ -196,7 +196,7 @@ private extension UserInputView {
 
                         validationErrors
                         
-                        Spacer(minLength: 105)
+                        Spacer(minLength: 25)
                         VStack(spacing: 8) {
                             Text("Not sure with your measurements?")
                                 .font(.body15Regular)
@@ -268,11 +268,11 @@ private extension UserInputView {
                             )
                         }
                         
-                        if isEditing {
+//                        if isEditing {
                             validationErrors
-                        }
+//                        }
                         
-                        Spacer(minLength: 85)
+                        Spacer(minLength: 20)
                         
                         if isEditing {
                             VStack (spacing: 20){
@@ -340,6 +340,7 @@ private extension UserInputView {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 56, alignment: .top)
         .padding(.top, 8)
     }
 }
