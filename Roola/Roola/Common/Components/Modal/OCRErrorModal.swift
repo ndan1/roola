@@ -16,9 +16,6 @@ struct OCRErrorModal: View {
         ZStack {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
             
             VStack(spacing: 0) {
                 
