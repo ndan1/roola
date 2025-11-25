@@ -16,8 +16,39 @@ struct SaveResultModal: View {
     
     @State private var showValidationError: Bool = false
     
-    private var isProductNameValid: Bool { !productName.trimmingCharacters(in: .whitespaces).isEmpty }
-    private var isBrandNameValid: Bool { !brandName.trimmingCharacters(in: .whitespaces).isEmpty }
+    // 1. Batas Karakter
+    private let charLimit = 15
+        
+    // 2. Logic Validasi Terpisah
+    // Cek Kosong
+    private var isProductEmpty: Bool { productName.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var isBrandEmpty: Bool { brandName.trimmingCharacters(in: .whitespaces).isEmpty }
+        
+    // Cek Kepanjangan
+    private var isProductTooLong: Bool { productName.count > charLimit }
+    private var isBrandTooLong: Bool { brandName.count > charLimit }
+        
+    // Validasi Gabungan (Untuk tombol Save)
+    private var isFormValid: Bool {
+        !isProductEmpty && !isBrandEmpty && !isProductTooLong && !isBrandTooLong
+    }
+        
+    // 3. Logic Error Message Dinamis
+    private var errorMessage: String {
+        if isProductTooLong {
+            return "Product Name max \(charLimit) characters"
+        } else if isBrandTooLong {
+            return "Brand Name max \(charLimit) characters"
+        } else {
+            return "Please fill in this field"
+        }
+    }
+        
+    // Helper untuk menentukan kapan error ditampilkan
+    // Muncul jika: (Tombol save ditekan DAN ada yang kosong) ATAU (Ada yang kepanjangan)
+    private var shouldShowError: Bool {
+        (showValidationError && (isProductEmpty || isBrandEmpty)) || (isProductTooLong || isBrandTooLong)
+    }
     
     var body: some View {
         ZStack {
@@ -62,17 +93,17 @@ struct SaveResultModal: View {
                         label: "Product Name",
                         value: $productName,
                         placeholder: "Product name",
-                        isError: showValidationError && !isProductNameValid
+                        isError: (showValidationError && isProductEmpty) || isProductTooLong
                     )
-                    .zIndex(showValidationError && !isProductNameValid ? 2 : 0)
+                    .zIndex(2)
                     
                     MiddleSaveInputRow(
                         label: "Brand Name",
                         value: $brandName,
                         placeholder: "Brand name",
-                        isError: showValidationError && !isBrandNameValid
+                        isError: (showValidationError && isBrandEmpty) || isBrandTooLong
                     )
-                    .zIndex(showValidationError && !isBrandNameValid ? 1 : 0)
+                    .zIndex(1)
                     
                     BottomSaveInputRow(
                         label: "Item Link",
@@ -80,8 +111,8 @@ struct SaveResultModal: View {
                         placeholder: "Optional"
                     )
                     
-                    if showValidationError && (!isProductNameValid || !isBrandNameValid) {
-                        Text("Please fill in this field")
+                    if shouldShowError {
+                        Text(errorMessage)
                             .font(.caption)
                             .foregroundColor(AppColors.errorRed)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,7 +128,7 @@ struct SaveResultModal: View {
                         // Logic saat tombol ditekan
                         showValidationError = true
                                             
-                        if isProductNameValid && isBrandNameValid {
+                        if isFormValid {
                             onSave()
                         }
                     }) {
