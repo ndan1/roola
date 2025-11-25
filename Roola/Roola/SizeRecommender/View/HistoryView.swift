@@ -101,7 +101,7 @@ struct HistoryView: View {
                                 Image(systemName: "slider.horizontal.3")
                                     .resizable()
                                     .frame(width: 22, height: 22)
-                                    .foregroundColor(isFilterActive ? AppColors.primaryPurple : .gray)
+                                    .foregroundColor(AppColors.primaryPurple)
                                 
                                 if isFilterActive {
                                     Circle()

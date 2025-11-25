@@ -268,9 +268,9 @@ struct RecommendationView: View {
     private var formValidationErrors: some View {
         if showClothingTypeError || showFitPreferenceError {
             HStack {
-                Text("• Please fill in this field")
-                    .font(.body14Regular)
-                    .foregroundColor(.red)
+                Text("Please fill in this field")
+                    .font(.body15Regular)
+                    .foregroundColor(AppColors.errorRed)
                 Spacer()
             }
             .padding(.horizontal, 24)

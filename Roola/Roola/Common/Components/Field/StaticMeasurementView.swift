@@ -157,7 +157,7 @@ struct MeasurementListView: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                .stroke(AppColors.grayScale300, lineWidth: 1)
         )
     }
 }
