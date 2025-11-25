@@ -65,12 +65,7 @@ struct CameraFlowContainerView: View {
             Color.clear.frame(height: 0)
         }
         .background(FirstGradientBackground().ignoresSafeArea())
-        .onAppear {
-            if let user = users.first {
-                tempHeight = user.height > 0 ? user.height : nil
-                tempWeight = user.weight > 0 ? user.weight : nil
-            }
-        }
+        // Reset temp data ketika modal ditutup
         .onChange(of: showBodySizeModal) { oldValue, newValue in
             if !newValue {
                 resetTempData()
@@ -80,6 +75,7 @@ struct CameraFlowContainerView: View {
 
     // MARK: - Helper Functions
     
+    // Reset temporary data
     private func resetTempData() {
         tempHeight = nil
         tempWeight = nil
@@ -89,7 +85,7 @@ struct CameraFlowContainerView: View {
     private func checkCameraPermissionFirst() {
         checkCameraPermission { granted in
             if granted {
-                // Permission granted → Show body size modal
+                // Permission granted → Show body size modal with EMPTY fields
                 showBodySizeModal = true
             } else {
                 // Permission denied → Go to denied screen
@@ -98,6 +94,7 @@ struct CameraFlowContainerView: View {
         }
     }
 
+    // Logic Penyimpanan Data dan Lanjut ke Capture
     private func saveBodyDataAndProceed() {
         let user = users.first ?? User(waist: 0)
         

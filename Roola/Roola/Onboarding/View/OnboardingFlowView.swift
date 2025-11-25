@@ -88,13 +88,6 @@ struct OnboardingFlowView: View {
                 }
             }
         }
-        // Load existing data saat view muncul
-        .onAppear {
-            if let user = users.first {
-                tempHeight = user.height > 0 ? user.height : nil
-                tempWeight = user.weight > 0 ? user.weight : nil
-            }
-        }
         // Reset temp data ketika modal ditutup
         .onChange(of: showBodySizeModal) { oldValue, newValue in
             if !newValue {

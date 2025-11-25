@@ -68,7 +68,7 @@ struct MeasurementField: View {
         .padding(.vertical, 16)
         .padding(.horizontal, 16)
         .frame(height: 56)
-        .background(isEditing ? AppColors.primaryWhite.opacity(0.8) : AppColors.primaryPurple.opacity(0.2))
+        .background(isEditing ? AppColors.primaryWhite.opacity(0.8) : AppColors.primaryPurple.opacity(0.1))
     }
 }
 
