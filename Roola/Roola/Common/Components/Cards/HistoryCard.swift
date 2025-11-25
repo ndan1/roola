@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// Simple version for use with List's swipeActions
 struct HistoryCard: View {
     let history: MeasurementHistory
     
@@ -52,10 +53,8 @@ struct HistoryCard: View {
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(6)
                 }
-                
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
             
             VStack(alignment: .trailing, spacing: 4) {
                 Text(formatDate(history.createdAt))
@@ -104,15 +103,17 @@ struct HistoryCard: View {
     }
     """
     
-    return HistoryCard(history: MeasurementHistory(
-        productName: "Classic T-Shirt",
-        brandName: "Roola",
-        clothingType: "short_sleeved_shirt",
-        selectedFitPreference: "slightly-loose",
-        recommendationsJSON: sampleJSON,
-        userBust: 90.0,
-        userWaist: 75.0,
-        userTorso: 60.0,
-        userArmLength: 55.0
-    ))
+    return HistoryCard(
+        history: MeasurementHistory(
+            productName: "Classic T-Shirt",
+            brandName: "Roola",
+            clothingType: "short_sleeved_shirt",
+            selectedFitPreference: "slightly-loose",
+            recommendationsJSON: sampleJSON,
+            userBust: 90.0,
+            userWaist: 75.0,
+            userTorso: 60.0,
+            userArmLength: 55.0
+        )
+    )
 }

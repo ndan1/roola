@@ -19,9 +19,7 @@ struct HistoryView: View {
     @State private var searchText = ""
     
     // FILTER STATES
-    // Default "All Time" agar logic switch case mudah handle defaultnya
     @State private var selectedTimeRange = "All Time"
-    // Set kosong berarti "Show All", kalau ada isinya berarti filter aktif
     @State private var selectedClothesTypes: Set<String> = []
     
     private var filteredHistories: [MeasurementHistory] {
@@ -56,17 +54,16 @@ struct HistoryView: View {
                 return month == currentMonth && year == currentYear
             }
             
-        default: // "All Time" atau string lain
+        default: // "All Time"
             timeFiltered = allHistories
         }
+        
         // 2. Filter by Clothes Type
-        // Jika Set kosong, dianggap pilih semua. Jika ada isinya, filter yang match saja.
         var typeFiltered: [MeasurementHistory]
         if selectedClothesTypes.isEmpty {
             typeFiltered = timeFiltered
         } else {
             typeFiltered = timeFiltered.filter { history in
-                // Pastikan history.clothingType sesuai dengan ID yang kita simpan di Set (t_shirt, blouse, dll)
                 selectedClothesTypes.contains(history.clothingType)
             }
         }
@@ -83,7 +80,8 @@ struct HistoryView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
+                // MARK: - Search Bar Area
                 HStack {
                     HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
@@ -96,7 +94,6 @@ struct HistoryView: View {
                         Button(action: {
                             showFilterSheet = true
                         }) {
-                            // Tampilkan indikator dot jika ada filter aktif
                             ZStack(alignment: .topTrailing) {
                                 Image(systemName: "slider.horizontal.3")
                                     .resizable()
@@ -122,7 +119,7 @@ struct HistoryView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 8)
                 
-                // 3. Content List
+                // MARK: - Content List (Updated to List)
                 if filteredHistories.isEmpty {
                     Spacer()
                     if searchText.isEmpty && allHistories.isEmpty {
@@ -139,20 +136,26 @@ struct HistoryView: View {
                         }
                     }
                     Spacer()
-                }else {
+                } else {
                     ScrollView {
-                        VStack(spacing: 12) {
+                        LazyVStack(spacing: 16) { // Spacing antar kartu
                             ForEach(filteredHistories) { history in
-                                NavigationLink(destination: HistoryDetailView(history: history)) {
+                                
+                                // Gunakan Wrapper Custom SwipeableCard
+                                SwipeableCard {
+                                    // Masukkan HistoryCard asli kamu di sini
                                     HistoryCard(history: history)
+                                } onDelete: {
+                                    // Panggil fungsi delete kamu
+                                    deleteHistory(history)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal, 20) // Padding kiri kanan layar
+                                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 10)
                     }
-                    .clipped()
+                    .scrollContentBackground(.hidden)
                 }
             }
             .background(FirstGradientBackground().ignoresSafeArea())
@@ -181,8 +184,10 @@ struct HistoryView: View {
     }
     
     private func deleteHistory(_ history: MeasurementHistory) {
+        // Hapus dari context
         modelContext.delete(history)
         do {
+            // Simpan perubahan
             try modelContext.save()
             print("✅ History deleted successfully")
         } catch {
@@ -190,7 +195,6 @@ struct HistoryView: View {
         }
     }
 }
-
 
 #Preview {
     HistoryView()
