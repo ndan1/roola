@@ -39,17 +39,28 @@ struct FilterSheet: View {
         self._tempClothesTypes = State(initialValue: activeClothesTypes.wrappedValue)
     }
     
+    private var isFilterClean: Bool {
+        return tempTimeRange == "All Time" && tempClothesTypes.isEmpty
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             
             // MARK: - Header (Clear - Title - Apply)
             HStack {
                 Button(action: {
-                    // Logic Clear: Kosongkan semua pilihan
-                    tempTimeRange = "All Time" // Atau default lain
-                    tempClothesTypes.removeAll()
+                    if isFilterClean {
+                        // Logic Cancel: Tutup sheet tanpa simpan
+                        dismiss()
+                    } else {
+                        // Logic Clear: Reset ke default (All Time & Kosong)
+                        tempTimeRange = "All Time"
+                        tempClothesTypes.removeAll()
+                    }
                 }) {
-                    Text("Clear")
+                    // Ganti Text berdasarkan kondisi filter
+                    Text(isFilterClean ? "Cancel" : "Clear")
+                        .frame(width: 55, alignment: .leading)
                         .font(.body)
                         .foregroundColor(AppColors.primaryPurple)
                 }

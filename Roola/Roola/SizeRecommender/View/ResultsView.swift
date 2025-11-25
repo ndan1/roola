@@ -131,7 +131,7 @@ struct ResultsView: View {
         ZStack {
             VStack(alignment: .leading, spacing: 16) {
                 recommendationSection(recommendation: recommendation)
-                    .padding(.top, isFromHistory ? 86 : 64)
+                    .padding(.top, 64)
             }
             .padding(.horizontal, 16)
             

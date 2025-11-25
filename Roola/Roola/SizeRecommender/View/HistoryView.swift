@@ -172,7 +172,7 @@ struct HistoryView: View {
                 activeTimeRange: $selectedTimeRange,
                 activeClothesTypes: $selectedClothesTypes
             )
-            .presentationDetents([.fraction(0.9)])
+            .presentationDetents([.fraction(0.95)])
         }
     }
     
