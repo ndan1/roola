@@ -317,9 +317,9 @@ struct RecommendationView: View {
             
             Menu {
                 Button("Tight") { fitPreference = "tight" }
-                Button("Slim") { fitPreference = "slim" }
+//                Button("Slim") { fitPreference = "slim" }
                 Button("Standard") { fitPreference = "standard" }
-                Button("Relaxed") { fitPreference = "relaxed" }
+//                Button("Relaxed") { fitPreference = "relaxed" }
                 Button("Loose") { fitPreference = "loose" }
             } label: {
                 HStack(spacing: 4) {
