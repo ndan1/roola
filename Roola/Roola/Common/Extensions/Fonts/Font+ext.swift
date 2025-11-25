@@ -47,6 +47,10 @@ extension Font {
         .custom("HelveticaNeue-Medium", size: 18, relativeTo: .body)
     }
     
+    static var body16Medium: Font {
+        .custom("HelveticaNeue", size: 16, relativeTo: .headline)
+    }
+    
     static var body16Regular: Font {
         .custom("HelveticaNeue", size: 16, relativeTo: .body)
     }

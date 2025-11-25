@@ -272,7 +272,7 @@ private extension UserInputView {
                             validationErrors
 //                        }
                         
-                        Spacer(minLength: 20)
+                        Spacer(minLength: 22)
                         
                         if isEditing {
                             VStack (spacing: 20){

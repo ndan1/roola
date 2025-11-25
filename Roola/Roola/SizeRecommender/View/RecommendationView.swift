@@ -68,6 +68,7 @@ struct RecommendationView: View {
                     Text("Find Your Fit")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
+                        .padding(.leading, 6)
                 }
                 
                 // 3. Tombol Info tetap di Kanan (Trailing)
@@ -106,12 +107,12 @@ struct RecommendationView: View {
         VStack(spacing: 0) {
 //            headerSection
             Text("Fill your product details to get your best match")
-                .font(.body)
+                .font(.body16Medium)
                 .foregroundColor(.primary)
+                .fontWeight(.medium)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
-                .padding(.top, 10)
             formSection
             uploadSection
             Spacer()
@@ -248,33 +249,36 @@ struct RecommendationView: View {
     
     private var formInputs: some View {
         VStack(spacing: 0) {
+            // Clothing Type Row dengan border individual
             clothingTypeRow
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12, corners: [.topLeft, .topRight])
+                .overlay(
+                    RoundedCorner(radius: 12, corners: [.topLeft, .topRight])
+                        .stroke(showClothingTypeError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
             
-            Rectangle()
-                .fill(AppColors.grayScale400.opacity(0.36))
-                .frame(height: 0.5)
-            
+            // Fit Preference Row dengan border individual
             fitPreferenceRow
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
+                .overlay(
+                    RoundedCorner(radius: 12, corners: [.bottomLeft, .bottomRight])
+                        .stroke(showFitPreferenceError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
         }
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-        )
     }
     
     @ViewBuilder
     private var formValidationErrors: some View {
         if showClothingTypeError || showFitPreferenceError {
             HStack {
-                Text("Please fill in this field")
-                    .font(.body15Regular)
+                Text("Please fill out this field")
+                    .font(.caption)
                     .foregroundColor(AppColors.errorRed)
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
     
@@ -335,16 +339,29 @@ struct RecommendationView: View {
     
     private var uploadSection: some View {
         VStack(spacing: 0) {
+            VStack (alignment: .leading) {
+                HStack(spacing: 0) {
+                    Text("*")
+                        .font(.caption14Italic)
+                        .foregroundStyle(Color.red)
+                    Text("Currently only available for woman’s top")
+                        .font(.caption14Italic)
+                        .foregroundStyle(AppColors.grayScale300)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 4)
             uploadContent
             uploadValidationError
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
+       
     }
     
     private var uploadContent: some View {
         VStack(spacing: 16) {
-            Text("Upload size chart screenshot")
+            Text("Upload product's size chart screenshot")
                 .font(.body)
                 .foregroundColor(AppColors.grayScale400)
             
@@ -358,12 +375,11 @@ struct RecommendationView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .padding(.horizontal, 24)
         .background(AppColors.primaryWhite.opacity(0.5))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                .stroke(showImageError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
         )
     }
     
@@ -371,13 +387,12 @@ struct RecommendationView: View {
     private var uploadValidationError: some View {
         if showImageError {
             HStack {
-                Text("• Please fill in this field")
+                Text("Please fill out this field")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(AppColors.errorRed)
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
     
@@ -399,7 +414,7 @@ struct RecommendationView: View {
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)
-                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+                    .stroke(AppColors.grayScale300, lineWidth: 1)
             )
         }
         .onChange(of: selectedPhoto) { oldValue, newValue in

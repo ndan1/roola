@@ -163,6 +163,7 @@ struct HistoryView: View {
                     Text("History")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
+                        .padding(.leading, 6)
                 }
             }
         }
