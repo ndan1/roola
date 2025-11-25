@@ -33,7 +33,7 @@ struct SwipeableCard<Content: View>: View {
                 ZStack(alignment: .trailing) {
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(AppColors.errorRed)
-                        .padding(.leading, 50) // Mencegah merah bocor di kiri
+                        .padding(.leading, 2)
                     
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
