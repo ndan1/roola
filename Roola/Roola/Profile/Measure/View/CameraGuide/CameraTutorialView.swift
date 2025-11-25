@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CameraTutorialView: View {
     let onContinue: () -> Void
+    @Binding var showBodySizeModal: Bool
     @State var isShowPolicy: Bool = false
     @Environment(\.dismiss) private var dismiss
 
@@ -31,9 +32,32 @@ struct CameraTutorialView: View {
         let width = UIScreen.main.bounds.width
 
         VStack(alignment: .center, spacing: 0) {
-            
-                VStack (alignment: .center, spacing: width * 0.01) {
-                    ScrollView {
+            if showBodySizeModal {
+                HStack(spacing: 20) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 24)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                    .fill(AppColors.primaryPurple)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                            )
+                    }
+                    Text("Instructions")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 5)
+            }
+            VStack (alignment: .center, spacing: width * 0.01) {
+                ScrollView {
                     ForEach(tutorialSteps) { step in
                         VStack(alignment:.leading, spacing: 5) {
                             Text(step.title)
@@ -91,8 +115,8 @@ struct CameraTutorialView: View {
                 
         // MARK: - SETUP NAVIGATION BAR
         .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline) // Agar font besar seperti RoolaHeader
-        .navigationBarBackButtonHidden(true)   // Sembunyikan back button biru default
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 // 2. Gabungkan Tombol Back & Judul dalam HStack
@@ -126,5 +150,5 @@ struct CameraTutorialView: View {
 }
 
 #Preview {
-    CameraTutorialView(onContinue: {})
+    CameraTutorialView(onContinue: {}, showBodySizeModal: .constant(false))
 }

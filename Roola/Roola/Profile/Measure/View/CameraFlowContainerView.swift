@@ -26,10 +26,10 @@ struct CameraFlowContainerView: View {
         NavigationStack(path: $path) {
             ZStack {
                 // Content Utama
-                CameraTutorialView {
-                    // NEW FLOW: Check camera permission FIRST
-                    checkCameraPermissionFirst()
-                }
+                CameraTutorialView(
+                    onContinue: { checkCameraPermissionFirst() },
+                    showBodySizeModal: $showBodySizeModal
+                )
                 
                 // Modal Overlay - Muncul SETELAH permission granted
                 if showBodySizeModal {
@@ -44,6 +44,7 @@ struct CameraFlowContainerView: View {
                     .zIndex(1)
                 }
             }
+            .toolbar(showBodySizeModal ? .hidden : .visible, for: .navigationBar)
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
                 case .capture:

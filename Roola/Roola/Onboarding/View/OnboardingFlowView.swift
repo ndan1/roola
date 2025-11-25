@@ -39,10 +39,11 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .ai:
                     ZStack {
-                        CameraTutorialView {
+                        CameraTutorialView (
                             // NEW FLOW: Check camera permission FIRST
-                            checkCameraPermissionFirst()
-                        }
+                            onContinue: { checkCameraPermissionFirst() },
+                            showBodySizeModal: $showBodySizeModal
+                        )
                         
                         if showBodySizeModal {
                             SaveBodySizeModal(
@@ -56,6 +57,7 @@ struct OnboardingFlowView: View {
                             .zIndex(1)
                         }
                     }
+                    .toolbar(showBodySizeModal ? .hidden : .visible, for: .navigationBar)
                     
                 case .manual:
                     UserInputView()
