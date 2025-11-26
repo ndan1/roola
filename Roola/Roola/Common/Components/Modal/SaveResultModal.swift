@@ -13,7 +13,6 @@ struct SaveResultModal: View {
     @Binding var brandName: String
     @Binding var productLink: String
     var onSave: () -> Void
-    var onDontSave: () -> Void = {}
     
     @State private var showValidationError: Bool = false
     
@@ -124,27 +123,17 @@ struct SaveResultModal: View {
                 }
                 
                 // Buttons
-                HStack(spacing: 12) {
-                    RoolaButton(
-                        buttonTitle: "Don't Save",
-                        buttonColor: AppColors.primaryWhite,
-                        action: {
-                            onDontSave()
+                RoolaButton(
+                    buttonTitle: "Save",
+                    buttonColor: AppColors.primaryPurple,
+                    action: {
+                        showValidationError = true
+                                            
+                        if isFormValid {
+                            onSave()
                         }
-                    )
-                    RoolaButton(
-                        buttonTitle: "Save",
-                        buttonColor: AppColors.primaryPurple,
-                        action: {
-                            showValidationError = true
-                                                
-                            if isFormValid {
-                                onSave()
-                            }
-                        }
-                    )
-                }
-                .padding(.top, 8)
+                    }
+                )
             }
             .padding(16)
             .background(Color.white)

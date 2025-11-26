@@ -53,9 +53,7 @@ struct ResultsView: View {
     }
     
     var body: some View {
-        ZStack {
-            FirstGradientBackground().ignoresSafeArea()
-            
+        VStack(spacing: 0) {
             if viewModel.recommendationViewModel.isCallingAPI {
                 ProgressView("Calculating Recommendations...")
                     .frame(maxWidth: .infinity)
@@ -63,30 +61,59 @@ struct ResultsView: View {
             } else if let apiError = viewModel.recommendationViewModel.apiError {
                 errorView(message: apiError)
             } else if let recommendation = viewModel.currentRecommendation {
-                resultContent(recommendation: recommendation)
+                ZStack {
+                    resultContent(recommendation: recommendation)
+                    
+                    if !isFromHistory {
+                        actionButtons
+                    } else {
+                        VStack {
+                            Spacer()
+                            
+                            if !viewModel.productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                
+                                let urlString = viewModel.productLink
+                                let urlToOpen = URL(string: urlString.lowercased().hasPrefix("http") ? urlString : "https://\(urlString)")
+                                
+                                if let url = urlToOpen {
+                                    RoolaButton(
+                                        buttonTitle: "View Product",
+                                        buttonColor: AppColors.primaryPurple,
+                                        action: {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    )
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, UIScreen.main.bounds.height * 0.08)
+                                }
+                            }
+                        }
+                        .ignoresSafeArea(.all, edges: .bottom)
+                    }
+                }
+                .clipped()
             }
         }
+        .background(FirstGradientBackground().ignoresSafeArea())
         .navigationTitle("")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar(viewModel.showSaveModal || viewModel.showSuccessModal ? .hidden : .visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar(isFromHistory ? .hidden : .visible, for: .tabBar)
+        .toolbar(viewModel.showSaveModal ? .hidden : .visible, for: .navigationBar)
         .toolbar {
-            // 2. Buat Custom Title di Kiri (Leading)
             ToolbarItem(placement: .topBarLeading) {
-                if isFromHistory {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left.circle.fill")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(AppColors.primaryWhite)
-                            .background(
-                                Circle()
-                                .fill(AppColors.primaryPurple)
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                    )}
-                }
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left.circle.fill")
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                        .foregroundColor(AppColors.primaryWhite)
+                        .background(
+                            Circle()
+                            .fill(AppColors.primaryPurple)
+                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                )}
             }
             ToolbarItem(placement: .principal) {
                 Text("Recommended Size")
@@ -94,6 +121,29 @@ struct ResultsView: View {
                     .foregroundStyle(.primary)
             }
         }
+        .overlay(
+            Group {
+                if viewModel.showSaveModal {
+                    SaveResultModal(
+                        isPresented: $viewModel.showSaveModal,
+                        productName: $viewModel.productName,
+                        brandName: $viewModel.brandName,
+                        productLink: $viewModel.productLink,
+                        onSave: {
+                            viewModel.saveToHistory()
+                        }
+                    )
+                    .transition(.opacity)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
+                }
+                
+                if viewModel.showSuccessModal {
+                    SaveSuccessModal()
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSuccessModal)
+                }
+            }
+        )
         .onAppear {
             viewModel.setModelContext(modelContext)
             viewModel.setInitialSliderPosition()
@@ -128,71 +178,39 @@ struct ResultsView: View {
     
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 16) {
-                recommendationSection(recommendation: recommendation)
-                    .padding(.top, 64)
-            }
-            .padding(.horizontal, 16)
-            
-            if !isFromHistory {
-                actionButtons
-                    .padding(.bottom, 48)
-            } else {
-                // Bungkus dengan VStack agar Spacer berfungsi mendorong ke bawah
-                VStack {
-                    Spacer()
-                    
-                    if !viewModel.productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        
-                        let urlString = viewModel.productLink
-                        // Logic simple untuk handle https
-                        let urlToOpen = URL(string: urlString.lowercased().hasPrefix("http") ? urlString : "https://\(urlString)")
-                        
-                        if let url = urlToOpen {
-                            RoolaButton(
-                                buttonTitle: "View Product",
-                                buttonColor: AppColors.primaryPurple,
-                                action: {
-                                    UIApplication.shared.open(url)
-                                }
-                            )
-                            .transition(.opacity)
-                            // Tambahkan padding agar sama dengan tombol 'Save'
-                            .padding(.horizontal, 16)
-                        }
-                    }
-                }
-                .padding(.bottom, 128) // Samakan padding bawah dengan actionButtons
-                        }
-            
+        VStack(spacing: 0) {
             if viewModel.showSaveModal {
-                SaveResultModal(
-                    isPresented: $viewModel.showSaveModal,
-                    productName: $viewModel.productName,
-                    brandName: $viewModel.brandName,
-                    productLink: $viewModel.productLink,
-                    onSave: {
-                        viewModel.saveToHistory()
-                    },
-                    onDontSave: {
-                        viewModel.showSaveModal = false
-                        showResults = false
-                        viewModel.onTryAgain?()
+                HStack(spacing: 19) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 32)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                    .fill(AppColors.primaryPurple)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                            )
                     }
-                )
-                .transition(.opacity)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
+                    Text("Recommended Size")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 5)
             }
-            
-            if viewModel.showSuccessModal {
-                SaveSuccessModal()
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSuccessModal)
+            ScrollView {
+                recommendationSection(recommendation: recommendation)
+                    .padding(.top, 24)
+                    .padding(.bottom, 120)
             }
+            .scrollIndicators(.hidden)
         }
+        .padding(.horizontal, 16)
     }
-    
     // MARK: - Recommendation Section
     
     @ViewBuilder
@@ -350,7 +368,7 @@ struct ResultsView: View {
             
             VStack(spacing: 12) {
                 RoolaButton(
-                    buttonTitle: "Finish",
+                    buttonTitle: "Save",
                     buttonColor: AppColors.primaryPurple,
                     action: {
                         viewModel.showSaveModal = true
@@ -358,8 +376,12 @@ struct ResultsView: View {
                 )
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, UIScreen.main.bounds.height * 0.1)
+            
         }
+        .padding(.bottom, 74)
+        .ignoresSafeArea(.all, edges: .bottom)
+        .animation(nil, value: viewModel.showSaveModal)
+        
     }
 }
 
