@@ -10,6 +10,7 @@ import SwiftUI
 struct SwipeableCard<Content: View>: View {
     var content: Content
     var onDelete: () -> Void
+    var onTap: () -> Void // 1. Tambahkan parameter onTap
     
     // State
     @State private var offset: CGFloat = 0
@@ -20,8 +21,10 @@ struct SwipeableCard<Content: View>: View {
     private let buttonWidth: CGFloat = 75
     private let cornerRadius: CGFloat = 12
     
-    init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {
+    // 2. Update Init
+    init(@ViewBuilder content: () -> Content, onTap: @escaping () -> Void, onDelete: @escaping () -> Void) {
         self.content = content()
+        self.onTap = onTap
         self.onDelete = onDelete
     }
     
@@ -33,7 +36,7 @@ struct SwipeableCard<Content: View>: View {
                 ZStack(alignment: .trailing) {
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(AppColors.errorRed)
-                        .padding(.leading, 2)
+                        .padding(.leading, 50)
                     
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
@@ -50,7 +53,6 @@ struct SwipeableCard<Content: View>: View {
                         deleteItem()
                     }
                 }
-                // Merah hanya muncul jika posisi card di sebelah kiri (offset negatif)
                 .opacity(offset < 0 ? 1 : 0)
             }
 
@@ -59,69 +61,75 @@ struct SwipeableCard<Content: View>: View {
                 .background(Color.white)
                 .cornerRadius(cornerRadius)
                 .offset(x: offset)
-                .gesture(
-                    DragGesture()
+                // 3. Tambahkan Tap Gesture Manual di sini
+                // Ini jauh lebih 'strict' daripada NavigationLink.
+                // Dia hanya akan jalan kalau benar-benar Tap (bukan geser).
+                .onTapGesture {
+                    if offset == 0 { // Hanya bisa diklik kalau card tidak sedang terbuka
+                        onTap()
+                    } else {
+                        // Kalau sedang terbuka dan diklik, tutup card-nya
+                        withAnimation(.spring()) {
+                            offset = 0
+                            isSwiped = false
+                        }
+                    }
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20, coordinateSpace: .local)
                         .onChanged { value in
                             let translation = value.translation.width
+                            let verticalMovement = value.translation.height
+                            
+                            // Cegah swipe jika gerakan dominan vertikal (scroll)
+                            if abs(verticalMovement) > abs(translation) { return }
                             
                             withAnimation(.interactiveSpring()) {
                                 if isSwiped {
-                                    // KONDISI: CARD SUDAH TERBUKA
-                                    // Kita hitung dari posisi terbuka (-buttonWidth)
-                                    
                                     if translation > 0 {
-                                        // User geser ke kanan (Menutup)
-                                        // Gerakannya linear mengikuti jari dari titik -85 menuju 0
-                                        // Kita pakai min(0, ...) supaya tidak bablas ke kanan banget
                                         let newPos = -buttonWidth + translation
-                                        self.offset = min(0, newPos) // Mentok di 0 (posisi tertutup)
+                                        self.offset = min(0, newPos)
                                     } else {
-                                        // User geser makin ke kiri (Resistance)
                                         self.offset = -buttonWidth + (translation / 3)
                                     }
                                 } else {
-                                    // KONDISI: CARD TERTUTUP (NORMAL)
                                     if translation < 0 {
-                                        // User geser ke kiri (Membuka)
                                         self.offset = translation
                                     } else {
-                                        // User geser ke kanan (Rubber Band)
                                         self.offset = translation / 3
                                     }
                                 }
                             }
                         }
                         .onEnded { value in
-                            // Tentukan snap point (kembali tertutup atau tetap terbuka)
+                            let translation = value.translation.width
+                            let verticalMovement = value.translation.height
+                            
+                            if abs(verticalMovement) > abs(translation) {
+                                withAnimation(.spring()) {
+                                    if isSwiped { offset = -buttonWidth }
+                                    else { offset = 0 }
+                                }
+                                return
+                            }
+                            
                             let threshold = buttonWidth / 2
                             
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 if isSwiped {
-                                    // Jika dari posisi terbuka, digeser ke kanan cukup jauh -> Tutup
-                                    if value.translation.width > threshold {
+                                    if translation > threshold {
                                         self.isSwiped = false
                                         self.offset = 0
                                     } else {
-                                        // Balik ke posisi terbuka
                                         self.offset = -buttonWidth
-                                        
-                                        // Cek delete instant
-                                        if value.translation.width < -100 {
-                                            deleteItem()
-                                        }
+                                        if translation < -100 { deleteItem() }
                                     }
                                 } else {
-                                    // Jika dari posisi tertutup, digeser ke kiri cukup jauh -> Buka
-                                    if value.translation.width < -threshold {
+                                    if translation < -threshold {
                                         self.isSwiped = true
                                         self.offset = -buttonWidth
-                                        
-                                        // Cek delete instant
-                                        if value.translation.width < -200 {
-                                            deleteItem()
-                                        }
+                                        if translation < -200 { deleteItem() }
                                     } else {
-                                        // Balik tertutup
                                         self.offset = 0
                                         self.isSwiped = false
                                     }
@@ -129,15 +137,6 @@ struct SwipeableCard<Content: View>: View {
                             }
                         }
                 )
-                // Tap body untuk menutup
-                .onTapGesture {
-                    if isSwiped {
-                        withAnimation(.spring()) {
-                            offset = 0
-                            isSwiped = false
-                        }
-                    }
-                }
         }
         .opacity(isRemoved ? 0 : 1)
         .frame(height: isRemoved ? 0 : nil, alignment: .top)

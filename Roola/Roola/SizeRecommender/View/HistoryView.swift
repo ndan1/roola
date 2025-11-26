@@ -11,6 +11,8 @@ import SwiftData
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
     
+    @State private var path = NavigationPath()
+    
     @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var allHistories: [MeasurementHistory]
     
     @State private var showSortSheet = false
@@ -60,143 +62,107 @@ struct HistoryView: View {
         
         // 2. Filter by Clothes Type
         var typeFiltered: [MeasurementHistory]
-        if selectedClothesTypes.isEmpty {
-            typeFiltered = timeFiltered
-        } else {
-            typeFiltered = timeFiltered.filter { history in
-                selectedClothesTypes.contains(history.clothingType)
-            }
-        }
-        
-        // 3. Filter by Search Text
-        if searchText.isEmpty {
-            return typeFiltered
-        } else {
-            return typeFiltered.filter { history in
-                history.productName.localizedCaseInsensitiveContains(searchText)
-            }
-        }
+        if selectedClothesTypes.isEmpty { typeFiltered = timeFiltered }
+        else { typeFiltered = timeFiltered.filter { selectedClothesTypes.contains($0.clothingType) } }
+                
+        if searchText.isEmpty { return typeFiltered }
+        else { return typeFiltered.filter { $0.productName.localizedCaseInsensitiveContains(searchText) } }
     }
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                if !filteredHistories.isEmpty {
-                // MARK: - Search Bar Area
-                    HStack {
-                        HStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.gray)
-                            
-                            TextField("Search", text: $searchText)
-                                .font(.body)
-                                .submitLabel(.search)
-                            
-                            Button(action: {
-                                showFilterSheet = true
-                            }) {
-                                ZStack(alignment: .topTrailing) {
-                                    Image(systemName: "slider.horizontal.3")
-                                        .resizable()
-                                        .frame(width: 22, height: 22)
-                                        .foregroundColor(AppColors.primaryPurple)
-                                    
-                                    if isFilterActive {
-                                        Circle()
-                                            .fill(.red)
-                                            .frame(width: 8, height: 8)
-                                            .offset(x: 2, y: -2)
+            // 2. Bind path ke NavigationStack
+            NavigationStack(path: $path) {
+                VStack(spacing: 0) {
+                    if !filteredHistories.isEmpty {
+                        // ... Search Bar Area (Tidak berubah) ...
+                        HStack {
+                            HStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass").foregroundColor(.gray)
+                                TextField("Search", text: $searchText).font(.body).submitLabel(.search)
+                                Button(action: { showFilterSheet = true }) {
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(systemName: "slider.horizontal.3")
+                                            .resizable().frame(width: 22, height: 22)
+                                            .foregroundColor(AppColors.primaryPurple)
+                                        if isFilterActive {
+                                            Circle().fill(.red).frame(width: 8, height: 8).offset(x: 2, y: -2)
+                                        }
                                     }
                                 }
                             }
+                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .background(Color.white).cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                        .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
-                }
-                
-                // MARK: - Content List (Updated to List)
-                if filteredHistories.isEmpty {
-                    Spacer()
-                    if searchText.isEmpty && allHistories.isEmpty {
-                        EmptyHistoryView()
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 40))
-                                .foregroundColor(.gray)
-                                .padding(.bottom, 8)
-                            Text("No history found")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) { // Spacing antar kartu
-                            ForEach(filteredHistories) { history in
-                                
-                                // Gunakan Wrapper Custom SwipeableCard
-                                SwipeableCard {
-                                    // Masukkan HistoryCard asli kamu di sini
-                                    HistoryCard(history: history)
-                                } onDelete: {
-                                    // Panggil fungsi delete kamu
-                                    deleteHistory(history)
-                                }
-                                .padding(.horizontal, 20) // Padding kiri kanan layar
-                                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    
+                    // MARK: - Content List
+                    if filteredHistories.isEmpty {
+                        Spacer()
+                        if searchText.isEmpty && allHistories.isEmpty {
+                             EmptyHistoryView()
+                        } else {
+                            VStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass").font(.system(size: 40)).foregroundColor(.gray).padding(.bottom, 8)
+                                Text("No history found").font(.headline).foregroundColor(.gray)
                             }
                         }
-                        .padding(.vertical, 10)
+                        Spacer()
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(filteredHistories) { history in
+                                    
+                                    // 3. Panggil SwipeableCard dengan onTap
+                                    SwipeableCard {
+                                        // HAPUS NAVIGATION LINK DARI SINI
+                                        // Cukup panggil card-nya saja
+                                        HistoryCard(history: history)
+                                    } onTap: {
+                                        // LOGIC PINDAH HALAMAN
+                                        // Saat card di-tap bersih (tanpa swipe), masukkan ke path
+                                        path.append(history)
+                                    } onDelete: {
+                                        deleteHistory(history)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                                }
+                            }
+                            .padding(.vertical, 10)
+                        }
+                        .scrollContentBackground(.hidden)
                     }
-                    .scrollContentBackground(.hidden)
+                }
+                .background(FirstGradientBackground().ignoresSafeArea())
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Text("History")
+                            .font(.heading28Medium)
+                            .foregroundStyle(.primary)
+                            .padding(.leading, 6)
+                    }
+                }
+                // 4. Daftarkan Destinasi Navigasi
+                // Ini akan menangani perpindahan saat path.append(history) dipanggil
+                .navigationDestination(for: MeasurementHistory.self) { history in
+                    HistoryDetailView(history: history)
                 }
             }
-            .background(FirstGradientBackground().ignoresSafeArea())
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("History")
-                        .font(.heading28Medium)
-                        .foregroundStyle(.primary)
-                        .padding(.leading, 6)
-                }
+            .sheet(isPresented: $showFilterSheet) {
+                FilterSheet(activeTimeRange: $selectedTimeRange, activeClothesTypes: $selectedClothesTypes)
+                    .presentationDetents([.fraction(0.95)])
             }
         }
-        .sheet(isPresented: $showFilterSheet) {
-            FilterSheet(
-                activeTimeRange: $selectedTimeRange,
-                activeClothesTypes: $selectedClothesTypes
-            )
-            .presentationDetents([.fraction(0.95)])
-        }
-    }
     
-    private var isFilterActive: Bool {
-        return selectedTimeRange != "All Time" || !selectedClothesTypes.isEmpty
-    }
-    
+    private var isFilterActive: Bool { return selectedTimeRange != "All Time" || !selectedClothesTypes.isEmpty }
     private func deleteHistory(_ history: MeasurementHistory) {
-        // Hapus dari context
         modelContext.delete(history)
-        do {
-            // Simpan perubahan
-            try modelContext.save()
-            print("✅ History deleted successfully")
-        } catch {
-            print("❌ Failed to delete history: \(error)")
-        }
-    }
-}
+        try? modelContext.save()
+    }}
 
 #Preview {
     HistoryView()
