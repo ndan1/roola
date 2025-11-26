@@ -136,6 +136,7 @@ struct ResultsView: View {
                     )
                     .transition(.opacity)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
+                    .padding(.horizontal)
                 }
                 
                 if viewModel.showSuccessModal {

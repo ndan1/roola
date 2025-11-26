@@ -135,10 +135,12 @@ struct SaveResultModal: View {
                     }
                 )
             }
+            .frame(maxWidth: UIScreen.main.bounds.width * 0.85)
             .padding(16)
             .background(Color.white)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
+            .padding(.horizontal)
         }
     }
 }
@@ -162,6 +164,7 @@ struct BottomSaveInputRow: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 200)
         }
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
         .padding()
         .background(Color.white)
         .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
@@ -191,6 +194,7 @@ struct TopSaveInputRow: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 200)
         }
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
         .padding()
         .background(Color.white)
         .cornerRadius(12, corners: [.topLeft, .topRight])
@@ -220,6 +224,7 @@ struct MiddleSaveInputRow: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 200)
         }
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
         .padding()
         .background(Color.white)
         .overlay(
