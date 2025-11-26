@@ -6,18 +6,17 @@
 //
 
 import UIKit
+import Vision
 
 class PoseValidationOverlay: UIView {
 
     // MARK: - UI Components
     private let feedbackLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.boldSystemFont(ofSize: 32)
-        l.textColor = .white
-        l.backgroundColor = UIColor(AppColors.primaryPurple).withAlphaComponent(0)
+        l.font = UIFont(name: "HelveticaNeue-Bold", size: 28)
+        l.textColor = UIColor(AppColors.primaryWhite)
         l.textAlignment = .center
-        l.numberOfLines = 0
-        l.layer.cornerRadius = 30
+        l.numberOfLines = 1
         l.clipsToBounds = true
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
@@ -25,7 +24,7 @@ class PoseValidationOverlay: UIView {
 
     private let borderIndicator: UIView = {
         let v = UIView()
-        v.layer.borderWidth = 5
+        v.layer.borderWidth = 6
         v.layer.borderColor = UIColor.clear.cgColor
         v.backgroundColor = .clear
         v.translatesAutoresizingMaskIntoConstraints = false
@@ -34,11 +33,15 @@ class PoseValidationOverlay: UIView {
 
     private let countLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 128, weight: .bold)
+        l.font = UIFont.systemFont(ofSize: 140, weight: .bold)
         l.textColor = UIColor(AppColors.primaryWhite)
         l.textAlignment = .center
         l.alpha = 0
         l.translatesAutoresizingMaskIntoConstraints = false
+        l.layer.shadowColor = UIColor.black.cgColor
+        l.layer.shadowRadius = 4
+        l.layer.shadowOpacity = 0.4
+        l.layer.shadowOffset = CGSize(width: 0, height: 2)
         return l
     }()
 
@@ -51,18 +54,50 @@ class PoseValidationOverlay: UIView {
         return iv
     }()
 
-    // Back button
-    var onBackTapped: (() -> Void)?
     private lazy var backButton: UIButton = {
         let b = UIButton(type: .system)
         let cfg = UIImage.SymbolConfiguration(pointSize: 24, weight: .semibold)
         b.setImage(UIImage(systemName: "chevron.left.circle.fill", withConfiguration: cfg), for: .normal)
         b.tintColor = UIColor(AppColors.primaryWhite)
+        b.backgroundColor = UIColor(AppColors.primaryPurple)
+        b.layer.cornerRadius = 25
+        
+        b.layer.shadowColor = UIColor.black.cgColor
+        b.layer.shadowOpacity = 0.3
+        b.layer.shadowOffset = CGSize(width: 0, height: 4)
+        b.layer.shadowRadius = 5
+
+        b.layer.masksToBounds = false
+        
         b.translatesAutoresizingMaskIntoConstraints = false
         b.addTarget(self, action: #selector(btnTouchDown), for: .touchDown)
         b.addTarget(self, action: #selector(btnTouchUp),   for: [.touchUpInside, .touchUpOutside, .touchCancel])
         return b
     }()
+    
+    // MARK: - Skeleton Layers
+    private let skeletonLayer: CAShapeLayer = {
+        let l = CAShapeLayer()
+        l.strokeColor = UIColor.white.withAlphaComponent(0.6).cgColor
+        l.lineWidth = 3.0
+        l.fillColor = UIColor.clear.cgColor
+        l.lineCap = .round
+        l.lineJoin = .round
+        return l
+    }()
+    
+    private let jointsLayer: CAShapeLayer = {
+        let l = CAShapeLayer()
+        // Default to system purple if AppColors fails, but tries to use your theme
+        l.fillColor = UIColor(AppColors.primaryPurple).cgColor
+        l.strokeColor = UIColor.white.cgColor
+        l.lineWidth = 2.0
+        return l
+    }()
+
+    // MARK: - Properties
+    var onBackTapped: (() -> Void)?
+    private var isCountdownActive = false
 
     // MARK: - Init
     override init(frame: CGRect) { super.init(frame: frame); setup() }
@@ -72,6 +107,10 @@ class PoseValidationOverlay: UIView {
         backgroundColor = .clear
         isUserInteractionEnabled = true
 
+        // Add skeleton layers first so they are behind labels but above camera
+        layer.addSublayer(skeletonLayer)
+        layer.addSublayer(jointsLayer)
+
         addSubview(stencilImageView)
         addSubview(borderIndicator)
         addSubview(feedbackLabel)
@@ -79,56 +118,106 @@ class PoseValidationOverlay: UIView {
         addSubview(backButton)
 
         NSLayoutConstraint.activate([
-            // Stencil (kept visible)
             stencilImageView.topAnchor.constraint(equalTo: topAnchor),
             stencilImageView.leadingAnchor.constraint(equalTo: leadingAnchor),
             stencilImageView.trailingAnchor.constraint(equalTo: trailingAnchor),
             stencilImageView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            // Border
             borderIndicator.topAnchor.constraint(equalTo: topAnchor),
             borderIndicator.leadingAnchor.constraint(equalTo: leadingAnchor),
             borderIndicator.trailingAnchor.constraint(equalTo: trailingAnchor),
             borderIndicator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            // Feedback (top)
             feedbackLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 0),
-            feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.65),
-            feedbackLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 50),
+            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.9),
 
-            // Countdown / Recording – centre
             countLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             countLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            // Back button
-            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 20),
-            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            backButton.widthAnchor.constraint(equalToConstant: 44),
-            backButton.heightAnchor.constraint(equalToConstant: 44)
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 0),
+            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 22),
+            backButton.widthAnchor.constraint(equalToConstant: 32),
+            backButton.heightAnchor.constraint(equalToConstant: 32)
         ])
 
-        // Only back button receives touches
         [stencilImageView, feedbackLabel, borderIndicator].forEach { $0.isUserInteractionEnabled = false }
     }
+    
+    // MARK: - Skeleton Drawing
+    
+    // In PoseValidationOverlay.swift
+    func updateSkeleton(points: [VNHumanBodyPoseObservation.JointName : CGPoint]) {
+        // Disable implicit animations for instant updates
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        
+        // 1. Draw Bones
+        let path = UIBezierPath()
+        
+        // Defined connections including legs
+        let connections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
+            // Arms
+            (.leftWrist, .leftElbow), (.leftElbow, .leftShoulder),
+            (.rightWrist, .rightElbow), (.rightElbow, .rightShoulder),
+            
+            // Torso (Stop at Neck, do not go to Nose/Eyes)
+            (.leftShoulder, .neck), (.rightShoulder, .neck),
+            (.leftShoulder, .leftHip), (.rightShoulder, .rightHip),
+            (.leftHip, .rightHip),
+            (.root, .neck), // Spine
+            
+            // Legs (ADDED)
+            (.leftHip, .leftKnee), (.leftKnee, .leftAnkle),
+            (.rightHip, .rightKnee), (.rightKnee, .rightAnkle)
+        ]
+        
+        for (startName, endName) in connections {
+            if let start = points[startName], let end = points[endName] {
+                path.move(to: start)
+                path.addLine(to: end)
+            }
+        }
+        skeletonLayer.path = path.cgPath
+        
+        // 2. Draw Joints
+        let dotsPath = UIBezierPath()
+        let radius: CGFloat = 5.0
+        
+        for (_, point) in points {
+            dotsPath.move(to: CGPoint(x: point.x + radius, y: point.y))
+            dotsPath.addArc(withCenter: point, radius: radius, startAngle: 0, endAngle: 2 * .pi, clockwise: true)
+        }
+        jointsLayer.path = dotsPath.cgPath
+        
+        CATransaction.commit()
+    }
+    
+    func clearSkeleton() {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        skeletonLayer.path = nil
+        jointsLayer.path = nil
+        CATransaction.commit()
+    }
 
-    // MARK: - Public API
-    func showFeedback(_ msg: String, color: UIColor = UIColor(AppColors.primaryPurple)) {
+    // MARK: - Helper Methods
+    func showFeedback(_ msg: String) {
         DispatchQueue.main.async { [weak self] in
-            UIView.transition(with: self?.feedbackLabel ?? UIView(),
-                              duration: 0.2,
-                              options: .transitionCrossDissolve) {
+            if self?.feedbackLabel.text == msg { return }
+            UIView.transition(with: self?.feedbackLabel ?? UIView(), duration: 0.2, options: .transitionCrossDissolve) {
                 self?.feedbackLabel.text = msg
-                self?.feedbackLabel.backgroundColor = color
             }
         }
     }
 
     func showValidPoseIndicator(_ valid: Bool) {
         DispatchQueue.main.async { [weak self] in
-            UIView.animate(withDuration: 0.3) {
-                self?.borderIndicator.layer.borderColor = valid ?
-                    UIColor.systemGreen.cgColor : UIColor.clear.cgColor
+            let color = valid ? UIColor.systemGreen.cgColor : UIColor.clear.cgColor
+            if self?.borderIndicator.layer.borderColor != color {
+                UIView.animate(withDuration: 0.3) {
+                    self?.borderIndicator.layer.borderColor = color
+                }
             }
         }
     }
@@ -136,6 +225,7 @@ class PoseValidationOverlay: UIView {
     func setStencil(image: UIImage?, animated: Bool = true) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            if self.stencilImageView.image == image { return }
             let work = {
                 self.stencilImageView.image = image
                 self.stencilImageView.alpha = image == nil ? 0 : 1
@@ -144,66 +234,73 @@ class PoseValidationOverlay: UIView {
         }
     }
 
-    // MARK: - Countdown (3 → 2 → 1 → Recording…) -------------------------------------------------
+    // MARK: - Countdown Logic
+    
     func startCountdown(completion: @escaping () -> Void) {
-        // Reset label
-        countLabel.text = "3"
-        countLabel.font = UIFont.systemFont(ofSize: 140, weight: .bold)
-        countLabel.transform = CGAffineTransform(scaleX: 0.3, y: 0.3)
+        isCountdownActive = true
+        countLabel.layer.removeAllAnimations()
         countLabel.alpha = 0
+        countLabel.transform = .identity
+        animateCountdownStep(3, completion: completion)
+    }
 
-        // Fade-in + scale-in
-        UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.8,
-                       options: [], animations: {
+    func cancelCountdown() {
+        isCountdownActive = false
+        DispatchQueue.main.async { [weak self] in
+            self?.countLabel.layer.removeAllAnimations()
+            self?.countLabel.alpha = 0
+        }
+    }
+
+    private func animateCountdownStep(_ number: Int, completion: @escaping () -> Void) {
+        guard isCountdownActive else { return }
+
+        // 1. Setup
+        countLabel.text = "\(number)"
+        countLabel.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
+        countLabel.alpha = 0
+        
+        // 2. Animate IN
+        UIView.animate(withDuration: 0.3,
+                       delay: 0,
+                       usingSpringWithDamping: 0.6,
+                       initialSpringVelocity: 0.8,
+                       options: .curveEaseOut,
+                       animations: {
             self.countLabel.alpha = 1
             self.countLabel.transform = .identity
         }) { _ in
-            self.runStep(2, completion: completion)
-        }
-    }
-
-    private func runStep(_ step: Int, completion: @escaping () -> Void) {
-        guard step > 0 else {
-            self.hideCountLabel {
+            guard self.isCountdownActive else { return }
+            if number == 1 {
                 completion()
             }
-            return
-        }
-
-        countLabel.text = "\(step)"
-        countLabel.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
-
-        UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.7,
-                       initialSpringVelocity: 0.8, options: [], animations: {
-            self.countLabel.transform = .identity
-        }) { _ in
-            // 1-second pause before next number
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.runStep(step - 1, completion: completion)
+            UIView.animate(withDuration: 0.2,
+                           delay: 0.2,
+                           options: .curveEaseIn,
+                           animations: {
+                self.countLabel.alpha = 0
+                self.countLabel.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+            }) { _ in
+                guard self.isCountdownActive else { return }
+                
+                if number > 1 {
+                    self.animateCountdownStep(number - 1, completion: completion)
+                }
             }
         }
     }
-    private func hideCountLabel(completion: @escaping () -> Void) {
-        countLabel.layer.removeAllAnimations()
-        UIView.animate(withDuration: 0.3, animations: {
-            self.countLabel.alpha = 0
-            self.countLabel.transform = CGAffineTransform(scaleX: 0.3, y: 0.3)
-        }) { _ in
-            completion()
-        }
-    }
 
-    // MARK: - Success Close Animation -------------------------------------------------
+    // MARK: - Success Close Animation
     func showSuccessCloseAnimation(completion: (() -> Void)? = nil) {
         let flash = UIView(frame: bounds)
         flash.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.45)
         flash.alpha = 0
         addSubview(flash)
 
-        UIView.animate(withDuration: 0.25, animations: {
+        UIView.animate(withDuration: 0.2, animations: {
             flash.alpha = 1
         }) { _ in
-            UIView.animate(withDuration: 0.55, delay: 0, usingSpringWithDamping: 0.7,
+            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.7,
                            initialSpringVelocity: 0.8, options: [], animations: {
                 flash.alpha = 0
                 flash.transform = CGAffineTransform(scaleX: 1.8, y: 1.8)
@@ -214,28 +311,17 @@ class PoseValidationOverlay: UIView {
         }
     }
 
-    // MARK: - Back button -------------------------------------------------
+    // MARK: - Actions
     @objc private func btnTouchDown() {
-        UIView.animate(withDuration: 0.1) {
-            self.backButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
-        }
+        UIView.animate(withDuration: 0.1) { self.backButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9) }
     }
-
     @objc private func btnTouchUp() {
-        UIView.animate(withDuration: 0.1) {
-            self.backButton.transform = .identity
-        }
-        print("BACK BUTTON TAPPED!")
+        UIView.animate(withDuration: 0.1) { self.backButton.transform = .identity }
         onBackTapped?()
     }
-
-    // MARK: - Hit-test (only back button)
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let p = convert(point, to: backButton)
-        if backButton.bounds.contains(p) {
-            return backButton.hitTest(p, with: event)
-        }
+        if backButton.bounds.contains(p) { return backButton.hitTest(p, with: event) }
         return nil
     }
-    
 }

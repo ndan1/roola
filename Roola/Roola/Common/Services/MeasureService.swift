@@ -16,10 +16,11 @@ enum MeasureServiceError: Error {
 
 struct MeasureService {
     private let apiKey: String
-    private let endpointID = "5e9eu6mwoznmzz"
+    // Updated Endpoint ID from python script
+    private let endpointID = "j5p5csagwls8pl"
     private let baseURL = "https://api.runpod.ai/v2"
-    private let MAX_WAIT: TimeInterval = 600
-    private let POLL_INTERVAL: TimeInterval = 5
+    private let MAX_WAIT: TimeInterval = 300 // Matches Python's 300s
+    private let POLL_INTERVAL: TimeInterval = 2 // Reduced to 2s for images
 
     init() {
         guard let key = ConfigManager.getMeasureKey() else {
@@ -29,27 +30,35 @@ struct MeasureService {
     }
 
     // MARK: - Public Method
-    func getMeasurement(from videoURL: URL) async throws -> [String: Any] {
-        let videoBase64 = try encodeVideo(videoURL)
-        let jobID = try await submitJob(videoBase64: videoBase64)
+    
+    /// Submits an image for body measurement.
+    /// - Parameters:
+    ///   - imageData: The raw Data of the image (JPEG/PNG).
+    ///   - height: The user's height in CM.
+    func getMeasurement(imageData: Data, height: Double) async throws -> [String: Any] {
+        // 1. Encode Image to Base64
+        let imageBase64 = imageData.base64EncodedString()
+        
+        // 2. Submit Job
+        let jobID = try await submitJob(imageBase64: imageBase64, height: height)
+        
+        // 3. Poll for results
         let result = try await pollJob(jobID: jobID)
         return result
     }
 
     // MARK: - Helpers
-    private func encodeVideo(_ url: URL) throws -> String {
-        let data = try Data(contentsOf: url)
-        return data.base64EncodedString()
-    }
 
-    private func submitJob(videoBase64: String) async throws -> String {
+    private func submitJob(imageBase64: String, height: Double) async throws -> String {
         guard let url = URL(string: "\(baseURL)/\(endpointID)/run") else {
             throw MeasureServiceError.invalidURL
         }
 
+        // Updated Payload structure to match Python script
         let payload: [String: Any] = [
             "input": [
-                "video": videoBase64
+                "image": imageBase64,
+                "height": height
             ]
         ]
 
@@ -91,6 +100,8 @@ struct MeasureService {
             }
 
             let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // If status check fails (non-200), wait and retry
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 try await Task.sleep(nanoseconds: UInt64(POLL_INTERVAL * 1_000_000_000))
                 continue
@@ -104,6 +115,8 @@ struct MeasureService {
             print("→ \(status)... (\(Int(Date().timeIntervalSince(start)))s elapsed)")
 
             if ["COMPLETED", "FAILED", "CANCELLED"].contains(status) {
+                // If completed, the python script looks at result["output"]
+                // We return the whole JSON here so the caller can handle "output" or "error"
                 return json ?? [:]
             }
 
