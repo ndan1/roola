@@ -103,6 +103,7 @@ struct ResultsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
+                    showResults = false
                     dismiss()
                 }) {
                     Image(systemName: "chevron.left.circle.fill")
@@ -181,7 +182,10 @@ struct ResultsView: View {
         VStack(spacing: 0) {
             if viewModel.showSaveModal {
                 HStack(spacing: 19) {
-                    Button(action: { dismiss() }) {
+                    Button(action: {
+                        showResults = false
+                        dismiss()
+                    }) {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)

@@ -151,6 +151,12 @@ struct RecommendationView: View {
         .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
             handleNetworkChange(oldValue: oldValue, newValue: newValue)
         }
+        .onChange(of: showResults) { oldValue, newValue in
+            // Ketika user kembali dari ResultsView (showResults berubah dari true ke false)
+            if oldValue == true && newValue == false {
+                resetAllFields()
+            }
+        }
         .fullScreenCover(isPresented: $showResults) {
             NavigationStack {
                 resultsView
