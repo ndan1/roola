@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Vision
 
 class PoseValidationOverlay: UIView {
 
@@ -13,15 +14,11 @@ class PoseValidationOverlay: UIView {
     private let feedbackLabel: UILabel = {
         let l = UILabel()
         l.font = UIFont(name: "HelveticaNeue-Bold", size: 28)
-        l.textColor = .white
+        l.textColor = UIColor(AppColors.primaryWhite)
         l.textAlignment = .center
         l.numberOfLines = 1
         l.clipsToBounds = true
         l.translatesAutoresizingMaskIntoConstraints = false
-        l.layer.shadowColor = UIColor.black.cgColor
-        l.layer.shadowRadius = 3
-        l.layer.shadowOpacity = 0.5
-        l.layer.shadowOffset = CGSize(width: 0, height: 2)
         return l
     }()
 
@@ -62,11 +59,40 @@ class PoseValidationOverlay: UIView {
         let cfg = UIImage.SymbolConfiguration(pointSize: 24, weight: .semibold)
         b.setImage(UIImage(systemName: "chevron.left.circle.fill", withConfiguration: cfg), for: .normal)
         b.tintColor = UIColor(AppColors.primaryWhite)
+        b.backgroundColor = UIColor(AppColors.primaryPurple)
+        b.layer.cornerRadius = 25
+        
+        b.layer.shadowColor = UIColor.black.cgColor
+        b.layer.shadowOpacity = 0.3
+        b.layer.shadowOffset = CGSize(width: 0, height: 4)
+        b.layer.shadowRadius = 5
+
+        b.layer.masksToBounds = false
+        
         b.translatesAutoresizingMaskIntoConstraints = false
         b.addTarget(self, action: #selector(btnTouchDown), for: .touchDown)
         b.addTarget(self, action: #selector(btnTouchUp),   for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        b.alpha = 0.8
         return b
+    }()
+    
+    // MARK: - Skeleton Layers
+    private let skeletonLayer: CAShapeLayer = {
+        let l = CAShapeLayer()
+        l.strokeColor = UIColor.white.withAlphaComponent(0.6).cgColor
+        l.lineWidth = 3.0
+        l.fillColor = UIColor.clear.cgColor
+        l.lineCap = .round
+        l.lineJoin = .round
+        return l
+    }()
+    
+    private let jointsLayer: CAShapeLayer = {
+        let l = CAShapeLayer()
+        // Default to system purple if AppColors fails, but tries to use your theme
+        l.fillColor = UIColor(AppColors.primaryPurple).cgColor
+        l.strokeColor = UIColor.white.cgColor
+        l.lineWidth = 2.0
+        return l
     }()
 
     // MARK: - Properties
@@ -80,6 +106,10 @@ class PoseValidationOverlay: UIView {
     private func setup() {
         backgroundColor = .clear
         isUserInteractionEnabled = true
+
+        // Add skeleton layers first so they are behind labels but above camera
+        layer.addSublayer(skeletonLayer)
+        layer.addSublayer(jointsLayer)
 
         addSubview(stencilImageView)
         addSubview(borderIndicator)
@@ -99,19 +129,76 @@ class PoseValidationOverlay: UIView {
             borderIndicator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             feedbackLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
+            feedbackLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             feedbackLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.9),
 
             countLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             countLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
-            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            backButton.widthAnchor.constraint(equalToConstant: 44),
-            backButton.heightAnchor.constraint(equalToConstant: 44)
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 0),
+            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 22),
+            backButton.widthAnchor.constraint(equalToConstant: 32),
+            backButton.heightAnchor.constraint(equalToConstant: 32)
         ])
 
         [stencilImageView, feedbackLabel, borderIndicator].forEach { $0.isUserInteractionEnabled = false }
+    }
+    
+    // MARK: - Skeleton Drawing
+    
+    // In PoseValidationOverlay.swift
+    func updateSkeleton(points: [VNHumanBodyPoseObservation.JointName : CGPoint]) {
+        // Disable implicit animations for instant updates
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        
+        // 1. Draw Bones
+        let path = UIBezierPath()
+        
+        // Defined connections including legs
+        let connections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
+            // Arms
+            (.leftWrist, .leftElbow), (.leftElbow, .leftShoulder),
+            (.rightWrist, .rightElbow), (.rightElbow, .rightShoulder),
+            
+            // Torso (Stop at Neck, do not go to Nose/Eyes)
+            (.leftShoulder, .neck), (.rightShoulder, .neck),
+            (.leftShoulder, .leftHip), (.rightShoulder, .rightHip),
+            (.leftHip, .rightHip),
+            (.root, .neck), // Spine
+            
+            // Legs (ADDED)
+            (.leftHip, .leftKnee), (.leftKnee, .leftAnkle),
+            (.rightHip, .rightKnee), (.rightKnee, .rightAnkle)
+        ]
+        
+        for (startName, endName) in connections {
+            if let start = points[startName], let end = points[endName] {
+                path.move(to: start)
+                path.addLine(to: end)
+            }
+        }
+        skeletonLayer.path = path.cgPath
+        
+        // 2. Draw Joints
+        let dotsPath = UIBezierPath()
+        let radius: CGFloat = 5.0
+        
+        for (_, point) in points {
+            dotsPath.move(to: CGPoint(x: point.x + radius, y: point.y))
+            dotsPath.addArc(withCenter: point, radius: radius, startAngle: 0, endAngle: 2 * .pi, clockwise: true)
+        }
+        jointsLayer.path = dotsPath.cgPath
+        
+        CATransaction.commit()
+    }
+    
+    func clearSkeleton() {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        skeletonLayer.path = nil
+        jointsLayer.path = nil
+        CATransaction.commit()
     }
 
     // MARK: - Helper Methods
@@ -147,7 +234,7 @@ class PoseValidationOverlay: UIView {
         }
     }
 
-    // MARK: - Countdown Logic (Fixed for Speed)
+    // MARK: - Countdown Logic
     
     func startCountdown(completion: @escaping () -> Void) {
         isCountdownActive = true
@@ -174,7 +261,7 @@ class PoseValidationOverlay: UIView {
         countLabel.alpha = 0
         
         // 2. Animate IN
-        UIView.animate(withDuration: 0.3, // Faster (was 0.4)
+        UIView.animate(withDuration: 0.3,
                        delay: 0,
                        usingSpringWithDamping: 0.6,
                        initialSpringVelocity: 0.8,
@@ -184,17 +271,11 @@ class PoseValidationOverlay: UIView {
             self.countLabel.transform = .identity
         }) { _ in
             guard self.isCountdownActive else { return }
-            
-            // CRITICAL CHANGE FOR "INSTANT" FEEL:
-            // If this was number "1", trigger the completion (Photo) NOW.
-            // Don't wait for the fade out to finish.
             if number == 1 {
                 completion()
             }
-            
-            // 3. Animate OUT
-            UIView.animate(withDuration: 0.2, // Faster (was 0.25)
-                           delay: 0.2,        // Shorter hold (was 0.25)
+            UIView.animate(withDuration: 0.2,
+                           delay: 0.2,
                            options: .curveEaseIn,
                            animations: {
                 self.countLabel.alpha = 0

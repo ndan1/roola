@@ -20,7 +20,7 @@ struct BodyMeasurements {
     let torsoLength: CGFloat
 }
 
-// MARK: - Feedback State Enum (Improved Copy)
+// MARK: - Feedback State Enum
 enum PoseFeedbackState: Equatable {
     case none
     case noPerson
@@ -32,7 +32,7 @@ enum PoseFeedbackState: Equatable {
     case notSymmetrical
     case success
     
-    // Text shown on screen (Concise)
+    // Text shown on screen
     var message: String {
         switch self {
         case .none: return ""
@@ -47,7 +47,7 @@ enum PoseFeedbackState: Equatable {
         }
     }
     
-    // Text spoken by TTS (Natural & Polite)
+    // Text spoken by TTS
     var spokenMessage: String {
         switch self {
         case .none: return ""
@@ -90,7 +90,7 @@ class PoseCaptureViewController: UIViewController {
     
     // TTS Debounce
     private var speechDebounceTimer: Timer?
-    private let errorSpeechDelay: TimeInterval = 1.0 // Slower for errors (less annoying)
+    private let errorSpeechDelay: TimeInterval = 1.0
     
     private lazy var stencilImageA: UIImage? = UIImage(named: "red_stencil")
     private lazy var stencilImageB: UIImage? = UIImage(named: "green_stencil")
@@ -129,10 +129,13 @@ class PoseCaptureViewController: UIViewController {
     
     private func configureVoice() {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            // Enhanced Samantha is usually the most natural built-in voice
-            let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.enhanced.en-US.Samantha")
-                ?? AVSpeechSynthesisVoice(language: "en-US")
-            DispatchQueue.main.async { self?.cachedVoice = voice }
+            let voices = AVSpeechSynthesisVoice.speechVoices()
+            let samanthaVoice = voices.first { $0.name == "Samantha" }
+            let finalVoice = samanthaVoice ?? AVSpeechSynthesisVoice(language: "en-US")
+            
+            DispatchQueue.main.async {
+                self?.cachedVoice = finalVoice
+            }
         }
     }
     
@@ -167,9 +170,8 @@ class PoseCaptureViewController: UIViewController {
         } catch { print("Camera error: \(error)") }
     }
     
-    // MARK: - State Management (Smoother)
+    // MARK: - State Management
     private func updateState(_ newState: PoseFeedbackState) {
-        // 1. Visuals: Update immediately for responsiveness
         if !isCountingDown && !isCapturingPhoto {
             overlayView.showFeedback(newState.message)
             
@@ -178,30 +180,20 @@ class PoseCaptureViewController: UIViewController {
             overlayView.setStencil(image: isValid ? stencilImageB : stencilImageA)
         }
         
-        // 2. TTS: Logic to reduce annoyance
         if newState != currentFeedbackState {
-            
-            // If we fall out of success, cancel countdown immediately
             if currentFeedbackState == .success && newState != .success {
                 resetCountdownState()
             }
             
             currentFeedbackState = newState
-            
-            // Kill any pending speech so we don't say old errors
             speechDebounceTimer?.invalidate()
             
             if newState != .none && !isCountingDown && !isCapturingPhoto {
-                
-                // CASE A: Success -> Speak IMMEDIATELY
                 if newState == .success {
                     speak(newState.spokenMessage)
-                }
-                // CASE B: Error -> Wait (Debounce) to see if user settles
-                else {
+                } else {
                     speechDebounceTimer = Timer.scheduledTimer(withTimeInterval: errorSpeechDelay, repeats: false) { [weak self] _ in
                         guard let self = self else { return }
-                        // Ensure state hasn't changed during the delay
                         if self.currentFeedbackState == newState && !self.isCountingDown {
                             self.speak(newState.spokenMessage)
                         }
@@ -215,8 +207,6 @@ class PoseCaptureViewController: UIViewController {
         isCountingDown = false
         validPoseCount = 0
         stopSpeaking()
-        
-        // Clear visuals
         DispatchQueue.main.async {
             self.overlayView.cancelCountdown()
         }
@@ -255,7 +245,6 @@ class PoseCaptureViewController: UIViewController {
         guard let connection = photoOutput.connection(with: .video) else { return }
         connection.videoRotationAngle = 90
         
-        // This takes a split second, so we trigger it exactly when countdown ends
         let settings = AVCapturePhotoSettings()
         photoOutput.capturePhoto(with: settings, delegate: self)
     }
@@ -267,11 +256,10 @@ class PoseCaptureViewController: UIViewController {
     }
 }
 
-// MARK: - Vision Processing & Hysteresis
+// MARK: - Vision Processing
 extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // We DO process during countdown now to ensure they stay still
         guard !isCapturingPhoto else { return }
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
@@ -280,15 +268,22 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             
             guard let observations = request.results as? [VNHumanBodyPoseObservation],
                   let observation = observations.first else {
-                DispatchQueue.main.async { self.updateState(.noPerson) }
+                DispatchQueue.main.async {
+                    self.updateState(.noPerson)
+                    self.overlayView.clearSkeleton()
+                }
                 return
             }
             
             // Analyze Logic
             let detectedState = self.analyzePose(observation)
             
+            // Extract and convert points for overlay
+            let skeletonPoints = self.extractSkeletonPoints(from: observation)
+            
             DispatchQueue.main.async {
                 self.handlePoseState(detectedState, observation: observation)
+                self.overlayView.updateSkeleton(points: skeletonPoints)
             }
         }
         
@@ -296,7 +291,40 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
         try? handler.perform([request])
     }
     
-    // Returns the calculated state of the body
+    private func extractSkeletonPoints(from observation: VNHumanBodyPoseObservation) -> [VNHumanBodyPoseObservation.JointName : CGPoint] {
+        var points: [VNHumanBodyPoseObservation.JointName : CGPoint] = [:]
+        
+        let joints: [VNHumanBodyPoseObservation.JointName] = [
+            .neck,
+            .leftShoulder, .rightShoulder,
+            .leftElbow, .rightElbow,
+            .leftWrist, .rightWrist,
+            .leftHip, .rightHip,
+            .leftKnee, .rightKnee,
+            .leftAnkle, .rightAnkle,
+            .root
+        ]
+        
+        let previewBounds = previewLayer.bounds
+        
+        for joint in joints {
+            guard let recognizedPoint = try? observation.recognizedPoint(joint),
+                  recognizedPoint.confidence > 0.3 else { continue }
+            
+            // Convert Vision normalized coordinates (bottom-left origin) to UIKit coordinates (top-left origin)
+            let normalizedX = recognizedPoint.x
+            let normalizedY = 1 - recognizedPoint.y
+            
+            let screenPoint = CGPoint(
+                x: normalizedX * previewBounds.width,
+                y: normalizedY * previewBounds.height
+            )
+            
+            points[joint] = screenPoint
+        }
+        return points
+    }
+    
     private func analyzePose(_ observation: VNHumanBodyPoseObservation) -> PoseFeedbackState {
         do {
             let leftWrist = try observation.recognizedPoint(.leftWrist)
@@ -316,14 +344,11 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
                   neck.confidence > minConf, leftAnkle.confidence > 0.2,
                   rightAnkle.confidence > 0.2 else { return .noPerson }
             
-            // --- HYSTERESIS / STICKY LOGIC ---
-            // If we are currently successful, we widen the acceptable ranges slightly.
-            // This prevents "jittering" between Success and Error states when on the edge.
+            // Hysteresis
             let isAlreadySuccess = (currentFeedbackState == .success)
             
-            // 2. Height Check (Distance)
+            // 2. Height Check
             let bodyHeight = abs(neck.y - ((leftHip.y + rightHip.y) / 2))
-            
             let minHeight: CGFloat = isAlreadySuccess ? 0.15 : 0.16
             let maxHeight: CGFloat = isAlreadySuccess ? 0.21 : 0.20
             
@@ -333,21 +358,18 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             // 3. Arm Span Check
             let armSpanX = abs(leftWrist.x - rightWrist.x)
             let minSpan: CGFloat = isAlreadySuccess ? 0.38 : 0.40
-            let maxSpan: CGFloat = isAlreadySuccess ? 0.92 : 0.90 // Allow 0.92 if already holding it
+            let maxSpan: CGFloat = isAlreadySuccess ? 0.92 : 0.90
             
             if armSpanX < minSpan { return .handsTooClose }
             if armSpanX > maxSpan { return .handsTooWide }
             
-            // 4. Angle Check (T-Pose)
+            // 4. Angle Check
             let leftAngle = calculateArmAngle(shoulder: leftShoulder, wrist: leftWrist)
             let rightAngle = calculateArmAngle(shoulder: rightShoulder, wrist: rightWrist)
             
-            // Allow 5 degrees extra variance if already success
             let variance: CGFloat = isAlreadySuccess ? 5.0 : 0.0
             
-            // Left: -70 to -20
             let lValid = leftAngle > (-70 - variance) && leftAngle < (-20 + variance)
-            // Right: -160 to -110
             let rValid = rightAngle > (-160 - variance) && rightAngle < (-110 + variance)
             
             if !lValid || !rValid { return .badAngles }
@@ -368,11 +390,10 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
         } else {
             validPoseCount = 0
             if isCountingDown {
-                resetCountdownState() // User moved during countdown!
+                resetCountdownState()
             }
         }
         
-        // Trigger Countdown if stable
         if validPoseCount >= requiredValidFrames && !isCountingDown && !isCapturingPhoto {
             startCountdownSequence(observation: observation)
         }
@@ -384,16 +405,10 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
         validPoseCount = 0
         
         saveMeasurements(observation)
-        
-        // Only say "Hold still" once at the start
         speak("Hold still")
         
-        // Start UI Countdown
         overlayView.startCountdown { [weak self] in
             guard let self = self, self.isCountingDown else { return }
-            
-            // INSTANT CAPTURE:
-            // The overlay callback now fires exactly when "1" appears/finishes.
             print("Countdown finished. Capturing immediately.")
             self.isCapturingPhoto = true
             self.isCountingDown = false
