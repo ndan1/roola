@@ -15,9 +15,6 @@ struct NoInternetModal: View {
         ZStack {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
             
             VStack {
                 HStack {

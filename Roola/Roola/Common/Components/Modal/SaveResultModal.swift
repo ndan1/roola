@@ -13,6 +13,7 @@ struct SaveResultModal: View {
     @Binding var brandName: String
     @Binding var productLink: String
     var onSave: () -> Void
+    var onDontSave: () -> Void = {}
     
     @State private var showValidationError: Bool = false
     
@@ -124,22 +125,24 @@ struct SaveResultModal: View {
                 
                 // Buttons
                 HStack(spacing: 12) {
-                    Button(action: {
-                        // Logic saat tombol ditekan
-                        showValidationError = true
-                                            
-                        if isFormValid {
-                            onSave()
+                    RoolaButton(
+                        buttonTitle: "Don't Save",
+                        buttonColor: AppColors.primaryWhite,
+                        action: {
+                            onDontSave()
                         }
-                    }) {
-                        Text("Save")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(AppColors.primaryPurple)
-                            .cornerRadius(25)
-                    }
+                    )
+                    RoolaButton(
+                        buttonTitle: "Save",
+                        buttonColor: AppColors.primaryPurple,
+                        action: {
+                            showValidationError = true
+                                                
+                            if isFormValid {
+                                onSave()
+                            }
+                        }
+                    )
                 }
                 .padding(.top, 8)
             }

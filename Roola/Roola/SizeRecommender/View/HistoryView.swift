@@ -81,43 +81,45 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                if !filteredHistories.isEmpty {
                 // MARK: - Search Bar Area
-                HStack {
-                    HStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        
-                        TextField("Search", text: $searchText)
-                            .font(.body)
-                            .submitLabel(.search)
-                        
-                        Button(action: {
-                            showFilterSheet = true
-                        }) {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "slider.horizontal.3")
-                                    .resizable()
-                                    .frame(width: 22, height: 22)
-                                    .foregroundColor(AppColors.primaryPurple)
-                                
-                                if isFilterActive {
-                                    Circle()
-                                        .fill(.red)
-                                        .frame(width: 8, height: 8)
-                                        .offset(x: 2, y: -2)
+                    HStack {
+                        HStack(spacing: 12) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            
+                            TextField("Search", text: $searchText)
+                                .font(.body)
+                                .submitLabel(.search)
+                            
+                            Button(action: {
+                                showFilterSheet = true
+                            }) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: "slider.horizontal.3")
+                                        .resizable()
+                                        .frame(width: 22, height: 22)
+                                        .foregroundColor(AppColors.primaryPurple)
+                                    
+                                    if isFilterActive {
+                                        Circle()
+                                            .fill(.red)
+                                            .frame(width: 8, height: 8)
+                                            .offset(x: 2, y: -2)
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
                 
                 // MARK: - Content List (Updated to List)
                 if filteredHistories.isEmpty {

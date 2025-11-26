@@ -17,7 +17,7 @@ struct SwipeableCard<Content: View>: View {
     @State private var isSwiped: Bool = false
     
     // Config
-    private let buttonWidth: CGFloat = 85
+    private let buttonWidth: CGFloat = 75
     private let cornerRadius: CGFloat = 12
     
     init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {

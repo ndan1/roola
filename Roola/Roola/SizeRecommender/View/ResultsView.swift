@@ -174,6 +174,11 @@ struct ResultsView: View {
                     productLink: $viewModel.productLink,
                     onSave: {
                         viewModel.saveToHistory()
+                    },
+                    onDontSave: {
+                        viewModel.showSaveModal = false
+                        showResults = false
+                        viewModel.onTryAgain?()
                     }
                 )
                 .transition(.opacity)
@@ -345,23 +350,15 @@ struct ResultsView: View {
             
             VStack(spacing: 12) {
                 RoolaButton(
-                    buttonTitle: "Save Result",
+                    buttonTitle: "Finish",
                     buttonColor: AppColors.primaryPurple,
                     action: {
                         viewModel.showSaveModal = true
                     }
                 )
-                RoolaButton(
-                    buttonTitle: "Try Again",
-                    buttonColor: AppColors.primaryWhite,
-                    action: {
-                        viewModel.onTryAgain?()
-                        showResults = false
-                    }
-                )
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, UIScreen.main.bounds.height * 0.05)
+            .padding(.bottom, UIScreen.main.bounds.height * 0.1)
         }
     }
 }
