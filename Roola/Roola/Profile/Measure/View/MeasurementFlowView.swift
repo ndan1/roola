@@ -50,23 +50,32 @@ struct MeasurementFlowView: View {
     }
     
     private func loadingView(image: UIImage) -> some View {
-        VStack(spacing: 20) {
-            GradientCircularLoader()
-            
-            Text("Analyzing photo...")
-                .font(.body18Medium)
-                .bold()
-                .padding(.top, 10)
+            VStack(spacing: 20) {
+                GradientCircularLoader()
+                
+                Text("Analyzing photo...")
+                    .font(.body18Medium)
+                    .bold()
+                    .padding(.top, 10)
+            }
+            .padding()
+            .task {
+                // UPDATED LOGIC:
+                // 1. Try to get height from UserDefaults (Temp)
+                // 2. If 0/nil, Fallback to SwiftData User
+                // 3. If missing, default to 170
+                
+                let tempHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
+                let existingHeight = users.first?.height ?? 0
+                
+                let userHeight = Double(tempHeight > 0 ? tempHeight : (existingHeight > 0 ? existingHeight : 170))
+                
+                print("📏 Using Height for API: \(userHeight)")
+
+                // 4. Call VM with both image and height
+                await viewModel.startMeasurementTask(image: image, userHeight: userHeight)
+            }
         }
-        .padding()
-        .task {
-            // 3. Get height from SwiftData (default to 170 if missing)
-            let userHeight = Double(users.first?.height ?? 170)
-            
-            // 4. Call VM with both image and height
-            await viewModel.startMeasurementTask(image: image, userHeight: userHeight)
-        }
-    }
     
     private func errorView(message: String) -> some View {
         ZStack(alignment: .bottom) {

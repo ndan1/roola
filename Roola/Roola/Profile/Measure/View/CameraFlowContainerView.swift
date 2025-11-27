@@ -17,7 +17,7 @@ struct CameraFlowContainerView: View {
     
     @State private var path = NavigationPath()
     
-    // State untuk Modal
+    // State for Modal
     @State private var showBodySizeModal = false
     @State private var tempHeight: Int?
     @State private var tempWeight: Int?
@@ -25,13 +25,13 @@ struct CameraFlowContainerView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                // Content Utama
+                // Main Content
                 CameraTutorialView(
                     onContinue: { checkCameraPermissionFirst() },
                     showBodySizeModal: $showBodySizeModal
                 )
                 
-                // Modal Overlay - Muncul SETELAH permission granted
+                // Modal Overlay
                 if showBodySizeModal {
                     SaveBodySizeModal(
                         isPresented: $showBodySizeModal,
@@ -51,7 +51,6 @@ struct CameraFlowContainerView: View {
                     MeasurementFlowView(
                         onFlowDidFinish: { dismiss() },
                         onSwitchToManual: { dismiss() },
-                        // UPDATED: Logic to pop the view off the stack
                         onRetake: {
                             if !path.isEmpty {
                                 path.removeLast()
@@ -72,7 +71,6 @@ struct CameraFlowContainerView: View {
             Color.clear.frame(height: 0)
         }
         .background(FirstGradientBackground().ignoresSafeArea())
-        // Reset temp data ketika modal ditutup
         .onChange(of: showBodySizeModal) { oldValue, newValue in
             if !newValue {
                 resetTempData()
@@ -82,40 +80,53 @@ struct CameraFlowContainerView: View {
 
     // MARK: - Helper Functions
     
-    // Reset temporary data
     private func resetTempData() {
         tempHeight = nil
         tempWeight = nil
     }
     
-    // NEW: Check camera permission first, then show modal
     private func checkCameraPermissionFirst() {
         checkCameraPermission { granted in
             if granted {
-                // Permission granted → Show body size modal with EMPTY fields
+                // 1. PRE-FILL LOGIC:
+                // Check UserDefaults first (most recent temp entry), then SwiftData (saved user)
+                let storedHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
+                let storedWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
+                
+                if storedHeight > 0 {
+                    self.tempHeight = storedHeight
+                } else if let existingUser = users.first, existingUser.height > 0 {
+                    self.tempHeight = existingUser.height
+                }
+                
+                if storedWeight > 0 {
+                    self.tempWeight = storedWeight
+                } else if let existingUser = users.first, existingUser.weight > 0 {
+                    self.tempWeight = existingUser.weight
+                }
+                
+                // Show modal
                 showBodySizeModal = true
             } else {
-                // Permission denied → Go to denied screen
                 path.append(FlowStep.permissionDenied)
             }
         }
     }
 
-    // Logic Penyimpanan Data dan Lanjut ke Capture
+    // Logic to save temporarily to UserDefaults
     private func saveBodyDataAndProceed() {
-        let user = users.first ?? User(waist: 0)
-        
-        user.height = tempHeight ?? 0
-        user.weight = tempWeight ?? 0
-        
-        if users.isEmpty {
-            modelContext.insert(user)
+        // 2. SAVE LOGIC:
+        // Do NOT save to modelContext yet. Save to UserDefaults.
+        if let h = tempHeight {
+            UserDefaults.standard.setValue(h, forKey: "temp_user_height")
+        }
+        if let w = tempWeight {
+            UserDefaults.standard.setValue(w, forKey: "temp_user_weight")
         }
         
-        try? modelContext.save()
-        print("✅ Height & Weight Saved: \(user.height), \(user.weight)")
+        print("✅ Height & Weight stored in UserDefaults: \(tempHeight ?? 0), \(tempWeight ?? 0)")
         
-        // Permission sudah checked, langsung ke capture
+        // Proceed to capture flow
         path.append(FlowStep.capture)
     }
 
@@ -139,7 +150,6 @@ struct CameraFlowContainerView: View {
     }
 }
 
-// MARK: - Navigation payload
 private enum FlowStep: Hashable {
     case capture
     case permissionDenied
