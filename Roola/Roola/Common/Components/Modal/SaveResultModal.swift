@@ -61,31 +61,33 @@ struct SaveResultModal: View {
             // Modal content
             VStack(spacing: 24) {
                 // Header
-                VStack(spacing: 8) {
+                VStack (spacing: 2) {
+                    HStack {
+                        Spacer()
+                        Button (action: {
+                            isPresented = false
+                        }){
+                            Image(systemName: "xmark.circle.fill")
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                                .font(.system(size: 32))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                     HStack {
                         Spacer()
                         Text("Product Detail")
                             .font(.heading24Medium)
                             .foregroundColor(.black)
-                            .padding(.leading, UIScreen.main.bounds.width * 0.15)
                         Spacer()
-                        Button (action: {
-                            isPresented = false
-                        }){
-                            Image(systemName: "x.circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
-                                .font(.system(size: 32))
-                                .padding(.trailing, UIScreen.main.bounds.width * 0.05)
-                        }
                     }
                     
                     Text("Fill in product detail below to save to history")
                         .font(.body16Regular)
                         .foregroundColor(Color(hex: "#838383"))
                         .multilineTextAlignment(.center)
+                        .padding(.top, 8)
                 }
-                .padding(.top, 8)
                 
                 // Form fields
                 VStack(spacing: 0) {
@@ -162,9 +164,9 @@ struct BottomSaveInputRow: View {
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 200)
+                .frame(width: 180)
         }
-        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
         .background(Color.white)
         .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
@@ -192,9 +194,9 @@ struct TopSaveInputRow: View {
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 200)
+                .frame(width: 180)
         }
-        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
         .background(Color.white)
         .cornerRadius(12, corners: [.topLeft, .topRight])
@@ -222,18 +224,14 @@ struct MiddleSaveInputRow: View {
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 200)
+                .frame(width: 180)
         }
-        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
         .background(Color.white)
         .overlay(
             Rectangle()
                 .stroke(isError ? AppColors.errorRed : Color.gray.opacity(0.2), lineWidth: 1)
-                // Trik: Jika tidak error, mungkin kamu mau border bawah/atas saja atau border tipis.
-                // Jika user code sebelumnya tidak pakai border di middle, gunakan:
-                // .stroke(isError ? AppColors.errorRed : Color.clear, lineWidth: 1)
-                // Tapi agar konsisten kotak, lebih baik dikasih border tipis atau stroke clear.
         )
     }
 }

@@ -207,12 +207,18 @@ struct ResultsView: View {
                 }
                 .padding(.bottom, 5)
             }
-            ScrollView {
+            if isFromHistory {
                 recommendationSection(recommendation: recommendation)
-                    .padding(.top, 24)
-                    .padding(.bottom, 120)
+                    .padding(.top, 80)
+//                    .padding(.bottom, 120)
+            } else {
+                ScrollView {
+                    recommendationSection(recommendation: recommendation)
+                        .padding(.top, 24)
+                        .padding(.bottom, 120)
+                }
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
         .padding(.horizontal, 16)
     }

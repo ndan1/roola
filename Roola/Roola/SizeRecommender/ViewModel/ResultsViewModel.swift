@@ -337,7 +337,7 @@ class ResultsViewModel: ObservableObject {
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-tight-2",
                         message: "\(partName) area will be too tight",
-                        icon: "xmark.circle.fill",
+                        icon: "x.circle.fill",
                         iconForeground: .white,
                         iconBackground: Color.red
                     ))

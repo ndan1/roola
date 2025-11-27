@@ -12,9 +12,10 @@ struct FailedState: View {
     
     var body: some View {
         VStack(spacing:5){
-            Image(systemName: "xmark.circle")
-                .font(.system(size: 97))
-                .foregroundColor(AppColors.grayScale300)
+            Image(systemName: "xmark.circle.fill")
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                .font(.system(size: 32))
             
             VStack(spacing: 5) {
                 Text("Measurement Failed")

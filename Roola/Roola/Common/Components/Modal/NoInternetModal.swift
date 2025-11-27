@@ -22,7 +22,7 @@ struct NoInternetModal: View {
                     Button (action: {
                         isPresented = false
                     }){
-                        Image(systemName: "x.circle.fill")
+                        Image(systemName: "xmark.circle.fill")
                             .symbolRenderingMode(.palette)
                             .foregroundStyle(Color.white, Color.gray.opacity(0.4))
                             .font(.system(size: 32))

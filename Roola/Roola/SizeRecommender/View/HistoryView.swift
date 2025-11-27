@@ -73,8 +73,7 @@ struct HistoryView: View {
             // 2. Bind path ke NavigationStack
             NavigationStack(path: $path) {
                 VStack(spacing: 0) {
-                    if !filteredHistories.isEmpty {
-                        // ... Search Bar Area (Tidak berubah) ...
+                    if !allHistories.isEmpty {
                         HStack {
                             HStack(spacing: 12) {
                                 Image(systemName: "magnifyingglass").foregroundColor(.gray)
@@ -116,12 +115,8 @@ struct HistoryView: View {
                                     
                                     // 3. Panggil SwipeableCard dengan onTap
                                     SwipeableCard {
-                                        // HAPUS NAVIGATION LINK DARI SINI
-                                        // Cukup panggil card-nya saja
                                         HistoryCard(history: history)
                                     } onTap: {
-                                        // LOGIC PINDAH HALAMAN
-                                        // Saat card di-tap bersih (tanpa swipe), masukkan ke path
                                         path.append(history)
                                     } onDelete: {
                                         deleteHistory(history)

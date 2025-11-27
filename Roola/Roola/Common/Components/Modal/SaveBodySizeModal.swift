@@ -40,7 +40,7 @@ struct SaveBodySizeModal: View {
                         Button (action: {
                             isPresented = false
                         }){
-                            Image(systemName: "x.circle.fill")
+                            Image(systemName: "xmark.circle.fill")
                                 .symbolRenderingMode(.palette)
                                 .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
                                 .font(.system(size: 32))

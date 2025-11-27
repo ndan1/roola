@@ -441,12 +441,11 @@ struct RecommendationView: View {
                 viewModel.selectedImage = nil
                 selectedPhoto = nil
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(AppColors.primaryWhite)
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                    .font(.system(size: 32))
                     .padding(10)
-                    .background(AppColors.grayScale400.opacity(0.6))
-                    .clipShape(Circle())
             }
             .padding(6)
         }

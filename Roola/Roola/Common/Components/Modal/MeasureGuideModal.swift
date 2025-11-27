@@ -22,10 +22,9 @@ struct MeasureGuideModal: View {
                     dismiss()
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 25)
-                        .foregroundColor(.gray)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                        .font(.system(size: 32))
                 }
                 
             }
