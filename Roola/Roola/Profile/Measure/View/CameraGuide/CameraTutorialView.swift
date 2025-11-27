@@ -44,6 +44,10 @@ struct CameraTutorialView: View {
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
                     }
                     Text("Instructions")
@@ -133,6 +137,10 @@ struct CameraTutorialView: View {
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
                     }
                     
