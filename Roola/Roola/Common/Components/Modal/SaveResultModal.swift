@@ -36,9 +36,9 @@ struct SaveResultModal: View {
     // 3. Logic Error Message Dinamis
     private var errorMessage: String {
         if isProductTooLong {
-            return "Product Name max \(charLimit) characters"
+            return "Product name max \(charLimit) characters"
         } else if isBrandTooLong {
-            return "Brand Name max \(charLimit) characters"
+            return "Brand name max \(charLimit) characters"
         } else {
             return "Please fill in this field"
         }
@@ -76,7 +76,7 @@ struct SaveResultModal: View {
                     .frame(maxWidth: .infinity)
                     HStack {
                         Spacer()
-                        Text("Product Detail")
+                        Text("Product detail")
                             .font(.heading24Medium)
                             .foregroundColor(.black)
                         Spacer()

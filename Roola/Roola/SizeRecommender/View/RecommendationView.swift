@@ -45,7 +45,7 @@ struct RecommendationView: View {
             .toolbar {
                 // 2. Buat Custom Title di Kiri (Leading)
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Find Your Fit")
+                    Text("Find your fit")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
                         .padding(.leading, 6)

@@ -114,13 +114,13 @@ struct UserInputView: View {
                                 )
                         }
                         
-                        Text("Your Measurements")
+                        Text("Your measurements")
                             .font(.heading28Medium)
                             .foregroundStyle(.primary)
                             .fixedSize(horizontal: true, vertical: false)
                     }
                 } else {
-                    Text("Your Measurements")
+                    Text("Your measurements")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: true, vertical: false)

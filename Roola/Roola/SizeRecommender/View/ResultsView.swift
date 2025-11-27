@@ -88,6 +88,7 @@ struct ResultsView: View {
                                 }
                             }
                         }
+                        .padding(.bottom, 40)
                         .ignoresSafeArea(.all, edges: .bottom)
                     }
                 }
@@ -99,7 +100,7 @@ struct ResultsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar(isFromHistory ? .hidden : .visible, for: .tabBar)
-        .toolbar(viewModel.showSaveModal ? .hidden : .visible, for: .navigationBar)
+        .toolbar(viewModel.showSaveModal || viewModel.showSuccessModal ? .hidden : .visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
@@ -117,7 +118,7 @@ struct ResultsView: View {
                 )}
             }
             ToolbarItem(placement: .principal) {
-                Text("Recommended Size")
+                Text("Recommended size")
                     .font(.heading28Medium)
                     .foregroundStyle(.primary)
             }
@@ -136,7 +137,7 @@ struct ResultsView: View {
                     )
                     .transition(.opacity)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
-                    .padding(.horizontal)
+//                    .padding(.horizontal)
                 }
                 
                 if viewModel.showSuccessModal {
@@ -181,7 +182,7 @@ struct ResultsView: View {
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
         VStack(spacing: 0) {
-            if viewModel.showSaveModal {
+            if viewModel.showSaveModal || viewModel.showSuccessModal {
                 HStack(spacing: 19) {
                     Button(action: {
                         showResults = false
@@ -198,7 +199,7 @@ struct ResultsView: View {
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                             )
                     }
-                    Text("Recommended Size")
+                    Text("Recommended size")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: true, vertical: false)
