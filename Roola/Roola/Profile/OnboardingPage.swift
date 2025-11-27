@@ -16,7 +16,7 @@ struct OnboardingPage: View {
             Text("Let's get your fit right")
                 .font(.heading28Medium)
                 .padding(.top, UIScreen.main.bounds.height * 0.065)
-            Text("Input your measurements and find your match.")
+            Text("Input your measurements and find your match")
                 .font(.body15Regular)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)

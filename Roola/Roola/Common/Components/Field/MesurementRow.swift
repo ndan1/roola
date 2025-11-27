@@ -21,7 +21,7 @@ struct MeasurementField: View {
             // LEFT SECTION
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.body16Regular)
+                    .font(.body16Medium)
                     .foregroundColor(AppColors.primaryBlack)
                 
                 if isError {

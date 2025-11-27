@@ -17,6 +17,7 @@ struct MeasureGuideModal: View {
                 Spacer()
                 Text("Details")
                     .font(.heading24Medium)
+                    .padding(.leading, UIScreen.main.bounds.width * 0.09)
                 Spacer()
                 Button(action: {
                     dismiss()

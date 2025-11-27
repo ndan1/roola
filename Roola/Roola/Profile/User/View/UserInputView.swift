@@ -138,6 +138,7 @@ struct UserInputView: View {
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(AppColors.primaryPurple)
+                        .padding(.trailing, 8)
                 }
             }
         }
@@ -178,6 +179,7 @@ private extension UserInputView {
                                 hasAnyError: viewModel.hasError,
                                 isEditing: true
                             )
+                            validationBodyErrors
                         }
                         .padding(.vertical, 16)
                         
@@ -190,21 +192,22 @@ private extension UserInputView {
                                 waist: $viewModel.waist,
                                 armLength: $viewModel.armsLength,
                                 torsoLength: $viewModel.torso,
-                                isChestError: viewModel.isBustError,
+                                isChestError: viewModel.isChestError,
                                 isWaistError: viewModel.isWaistError,
-                                isArmLengthError: viewModel.isArmsLengthError,
-                                isTorsoLengthError: viewModel.isTorsoError,
+                                isArmLengthError: viewModel.isArmLengthError,
+                                isTorsoLengthError: viewModel.isTorsoLengthError,
                                 hasAnyError: viewModel.hasError,
                                 isEditing: true
                             )
                         }
 
-                        validationErrors
+                        validationMeasureErrors
                         
                         Spacer(minLength: 32)
                         VStack(spacing: 8) {
                             Text("Not sure with your measurements?")
-                                .font(.body15Regular)
+                                .font(.body16Regular)
+                                .foregroundStyle(AppColors.primaryPurple)
                             
                             RoolaButton(
                                 buttonTitle: "Measure with AI",
@@ -214,14 +217,14 @@ private extension UserInputView {
                                 }
                             )
                             .frame(width: UIScreen.main.bounds.width * 0.85)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 4)
                             RoolaButton(
                                 buttonTitle: "Save",
                                 buttonColor: AppColors.primaryWhite,
                                 action: saveUser
                             )
                             .frame(width: UIScreen.main.bounds.width * 0.85)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 4)
                         }
                     }
                 }
@@ -252,8 +255,7 @@ private extension UserInputView {
                                 isEditing: isEditing
                             )
                         }
-                        
-                        Spacer(minLength: 30)
+                        validationBodyErrors
                         
                         VStack (alignment: .leading, spacing: 4) {
                             Text("Body measurements")
@@ -264,17 +266,18 @@ private extension UserInputView {
                                 waist: $viewModel.waist,
                                 armLength: $viewModel.armsLength,
                                 torsoLength: $viewModel.torso,
-                                isChestError: viewModel.isBustError,
+                                isChestError: viewModel.isChestError,
                                 isWaistError: viewModel.isWaistError,
-                                isArmLengthError: viewModel.isArmsLengthError,
-                                isTorsoLengthError: viewModel.isTorsoError,
+                                isArmLengthError: viewModel.isArmLengthError,
+                                isTorsoLengthError: viewModel.isTorsoLengthError,
                                 hasAnyError: viewModel.hasError,
                                 isEditing: isEditing
                             )
                         }
+                        .padding(.top)
                         
 //                        if isEditing {
-                            validationErrors
+                            validationMeasureErrors
 //                        }
                         
                         Spacer(minLength: 22)
@@ -330,23 +333,34 @@ private extension UserInputView {
 
 // MARK: - Validation UI
 private extension UserInputView {
-    var validationErrors: some View {
+    var validationMeasureErrors: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if viewModel.hasEmptyError {
-                Text("Please fill in all fields")
+            if viewModel.hasMeasureErrorNull {
+                Text("Please fill out this field")
                     .font(.body15Regular)
                     .foregroundColor(AppColors.errorRed)
             }
 
-            if viewModel.hasAttemptedSave && viewModel.hasError {
-                Text("All measurements must be between 1 and 250 cm")
+            if viewModel.hasAttemptedSave && viewModel.hasMeasureErrorNumber {
+                Text("All measurements must be between 1 to 250 cm")
                     .font(.body15Regular)
                     .foregroundColor(AppColors.errorRed)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 56, alignment: .top)
-        .padding(.top, 8)
+        .frame(height: 50, alignment: .top)
+    }
+    
+    var validationBodyErrors: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if viewModel.hasBodyErrorNull {
+                Text("Please fill out this field")
+                    .font(.body15Regular)
+                    .foregroundColor(AppColors.errorRed)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 15, alignment: .top)
     }
 }
 
