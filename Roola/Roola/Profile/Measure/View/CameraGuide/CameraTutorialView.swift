@@ -10,6 +10,7 @@ import SwiftUI
 struct CameraTutorialView: View {
     let onContinue: () -> Void
     @Binding var showBodySizeModal: Bool
+    @State private var canProceed = false
     @State var isShowPolicy: Bool = false
     @Environment(\.dismiss) private var dismiss
 
@@ -58,32 +59,8 @@ struct CameraTutorialView: View {
             }
             VStack (alignment: .center, spacing: width * 0.01) {
                 ScrollView {
-                    ForEach(tutorialSteps) { step in
-                        VStack(alignment:.leading, spacing: 5) {
-                            Text(step.title)
-                                .font(.body16Regular)
-                            
-                            HStack(spacing: width * 0.125) {
-                                Image(step.image1)
-                                    .resizable()
-                                    .frame(width: 112, height: 133)
-                                
-                                Image(step.image2)
-                                    .resizable()
-                                    .frame(width: 112, height: 133)
-                            }
-                        }
-                        .padding(.bottom, 20)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "speaker.wave.2.fill")
-                            .foregroundStyle(Color(AppColors.primaryPurple))
-                        Text("Turn your volume on for better experience")
-                            .font(.subheadline)
-                    }
-                    
-                    Spacer(minLength: 30)
+                    CarouselGuideView(isLastPageReached: $canProceed)
+                        .frame(height: 600)
                     
                     Button {
                         isShowPolicy = true
@@ -96,15 +73,17 @@ struct CameraTutorialView: View {
                     .padding(.bottom, 8)
                     
                     VStack{
-                        RoolaButton(buttonTitle: "Continue",
-                                    buttonColor: AppColors.primaryButton,
-                                    action: onContinue)
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 15)
+                        if canProceed{
+                            RoolaButton(buttonTitle: "Continue",
+                                        buttonColor: AppColors.primaryButton,
+                                        action: onContinue)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
+                            .padding(.bottom, 15)
+                        }
                     }
                 }
             }
-                .padding(.top, 10)
+//            .padding(.top, 10)
         }
         .sheet(isPresented: $isShowPolicy) {
             CameraTermsView(onContinue: onContinue, isShowPolicy: $isShowPolicy)
