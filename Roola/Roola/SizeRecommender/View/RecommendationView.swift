@@ -5,25 +5,6 @@
 //  Created by Lin Dan Christiano on 04/11/25.
 //
 
-/*
- 
- STRUCTURE OF RecommendationView
- 
- body
- ├── mainContent (VStack)
- │   ├── headerSection
- │   ├── formSection
- │   │   ├── formInputs
- │   │   └── formValidationErrors
- │   ├── uploadSection
- │   │   ├── uploadContent
- │   │   └── uploadValidationError
- │   └── bottomButton
- ├── loadingOverlay
- └── errorModals
- 
-*/
-
 import SwiftUI
 import Vision
 import PhotosUI
@@ -58,7 +39,6 @@ struct RecommendationView: View {
             ZStack {
                 mainContent
                 loadingOverlay
-                errorModals
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -98,6 +78,33 @@ struct RecommendationView: View {
             }
             .animation(.spring(), value: viewModel.isProcessing)
             .animation(.spring(), value: viewModel.showErrorAlert)
+            .fullScreenCover(isPresented: $viewModel.showErrorAlert) {
+                if let error = viewModel.currentError {
+                    OCRErrorModal(
+                        error: error,
+                        onRetry: {
+                            viewModel.resetAllStates()
+                            selectedPhoto = nil
+                            viewModel.selectedImage = nil
+                            isVisualLoading = false
+                            timeoutTask?.cancel()
+                            viewModel.showErrorAlert = false
+                        },
+                        isPresented: $viewModel.showErrorAlert
+                    )
+                    .presentationBackground(.clear)
+                }
+                if showNoInternetModal {
+                    NoInternetModal(
+                        isPresented: $showNoInternetModal,
+                        onRetry: {
+                            showNoInternetModal = false
+                        }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
+                }
+            }
         }
     }
     
@@ -186,40 +193,6 @@ struct RecommendationView: View {
             )
             .zIndex(1)
             .transition(.scale.combined(with: .opacity))
-        }
-    }
-    
-    // MARK: - Error Modals
-    
-    @ViewBuilder
-    private var errorModals: some View {
-        Group {
-            if viewModel.showErrorAlert, let error = viewModel.currentError {
-                OCRErrorModal(
-                    error: error,
-                    onRetry: {
-                        viewModel.resetAllStates()
-                        selectedPhoto = nil
-                        viewModel.selectedImage = nil
-                        isVisualLoading = false
-                        timeoutTask?.cancel()
-                    },
-                    isPresented: $viewModel.showErrorAlert
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
-            }
-            
-            if showNoInternetModal {
-                NoInternetModal(
-                    isPresented: $showNoInternetModal,
-                    onRetry: {
-                        showNoInternetModal = false
-                    }
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
-            }
         }
     }
     

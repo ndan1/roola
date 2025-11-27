@@ -94,6 +94,7 @@ struct UserInputView: View {
         .navigationBarBackButtonHidden(true)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isEditing ? .hidden : .visible, for: .tabBar)
         .toolbar {
             
             // BAGIAN KIRI (LEADING)
