@@ -20,7 +20,8 @@ struct RoolaHeader: View {
                 Button(action: onBack ?? { }) {
                     Image(systemName: "chevron.left.circle.fill")
                         .resizable()
-                        .frame(width: 32, height: 32)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 32)
                         .foregroundColor(AppColors.primaryWhite)
                         .background(
                             Circle()

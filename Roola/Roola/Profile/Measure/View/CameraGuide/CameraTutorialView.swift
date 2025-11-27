@@ -38,7 +38,7 @@ struct CameraTutorialView: View {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 24)
+                            .frame(height: 32)
                             .foregroundColor(AppColors.primaryWhite)
                             .background(
                                 Circle()
@@ -127,7 +127,7 @@ struct CameraTutorialView: View {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 24)
+                            .frame(height: 32)
                             .foregroundColor(AppColors.primaryWhite)
                             .background(
                                 Circle()
