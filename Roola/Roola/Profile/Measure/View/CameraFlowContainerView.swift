@@ -50,7 +50,13 @@ struct CameraFlowContainerView: View {
                 case .capture:
                     MeasurementFlowView(
                         onFlowDidFinish: { dismiss() },
-                        onSwitchToManual: { dismiss() }
+                        onSwitchToManual: { dismiss() },
+                        // UPDATED: Logic to pop the view off the stack
+                        onRetake: {
+                            if !path.isEmpty {
+                                path.removeLast()
+                            }
+                        }
                     )
                     .navigationBarHidden(true)
                 case .permissionDenied:

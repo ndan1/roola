@@ -19,6 +19,8 @@ struct MeasurementFlowView: View {
 
     var onFlowDidFinish: () -> Void
     var onSwitchToManual: () -> Void
+    // New closure to handle navigation pop
+    var onRetake: () -> Void
 
     var body: some View {
         ZStack {
@@ -79,6 +81,8 @@ struct MeasurementFlowView: View {
                     buttonTitle: "Retake",
                     buttonColor: AppColors.primaryPurple,
                     action: {
+                        // Note: You can also use onRetake() here if you want
+                        // error retries to pop back to container as well.
                         viewModel.retryMeasurement()
                     }
                 )
@@ -114,7 +118,8 @@ struct MeasurementFlowView: View {
         MeasurementResultView(
             data: data,
             onDone: { withAnimation { showSuccessPopup = true } },
-            onBack: { viewModel.retryMeasurement() },
+            // UPDATED: Call the external onRetake closure to pop the view
+            onBack: { onRetake() },
             onInfo: { print("info")}
         )
         .overlay {
@@ -137,9 +142,9 @@ struct MeasurementFlowView: View {
 
 #Preview {
     MeasurementFlowView(
-        // --- UPDATE PREVIEW ---
         onFlowDidFinish: { print("Flow Finished") },
-        onSwitchToManual: { print("Switch to Manual") }
+        onSwitchToManual: { print("Switch to Manual") },
+        onRetake: { print("Pop Navigation") }
     )
     .modelContainer(for: User.self, inMemory: true)
 }
