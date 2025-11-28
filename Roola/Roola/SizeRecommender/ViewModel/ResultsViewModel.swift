@@ -330,7 +330,7 @@ class ResultsViewModel: ObservableObject {
                         part: "\(partName.lowercased())-tight-1",
                         message: "\(partName) area will be slightly tight",
                         icon: "exclamationmark.circle.fill",
-                        iconForeground: .black,
+                        iconForeground: .white,
                         iconBackground: Color(hex: "FEC901").opacity(0.5)
                     ))
                 } else if distance >= 2 {
@@ -348,7 +348,7 @@ class ResultsViewModel: ObservableObject {
                         part: "\(partName.lowercased())-loose-1",
                         message: "\(partName) will be slightly loose",
                         icon: "exclamationmark.circle.fill",
-                        iconForeground: .black,
+                        iconForeground: .white,
                         iconBackground: Color(hex: "FEC901").opacity(0.5)
                     ))
                 } else if distance >= 2 {
@@ -356,7 +356,7 @@ class ResultsViewModel: ObservableObject {
                         part: "\(partName.lowercased())-loose-2",
                         message: "\(partName) area will be very loose",
                         icon: "arrow.left.arrow.right.circle.fill",
-                        iconForeground: .black,
+                        iconForeground: .white,
                         iconBackground: Color(hex: "A7DCFF")
                     ))
                 }

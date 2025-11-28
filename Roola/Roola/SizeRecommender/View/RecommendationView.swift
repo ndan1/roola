@@ -95,16 +95,17 @@ struct RecommendationView: View {
                     )
                     .presentationBackground(.clear)
                 }
-                if showNoInternetModal {
-                    NoInternetModal(
-                        isPresented: $showNoInternetModal,
-                        onRetry: {
-                            showNoInternetModal = false
-                        }
-                    )
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
-                }
+            }
+            .fullScreenCover(isPresented: $showNoInternetModal) {
+                NoInternetModal(
+                    isPresented: $showNoInternetModal,
+                    onRetry: {
+                        showNoInternetModal = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
+                .presentationBackground(.clear)
             }
         }
     }

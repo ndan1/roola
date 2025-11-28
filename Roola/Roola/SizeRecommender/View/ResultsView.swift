@@ -77,7 +77,7 @@ struct ResultsView: View {
                                 
                                 if let url = urlToOpen {
                                     RoolaButton(
-                                        buttonTitle: "View Product",
+                                        buttonTitle: "Shop Now",
                                         buttonColor: AppColors.primaryPurple,
                                         action: {
                                             UIApplication.shared.open(url)
