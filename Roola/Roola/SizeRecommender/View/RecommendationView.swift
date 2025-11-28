@@ -58,6 +58,7 @@ struct RecommendationView: View {
                             .resizable()
                             .frame(width: 24, height: 24)
                             .foregroundColor(AppColors.primaryPurple)
+                            .padding(.trailing, 8)
                     }
                 }
             }
@@ -116,7 +117,6 @@ struct RecommendationView: View {
             Text("Fill your product details to get your best match")
                 .font(.body16Medium)
                 .foregroundColor(.primary)
-                .fontWeight(.medium)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -269,10 +269,10 @@ struct RecommendationView: View {
             Spacer()
             
             Menu {
-                Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
                 Button("Blouse") { viewModel.clothingType = "blouse" }
-                Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
-                Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("T-shirt") { viewModel.clothingType = "t_shirt" }
+                Button("Short sleeve") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("Long sleeve") { viewModel.clothingType = "long_sleeved_shirt" }
             } label: {
                 HStack(spacing: 4) {
                     Text(displayClothingType)
@@ -296,9 +296,7 @@ struct RecommendationView: View {
             
             Menu {
                 Button("Tight") { fitPreference = "tight" }
-//                Button("Slim") { fitPreference = "slim" }
                 Button("Standard") { fitPreference = "standard" }
-//                Button("Relaxed") { fitPreference = "relaxed" }
                 Button("Loose") { fitPreference = "loose" }
             } label: {
                 HStack(spacing: 4) {
@@ -435,7 +433,8 @@ struct RecommendationView: View {
             }
         )
         .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
-        .padding(.horizontal, 24)
+//        .padding(.horizontal, 24)
+        .frame(width: UIScreen.main.bounds.width * 0.8)
         .padding(.bottom, 110)
     }
     
@@ -464,7 +463,7 @@ struct RecommendationView: View {
         timeoutTask?.cancel()
         
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 7 * 1_000_000_000)
             
             if !Task.isCancelled {
                 await MainActor.run {

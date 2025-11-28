@@ -216,19 +216,19 @@ private extension UserInputView {
                                     isShowingAIMeasurement = true
                                 }
                             )
-                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
                             .padding(.bottom, 4)
                             RoolaButton(
                                 buttonTitle: "Save",
                                 buttonColor: AppColors.primaryWhite,
                                 action: saveUser
                             )
-                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
                             .padding(.bottom, 4)
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 10)
             }
             .onTapGesture {
@@ -298,7 +298,7 @@ private extension UserInputView {
                                     }
                                 )
                             }
-                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
                             .padding(.bottom, 25)
                         } else {
                             VStack(spacing:20){
@@ -317,12 +317,12 @@ private extension UserInputView {
                                     }
                                 )
                             }
-                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
                             .padding(.bottom, 25)
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 10)
             }
             .onTapGesture {
