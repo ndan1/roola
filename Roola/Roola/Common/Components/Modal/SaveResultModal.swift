@@ -59,10 +59,15 @@ struct SaveResultModal: View {
                 }
             
             // Modal content
-            VStack(spacing: 24) {
+            VStack(spacing: 16) {
                 // Header
                 VStack (spacing: 2) {
                     HStack {
+//                        Spacer()
+                        Text("Product detail")
+                            .font(.heading24Medium)
+                            .foregroundColor(.black)
+                            .padding(.leading, UIScreen.main.bounds.width * 0.23)
                         Spacer()
                         Button (action: {
                             isPresented = false
@@ -73,17 +78,10 @@ struct SaveResultModal: View {
                                 .font(.system(size: 32))
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    HStack {
-                        Spacer()
-                        Text("Product detail")
-                            .font(.heading24Medium)
-                            .foregroundColor(.black)
-                        Spacer()
-                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
                     
                     Text("Fill in product detail below to save to history")
-                        .font(.body16Regular)
+                        .font(.body14Regular)
                         .foregroundColor(Color(hex: "#838383"))
                         .multilineTextAlignment(.center)
                         .padding(.top, 8)
