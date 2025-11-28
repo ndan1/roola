@@ -39,12 +39,16 @@ struct CameraTutorialView: View {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 24)
+                            .frame(height: 32)
                             .foregroundColor(AppColors.primaryWhite)
                             .background(
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
                     }
                     Text("Instructions")
@@ -106,12 +110,16 @@ struct CameraTutorialView: View {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 24)
+                            .frame(height: 32)
                             .foregroundColor(AppColors.primaryWhite)
                             .background(
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
                     }
                     

@@ -31,24 +31,47 @@ final class UserInputViewModel: ObservableObject {
     }
 
     // MARK: - Validation helpers
-    private func isFieldInvalid(_ value: Int?, max: Int = 250) -> Bool {
-        hasAttemptedSave && (value == nil || value! <= 0 || value! > max)
+    private func isFieldNull(_ value: Int?) -> Bool {
+        hasAttemptedSave && (value == nil)
+    }
+    
+    private func isFieldNumber(_ value: Int?, max: Int = 250) -> Bool {
+       guard hasAttemptedSave, let value = value else { return false }
+        
+        return value <= 0 || value > max
     }
 
-    var isBustError: Bool       { isFieldInvalid(bust) }
-    var isWaistError: Bool      { isFieldInvalid(waist) }
-    var isTorsoError: Bool      { isFieldInvalid(torso) }
-    var isArmsLengthError: Bool { isFieldInvalid(armsLength) }
-    var isHeightError: Bool      { isFieldInvalid(height) }
-    var isWeightError: Bool     { isFieldInvalid(weight) }
+    var isChestError: Bool       { isFieldNull(bust) || isFieldNumber(bust) }
+    var isWaistError: Bool      { isFieldNull(waist) || isFieldNumber(waist) }
+    var isTorsoLengthError: Bool      { isFieldNull(torso) || isFieldNumber(torso) }
+    var isArmLengthError: Bool { isFieldNull(armsLength) || isFieldNumber(armsLength) }
+    
+    var isHeightError: Bool      { isFieldNull(height) }
+    var isWeightError: Bool     { isFieldNull(weight) }
 
+    var hasBodyErrorNull: Bool {
+        isFieldNull(height) || isFieldNull(weight)
+    }
+    
+    var hasMeasureErrorNull: Bool {
+        isFieldNull(bust) || isFieldNull(waist) || isFieldNull(torso) || isFieldNull(armsLength)
+    }
+    
+    var hasMeasureErrorNumber: Bool {
+        isFieldNumber(bust) || isFieldNumber(waist) || isFieldNumber(torso) || isFieldNumber(armsLength)
+    }
+    
     var hasError: Bool {
-        isBustError || isWaistError || isTorsoError || isArmsLengthError || isHeightError || isWeightError
+        hasMeasureErrorNull || hasBodyErrorNull || hasMeasureErrorNumber
     }
-
-    var hasEmptyError: Bool {
-        hasAttemptedSave && (bust == nil || waist == nil || torso == nil || armsLength == nil || height == nil || weight == nil)
-    }
+    
+    // MARK: - Error properties for Cards (matching BodySizeCard and MeasurementsCard expectations)
+//    var isHeightError: Bool { isFieldNull(height) }
+//    var isWeightError: Bool { isFieldNull(weight) }
+//    var isChestError: Bool { isFieldNull(bust) || isFieldNumber(bust) }
+//    var isWaistError: Bool { isFieldNull(waist) || isFieldNumber(waist) }
+//    var isArmLengthError: Bool { isFieldNull(armsLength) || isFieldNumber(armsLength) }
+//    var isTorsoLengthError: Bool { isFieldNull(torso) || isFieldNumber(torso) }
 
     // MARK: - Intent
     func validateInputs() -> Bool {

@@ -88,6 +88,7 @@ struct ResultsView: View {
                                 }
                             }
                         }
+                        .padding(.bottom, 40)
                         .ignoresSafeArea(.all, edges: .bottom)
                     }
                 }
@@ -99,7 +100,7 @@ struct ResultsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar(isFromHistory ? .hidden : .visible, for: .tabBar)
-        .toolbar(viewModel.showSaveModal ? .hidden : .visible, for: .navigationBar)
+        .toolbar(viewModel.showSaveModal || viewModel.showSuccessModal ? .hidden : .visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
@@ -108,16 +109,22 @@ struct ResultsView: View {
                 }) {
                     Image(systemName: "chevron.left.circle.fill")
                         .resizable()
-                        .frame(width: 32, height: 32)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 32)
                         .foregroundColor(AppColors.primaryWhite)
                         .background(
                             Circle()
                             .fill(AppColors.primaryPurple)
                             .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                )}
+                            .overlay(
+                                Circle()
+                                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+                            )
+                        )
+                }
             }
             ToolbarItem(placement: .principal) {
-                Text("Recommended Size")
+                Text("Recommended size")
                     .font(.heading28Medium)
                     .foregroundStyle(.primary)
             }
@@ -136,7 +143,7 @@ struct ResultsView: View {
                     )
                     .transition(.opacity)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
-                    .padding(.horizontal)
+//                    .padding(.horizontal)
                 }
                 
                 if viewModel.showSuccessModal {
@@ -181,7 +188,7 @@ struct ResultsView: View {
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
         VStack(spacing: 0) {
-            if viewModel.showSaveModal {
+            if viewModel.showSaveModal || viewModel.showSuccessModal {
                 HStack(spacing: 19) {
                     Button(action: {
                         showResults = false
@@ -196,9 +203,13 @@ struct ResultsView: View {
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
                     }
-                    Text("Recommended Size")
+                    Text("Recommended size")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: true, vertical: false)
@@ -207,12 +218,18 @@ struct ResultsView: View {
                 }
                 .padding(.bottom, 5)
             }
-            ScrollView {
+            if isFromHistory {
                 recommendationSection(recommendation: recommendation)
-                    .padding(.top, 24)
-                    .padding(.bottom, 120)
+                    .padding(.top, 80)
+//                    .padding(.bottom, 120)
+            } else {
+                ScrollView {
+                    recommendationSection(recommendation: recommendation)
+                        .padding(.top, 24)
+                        .padding(.bottom, 120)
+                }
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
         .padding(.horizontal, 16)
     }

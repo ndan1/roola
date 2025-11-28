@@ -30,8 +30,10 @@ struct SortSheet: View {
             .padding(.vertical, 24)
             .overlay(alignment: .trailing) {
                 Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.gray)
+                    Image(systemName: "xmark.circle.fill")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                        .font(.system(size: 32))
                         .padding(.trailing, 20)
                 }
             }

@@ -143,9 +143,6 @@ struct YourMeasurementView: View {
     }
 }
 
-// ... Your MeasurementsCard, MeasurementRow, TopMeasurementRow,
-// ... and BottomMeasurementRow structs would be here ...
-
 struct BodySizeCard: View {
     
     @Binding var height: Int?
