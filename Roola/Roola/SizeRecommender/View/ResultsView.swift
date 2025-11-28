@@ -83,7 +83,7 @@ struct ResultsView: View {
                                             UIApplication.shared.open(url)
                                         }
                                     )
-                                    .padding(.horizontal, 16)
+                                    .frame(width: UIScreen.main.bounds.width * 0.8)
                                     .padding(.bottom, UIScreen.main.bounds.height * 0.08)
                                 }
                             }
@@ -121,6 +121,7 @@ struct ResultsView: View {
                                     .stroke(AppColors.primaryPurple, lineWidth: 1)
                             )
                         )
+                        .padding(.leading, 8)
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -189,7 +190,7 @@ struct ResultsView: View {
     private func resultContent(recommendation: FitRecommendation) -> some View {
         VStack(spacing: 0) {
             if viewModel.showSaveModal || viewModel.showSuccessModal {
-                HStack(spacing: 19) {
+                HStack(spacing: 14) {
                     Button(action: {
                         showResults = false
                         dismiss()
@@ -208,6 +209,7 @@ struct ResultsView: View {
                                             .stroke(AppColors.primaryPurple, lineWidth: 1)
                                     )
                             )
+//                            .padding(.leading, 6)
                     }
                     Text("Recommended size")
                         .font(.heading28Medium)
@@ -223,15 +225,15 @@ struct ResultsView: View {
                     .padding(.top, 80)
 //                    .padding(.bottom, 120)
             } else {
-                ScrollView {
+//                ScrollView {
                     recommendationSection(recommendation: recommendation)
                         .padding(.top, 24)
                         .padding(.bottom, 120)
-                }
-                .scrollIndicators(.hidden)
+//                }
+//                .scrollIndicators(.hidden)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 24)
     }
     // MARK: - Recommendation Section
     
@@ -268,11 +270,15 @@ struct ResultsView: View {
             }
             .padding(8)
             .padding(.top, 38)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 16)
             .background(Color.white)
             .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 5)
+//            .padding(.horizontal, 4)
             
             noteText
+                .padding(.horizontal)
             Spacer()
         }
     }
@@ -397,10 +403,11 @@ struct ResultsView: View {
                     }
                 )
             }
-            .padding(.horizontal, 16)
+            .frame(width: UIScreen.main.bounds.width * 0.8)
+//            .padding(.horizontal, 16)
             
         }
-        .padding(.bottom, 74)
+        .padding(.bottom, 80)
         .ignoresSafeArea(.all, edges: .bottom)
         .animation(nil, value: viewModel.showSaveModal)
         
@@ -440,7 +447,7 @@ struct SliderWithLabels: View {
                 ForEach(0..<labels.count, id: \.self) { index in
                     let isSelected = (Int(round(sliderValue)) == index)
                     
-                    VStack(spacing: 4) {
+                    VStack(spacing: 0) {
                         Text("•")
                             .font(.system(size: 16))
                             .foregroundColor(.black)
