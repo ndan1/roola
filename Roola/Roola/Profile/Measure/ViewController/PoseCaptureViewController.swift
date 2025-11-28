@@ -51,14 +51,14 @@ enum PoseFeedbackState: Equatable {
     var spokenMessage: String {
         switch self {
         case .none: return ""
-        case .noPerson: return "I can't see you clearly."
-        case .tooClose: return "Please step back a bit."
-        case .tooFar: return "Step forward closer to the camera."
-        case .handsTooClose: return "Stretch your arms out wider."
+        case .noPerson: return "Make sure all body parts is seen on camera"
+        case .tooClose: return "Please move backwards"
+        case .tooFar: return "Please move forward"
+        case .handsTooClose: return "Lift your arm to the side"
         case .handsTooWide: return "Lower your hands just a little."
         case .badAngles: return "Lift your arms to shoulder height."
         case .notSymmetrical: return "Try to keep your arms level."
-        case .success: return "Perfect. Hold that pose."
+        case .success: return "Hold still for a few seconds"
         }
     }
 }

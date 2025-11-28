@@ -71,7 +71,7 @@ struct CameraTutorialView: View {
                     } label: {
                         Text("Learn more about data policy")
                             .underline()
-                            .font(.footnote)
+                            .font(.body16Regular)
                             .foregroundStyle(Color(AppColors.primaryPurple))
                     }
                     .padding(.bottom, 8)
