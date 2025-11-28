@@ -31,7 +31,7 @@ struct RecommendationView: View {
     
     @State private var isAnimationFinished = false
     @State private var timeoutTask: Task<Void, Never>? = nil
-    @State private var showTimeoutAlert = false
+    @State private var showTimeoutModal = false
     @State private var isVisualLoading = false
     
     var body: some View {
@@ -64,13 +64,6 @@ struct RecommendationView: View {
             }
             .toolbar(isVisualLoading ? .hidden : .visible, for: .navigationBar)
             .toolbar(isVisualLoading ? .hidden : .visible, for: .tabBar)
-            .alert("Request Timeout", isPresented: $showTimeoutAlert) {
-                Button("OK") {
-                    resetProcessingState()
-                }
-            } message: {
-                Text("The request took too long to process. Please try again.")
-            }
             .fullScreenCover(isPresented: $showNoInternetPage) {
                 NoInternetPage(onRetry: {
                     showNoInternetPage = false
@@ -96,6 +89,19 @@ struct RecommendationView: View {
                     .presentationBackground(.clear)
                 }
             }
+            
+            .fullScreenCover(isPresented: $showTimeoutModal) {
+                OCRErrorModal(
+                    error: .timeout,
+                    onRetry: {
+                        showTimeoutModal = false
+                        resetProcessingState()
+                    },
+                    isPresented: $showTimeoutModal
+                )
+                .presentationBackground(.clear)
+            }
+            
             .fullScreenCover(isPresented: $showNoInternetModal) {
                 NoInternetModal(
                     isPresented: $showNoInternetModal,
@@ -482,7 +488,7 @@ struct RecommendationView: View {
         viewModel.resetAllStates()
         isVisualLoading = false
         isAnimationFinished = false
-        showTimeoutAlert = true
+        showTimeoutModal = true
     }
     
     private func resetProcessingState() {
@@ -508,6 +514,12 @@ struct RecommendationView: View {
     
     private func handleNetworkChange(oldValue: Bool, newValue: Bool) {
         if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+            
+            timeoutTask?.cancel()
+            timeoutTask = nil
+            
+            isVisualLoading = false
+            
             showNoInternetPage = true
         }
     }
