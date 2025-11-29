@@ -13,6 +13,8 @@ struct UserInputView: View {
     @Query(sort: \User.bust) private var existingUsers: [User]
     @StateObject private var viewModel = UserInputViewModel()
     
+    var onFinish: (() -> Void)? = nil
+    
     @State private var isEditing = false
     @State private var showMeasureGuide = false
     @State private var isShowingAIMeasurement = false
@@ -50,18 +52,11 @@ struct UserInputView: View {
                     .zIndex(1)
                 
                 SuccessPopupView {
-                    // Allow manual dismiss on tap
                     handleSuccessDismissal()
                 }
                 .zIndex(2)
                 .onAppear {
-                    // Auto-dismiss after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        // Check if it is still showing to avoid redundant calls
-                        if viewModel.showSuccessPopup {
-                            handleSuccessDismissal()
-                        }
-                    }
+                    // Auto-dismiss after 2 seconds (Logic dipindah ke saveUser task)
                 }
             }
         }
@@ -149,11 +144,14 @@ struct UserInputView: View {
         withAnimation {
             viewModel.showSuccessPopup = false
             
-            if existingUsers.isEmpty {
-                // If creating for the first time, dismiss the screen
+            if let onFinish = onFinish {
+                onFinish()
+                return
+            }
+            
+            if existingUsers.isEmpty || shouldShowCreateFlow {
                 dismiss()
             } else {
-                // If updating, just exit edit mode
                 isEditing = false
             }
         }
@@ -377,23 +375,31 @@ private extension UserInputView {
 private extension UserInputView {
     func saveUser() {
         guard viewModel.validateInputs() else { return }
-
-        let user = existingUsers.first ?? User(waist: 0)
-        user.bust        = viewModel.bust        ?? 0
-        user.waist       = viewModel.waist       ?? 0
-        user.torso       = viewModel.torso       ?? 0
-        user.arms_length = viewModel.armsLength  ?? 0
-        user.height      = viewModel.height ?? 0
-        user.weight      = viewModel.weight ?? 0
-
-        if existingUsers.isEmpty {
-            modelContext.insert(user)
-        }
-        
-        try? modelContext.save()
         
         withAnimation {
-            viewModel.triggerSuccess()
+            viewModel.showSuccessPopup = true
+        }
+
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            
+            let user = existingUsers.first ?? User(waist: 0)
+            user.bust        = viewModel.bust        ?? 0
+            user.waist       = viewModel.waist       ?? 0
+            user.torso       = viewModel.torso       ?? 0
+            user.arms_length = viewModel.armsLength  ?? 0
+            user.height      = viewModel.height ?? 0
+            user.weight      = viewModel.weight ?? 0
+
+            if existingUsers.isEmpty {
+                modelContext.insert(user)
+            }
+            
+            try? modelContext.save()
+            
+            await MainActor.run {
+                handleSuccessDismissal()
+            }
         }
     }
 }

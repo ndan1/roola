@@ -10,20 +10,33 @@ import SwiftData
 
 struct ContentView: View {
     @Query private var users: [User]
-    @State private var isOnboardingComplete = false
+    @State private var showMainApp = false
+    @State private var isCheckingUser = true
     
     var body: some View {
         Group {
-            // Cek User Pertama DAN Cek apakah measurement intinya sudah ada
-            if let user = users.first, user.isOnboardingFinished {
+            if isCheckingUser {
+                Color.white.ignoresSafeArea()
+            } else if showMainApp {
                 MainTabView()
-                    .transition(.opacity)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.5)))
             } else {
-                // Jika user kosong ATAU user ada tapi cuma punya height/weight (belum bust/waist)
-                // Tetap stay di OnboardingFlow
-                OnboardingFlowView(isOnboardingComplete: $isOnboardingComplete)
+                OnboardingFlowView(isOnboardingComplete: $showMainApp)
+                    .transition(.opacity)
             }
         }
         .modelContainer(for: [User.self, MeasurementHistory.self])
+        .onAppear {
+            checkUserStatus()
+        }
+    }
+    
+    private func checkUserStatus() {
+        if let user = users.first, user.isOnboardingFinished {
+            showMainApp = true
+        } else {
+            showMainApp = false
+        }
+        isCheckingUser = false
     }
 }

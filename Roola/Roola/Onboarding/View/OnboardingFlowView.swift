@@ -60,7 +60,11 @@ struct OnboardingFlowView: View {
                     .toolbar(showBodySizeModal ? .hidden : .visible, for: .navigationBar)
                     
                 case .manual:
-                    UserInputView()
+                    UserInputView(onFinish: {
+                        withAnimation {
+                            isOnboardingComplete = true
+                        }
+                    })
                 }
             }
             .navigationDestination(for: FlowStep.self) { step in
@@ -68,10 +72,9 @@ struct OnboardingFlowView: View {
                 case .capture:
                     MeasurementFlowView(
                         onFlowDidFinish: {
-                            // Tidak perlu melakukan apa-apa disini secara manual,
-                            // Karena begitu MeasurementFlowView menyimpan data (bust/waist),
-                            // ContentView akan otomatis mendeteksi user.isOnboardingFinished = true
-                            // dan mengganti halaman.
+                            withAnimation {
+                                isOnboardingComplete = true
+                            }
                         },
                         onSwitchToManual: {
                             path.removeLast(path.count)
@@ -112,19 +115,6 @@ struct OnboardingFlowView: View {
         tempHeight = nil
         tempWeight = nil
     }
-    
-    // NEW: Check camera permission first, then show modal
-//    private func checkCameraPermissionFirst() {
-//        checkCameraPermission { granted in
-//            if granted {
-//                // Permission granted → Show body size modal
-//                showBodySizeModal = true
-//            } else {
-//                // Permission denied → Go to denied screen
-//                path.append(FlowStep.permissionDenied)
-//            }
-//        }
-//    }
     
     // MARK: - Helper Save untuk Onboarding
     private func saveBodyDataAndProceed() {

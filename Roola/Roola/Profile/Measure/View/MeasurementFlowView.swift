@@ -53,7 +53,7 @@ struct MeasurementFlowView: View {
             VStack(spacing: 20) {
                 GradientCircularLoader()
                 
-                Text("Analyzing photo...")
+                Text("Getting your measurements..")
                     .font(.body18Medium)
                     .bold()
                     .padding(.top, 10)
@@ -133,12 +133,21 @@ struct MeasurementFlowView: View {
         )
         .overlay {
             if showSuccessPopup {
-                SuccessPopupView {
-                    withAnimation { showSuccessPopup = false }
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    SuccessPopupView(onDismiss: {})
                 }
+                .transition(.opacity)
+                .zIndex(1)
                 .task {
+                    // MARK: - LOGIC FIX
+                    
+                    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 Detik
+                    
                     await viewModel.measurementDidFinish(data: data, modelContext: modelContext)
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    
                     await MainActor.run {
                         withAnimation { showSuccessPopup = false }
                         onFlowDidFinish()
