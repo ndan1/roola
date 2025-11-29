@@ -14,9 +14,10 @@ struct MeasurementResultView: View {
     @State private var showMeasureGuide = false
     
     // MARK: - Init
-    init(data: MeasurementData?, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
+    init(data: MeasurementData?, userWeight: Int? = nil ,onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: MeasurementResultViewModel(
             data: data,
+            userWeight: userWeight,
             onDone: onDone,
             onBack: onBack,
             onInfo: onInfo

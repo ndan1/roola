@@ -54,7 +54,7 @@ struct MeasurementFlowView: View {
                 GradientCircularLoader()
                 
                 Text("Getting your measurements..")
-                    .font(.body18Medium)
+                    .font(.heading22Medium)
                     .bold()
                     .padding(.top, 10)
             }
@@ -124,8 +124,11 @@ struct MeasurementFlowView: View {
     }
     
     private func successResultView(data: MeasurementData) -> some View {
-        MeasurementResultView(
+        let currentUserWeight = users.first?.weight ?? UserDefaults.standard.integer(forKey: "temp_user_weight")
+        
+        return MeasurementResultView(
             data: data,
+            userWeight: currentUserWeight,
             onDone: { withAnimation { showSuccessPopup = true } },
             // UPDATED: Call the external onRetake closure to pop the view
             onBack: { onRetake() },

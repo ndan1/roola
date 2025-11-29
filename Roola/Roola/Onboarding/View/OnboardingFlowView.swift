@@ -128,6 +128,11 @@ struct OnboardingFlowView: View {
         
         try? modelContext.save()
         
+        if let w = tempWeight { UserDefaults.standard.setValue(w, forKey: "temp_user_weight") }
+        if let h = tempHeight { UserDefaults.standard.setValue(h, forKey: "temp_user_height") }
+        
+        print("✅ Temp Data Saved: Weight \(tempWeight ?? 0), Height \(tempHeight ?? 0)")
+        
         // 2. Setelah simpan, baru cek Permission Kamera
         checkCameraPermission { granted in
             if granted {

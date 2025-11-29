@@ -29,7 +29,7 @@ class MeasurementResultViewModel: ObservableObject {
     let onInfo: () -> Void
     
     // MARK: - Initializer
-    init(data: MeasurementData?, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
+    init(data: MeasurementData?, userWeight: Int? = nil, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
         self.data = data
         self.onDone = onDone
         self.onBack = onBack
@@ -47,7 +47,11 @@ class MeasurementResultViewModel: ObservableObject {
             // NEW: Initialize Weight from Temp Storage (UserDefaults)
             // We read the same key used in CameraFlowContainerView
             let storedWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
-            self.weight = storedWeight > 0 ? storedWeight : nil
+            if let passedWeight = userWeight, passedWeight > 0 {
+                self.weight = passedWeight
+            } else {
+                self.weight = storedWeight > 0 ? storedWeight : nil
+            }
         }
     }
     
