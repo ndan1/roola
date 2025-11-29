@@ -26,13 +26,13 @@ struct HistoryCard: View {
             // Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(history.productName)
-                    .font(.body16Regular)
+                    .font(.body18Medium)
                     .foregroundColor(.black)
                     .lineLimit(1)
                 
                 Text(history.brandName)
                     .font(.body15Regular)
-                    .foregroundColor(AppColors.grayScale300)
+                    .foregroundColor(Color(hex: "#4E4E4E"))
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
@@ -46,10 +46,10 @@ struct HistoryCard: View {
                     
                     Text(displayFitPreference(history.selectedFitPreference))
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppColors.primaryPurple)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.1))
+                        .background(AppColors.primaryPurple.opacity(0.1))
                         .cornerRadius(6)
                 }
                 
@@ -59,8 +59,8 @@ struct HistoryCard: View {
             
             VStack(alignment: .trailing, spacing: 4) {
                 Text(formatDate(history.createdAt))
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.body15Regular)
+                    .foregroundColor(Color(hex: "#4E4E4E"))
                 Spacer()
             }
         }

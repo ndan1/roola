@@ -15,17 +15,20 @@ enum OCRError: Error, LocalizedError {
     case notUpperwear
     case noSizeChartDetected
     case incompleteSizeChart
+    case timeout
     
     var title: String {
         switch self {
         case .invalidImage, .noTextFound, .recognitionFailed, .noSizeDataFound:
             return "Error"
         case .notUpperwear:
-            return "Uh oh! Size chart uploaded wasn’t an upperwear"
+            return "Uh oh! Size chart uploaded wasn't an upperwear"
         case .noSizeChartDetected:
             return "Uh oh! There wasn't any size chart in the screenshot"
         case .incompleteSizeChart:
             return "Size chart incomplete"
+        case .timeout:
+            return "Uh oh! Failed to recognize the screenshot"
         }
     }
     
@@ -45,6 +48,8 @@ enum OCRError: Error, LocalizedError {
             return "Try another one?"
         case .incompleteSizeChart:
             return "We need at least 2 sizes (e.g., S & M) or an 'All Size' label to give a recommendation."
+        case .timeout:
+            return "Try cropping the image"
         }
     }
     

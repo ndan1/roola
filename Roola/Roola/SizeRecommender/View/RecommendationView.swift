@@ -31,7 +31,7 @@ struct RecommendationView: View {
     
     @State private var isAnimationFinished = false
     @State private var timeoutTask: Task<Void, Never>? = nil
-    @State private var showTimeoutAlert = false
+    @State private var showTimeoutModal = false
     @State private var isVisualLoading = false
     
     var body: some View {
@@ -58,18 +58,12 @@ struct RecommendationView: View {
                             .resizable()
                             .frame(width: 24, height: 24)
                             .foregroundColor(AppColors.primaryPurple)
+                            .padding(.trailing, 8)
                     }
                 }
             }
             .toolbar(isVisualLoading ? .hidden : .visible, for: .navigationBar)
             .toolbar(isVisualLoading ? .hidden : .visible, for: .tabBar)
-            .alert("Request Timeout", isPresented: $showTimeoutAlert) {
-                Button("OK") {
-                    resetProcessingState()
-                }
-            } message: {
-                Text("The request took too long to process. Please try again.")
-            }
             .fullScreenCover(isPresented: $showNoInternetPage) {
                 NoInternetPage(onRetry: {
                     showNoInternetPage = false
@@ -94,16 +88,30 @@ struct RecommendationView: View {
                     )
                     .presentationBackground(.clear)
                 }
-                if showNoInternetModal {
-                    NoInternetModal(
-                        isPresented: $showNoInternetModal,
-                        onRetry: {
-                            showNoInternetModal = false
-                        }
-                    )
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
-                }
+            }
+            
+            .fullScreenCover(isPresented: $showTimeoutModal) {
+                OCRErrorModal(
+                    error: .timeout,
+                    onRetry: {
+                        showTimeoutModal = false
+                        resetProcessingState()
+                    },
+                    isPresented: $showTimeoutModal
+                )
+                .presentationBackground(.clear)
+            }
+            
+            .fullScreenCover(isPresented: $showNoInternetModal) {
+                NoInternetModal(
+                    isPresented: $showNoInternetModal,
+                    onRetry: {
+                        showNoInternetModal = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
+                .presentationBackground(.clear)
             }
         }
     }
@@ -116,7 +124,6 @@ struct RecommendationView: View {
             Text("Fill your product details to get your best match")
                 .font(.body16Medium)
                 .foregroundColor(.primary)
-                .fontWeight(.medium)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -269,10 +276,10 @@ struct RecommendationView: View {
             Spacer()
             
             Menu {
-                Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
                 Button("Blouse") { viewModel.clothingType = "blouse" }
-                Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
-                Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("T-shirt") { viewModel.clothingType = "t_shirt" }
+                Button("Short sleeve") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("Long sleeve") { viewModel.clothingType = "long_sleeved_shirt" }
             } label: {
                 HStack(spacing: 4) {
                     Text(displayClothingType)
@@ -296,9 +303,7 @@ struct RecommendationView: View {
             
             Menu {
                 Button("Tight") { fitPreference = "tight" }
-//                Button("Slim") { fitPreference = "slim" }
                 Button("Standard") { fitPreference = "standard" }
-//                Button("Relaxed") { fitPreference = "relaxed" }
                 Button("Loose") { fitPreference = "loose" }
             } label: {
                 HStack(spacing: 4) {
@@ -435,7 +440,8 @@ struct RecommendationView: View {
             }
         )
         .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
-        .padding(.horizontal, 24)
+//        .padding(.horizontal, 24)
+        .frame(width: UIScreen.main.bounds.width * 0.8)
         .padding(.bottom, 110)
     }
     
@@ -464,7 +470,7 @@ struct RecommendationView: View {
         timeoutTask?.cancel()
         
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 7 * 1_000_000_000)
             
             if !Task.isCancelled {
                 await MainActor.run {
@@ -482,7 +488,7 @@ struct RecommendationView: View {
         viewModel.resetAllStates()
         isVisualLoading = false
         isAnimationFinished = false
-        showTimeoutAlert = true
+        showTimeoutModal = true
     }
     
     private func resetProcessingState() {
@@ -508,6 +514,12 @@ struct RecommendationView: View {
     
     private func handleNetworkChange(oldValue: Bool, newValue: Bool) {
         if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+            
+            timeoutTask?.cancel()
+            timeoutTask = nil
+            
+            isVisualLoading = false
+            
             showNoInternetPage = true
         }
     }
