@@ -568,8 +568,8 @@ struct RecommendationView: View {
         switch viewModel.clothingType {
         case "t_shirt": return "T-Shirt"
         case "blouse": return "Blouse"
-        case "long_sleeved_shirt": return "Long Sleeved Shirt"
-        case "short_sleeved_shirt": return "Short Sleeved Shirt"
+        case "long_sleeved_shirt": return "Long sleeve"
+        case "short_sleeved_shirt": return "Short sleeve"
         default: return "Select clothing type"
         }
     }
