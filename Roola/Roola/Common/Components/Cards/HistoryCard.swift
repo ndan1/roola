@@ -25,17 +25,29 @@ struct HistoryCard: View {
             
             // Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(history.productName)
-                    .font(.body18Medium)
-                    .foregroundColor(.black)
-                    .lineLimit(1)
                 
+                HStack(alignment: .top) {
+                    Text(history.productName)
+                        .font(.body18Medium)
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    Text(formatDate(history.createdAt))
+                        .font(.body15Regular)
+                        .foregroundColor(Color(hex: "#4E4E4E"))
+                        .fixedSize()
+                        .offset(y: -8)
+                }
+               
                 Text(history.brandName)
                     .font(.body15Regular)
                     .foregroundColor(Color(hex: "#4E4E4E"))
                     .lineLimit(1)
+                    .padding(.bottom, 4)
                 
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Text(displayClothingType(history.clothingType))
                         .font(.caption)
                         .foregroundColor(AppColors.primaryPurple)
@@ -43,6 +55,8 @@ struct HistoryCard: View {
                         .padding(.vertical, 4)
                         .background(AppColors.primaryPurple.opacity(0.1))
                         .cornerRadius(6)
+                        .lineLimit(1)
+                        .fixedSize()
                     
                     Text(displayFitPreference(history.selectedFitPreference))
                         .font(.caption)
@@ -51,20 +65,15 @@ struct HistoryCard: View {
                         .padding(.vertical, 4)
                         .background(AppColors.primaryPurple.opacity(0.1))
                         .cornerRadius(6)
+                        .lineLimit(1)
+                        .fixedSize()
+                    
+                    Spacer()
                 }
-                
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(formatDate(history.createdAt))
-                    .font(.body15Regular)
-                    .foregroundColor(Color(hex: "#4E4E4E"))
-                Spacer()
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 20)
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
@@ -87,7 +96,14 @@ struct HistoryCard: View {
     }
     
     private func displayFitPreference(_ preference: String) -> String {
-        return preference.capitalized
+        switch preference {
+            case "loose": return "Loose"
+            case "regular": return "Regular"
+            case "slightly-loose": return "Slightly Loose"
+            case "slightly-tight": return "Slightly Tight"
+            case "tight": return "Tight"
+            default: return preference.capitalized
+        }
     }
 }
 
@@ -107,7 +123,7 @@ struct HistoryCard: View {
     return HistoryCard(history: MeasurementHistory(
         productName: "Classic T-Shirt",
         brandName: "Roola",
-        clothingType: "short_sleeved_shirt",
+        clothingType: "long_sleeved_shirt",
         selectedFitPreference: "slightly-loose",
         recommendationsJSON: sampleJSON,
         userBust: 90.0,
@@ -115,4 +131,5 @@ struct HistoryCard: View {
         userTorso: 60.0,
         userArmLength: 55.0
     ))
+    .padding()
 }

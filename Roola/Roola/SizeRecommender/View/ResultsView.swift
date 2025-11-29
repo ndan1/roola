@@ -254,7 +254,7 @@ struct ResultsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                Text("Fit Preference")
+                Text("Fit preference")
                     .font(.body16Regular)
                 
                 SliderWithLabels(sliderValue: $viewModel.sliderValue)
