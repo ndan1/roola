@@ -76,7 +76,10 @@ struct HistoryCard: View {
         .padding(.vertical, 20)
         .background(Color.white)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#E0E0E0"), lineWidth: 2)
+        }
     }
     
     private func formatDate(_ date: Date) -> String {
