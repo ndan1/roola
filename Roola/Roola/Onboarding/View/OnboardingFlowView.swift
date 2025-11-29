@@ -41,7 +41,7 @@ struct OnboardingFlowView: View {
                     ZStack {
                         CameraTutorialView (
                             // NEW FLOW: Check camera permission FIRST
-                            onContinue: { checkCameraPermissionFirst() },
+                            onContinue: { showBodySizeModal = true },
                             showBodySizeModal: $showBodySizeModal
                         )
                         
@@ -114,17 +114,17 @@ struct OnboardingFlowView: View {
     }
     
     // NEW: Check camera permission first, then show modal
-    private func checkCameraPermissionFirst() {
-        checkCameraPermission { granted in
-            if granted {
-                // Permission granted → Show body size modal
-                showBodySizeModal = true
-            } else {
-                // Permission denied → Go to denied screen
-                path.append(FlowStep.permissionDenied)
-            }
-        }
-    }
+//    private func checkCameraPermissionFirst() {
+//        checkCameraPermission { granted in
+//            if granted {
+//                // Permission granted → Show body size modal
+//                showBodySizeModal = true
+//            } else {
+//                // Permission denied → Go to denied screen
+//                path.append(FlowStep.permissionDenied)
+//            }
+//        }
+//    }
     
     // MARK: - Helper Save untuk Onboarding
     private func saveBodyDataAndProceed() {
@@ -138,8 +138,16 @@ struct OnboardingFlowView: View {
         
         try? modelContext.save()
         
-        // Permission sudah checked, langsung ke capture
-        path.append(FlowStep.capture)
+        // 2. Setelah simpan, baru cek Permission Kamera
+        checkCameraPermission { granted in
+            if granted {
+                // Izin diberikan -> Lanjut ke Capture
+                path.append(FlowStep.capture)
+            } else {
+                // Izin ditolak -> Ke halaman Denied
+                path.append(FlowStep.permissionDenied)
+            }
+        }
     }
     
     private func finishOnboarding() {

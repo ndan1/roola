@@ -86,37 +86,30 @@ struct CameraFlowContainerView: View {
     }
     
     private func checkCameraPermissionFirst() {
-        checkCameraPermission { granted in
-            if granted {
-                // 1. PRE-FILL LOGIC:
-                // Check UserDefaults first (most recent temp entry), then SwiftData (saved user)
-                let storedHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
-                let storedWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
-                
-                if storedHeight > 0 {
-                    self.tempHeight = storedHeight
-                } else if let existingUser = users.first, existingUser.height > 0 {
-                    self.tempHeight = existingUser.height
-                }
-                
-                if storedWeight > 0 {
-                    self.tempWeight = storedWeight
-                } else if let existingUser = users.first, existingUser.weight > 0 {
-                    self.tempWeight = existingUser.weight
-                }
-                
-                // Show modal
-                showBodySizeModal = true
-            } else {
-                path.append(FlowStep.permissionDenied)
-            }
+        // 1. PRE-FILL LOGIC:
+        // Check UserDefaults first (most recent temp entry), then SwiftData (saved user)
+        let storedHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
+        let storedWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
+        
+        if storedHeight > 0 {
+            self.tempHeight = storedHeight
+        } else if let existingUser = users.first, existingUser.height > 0 {
+            self.tempHeight = existingUser.height
         }
+        
+        if storedWeight > 0 {
+            self.tempWeight = storedWeight
+        } else if let existingUser = users.first, existingUser.weight > 0 {
+            self.tempWeight = existingUser.weight
+        }
+        
+        // Show modal
+        showBodySizeModal = true
     }
 
     // Logic to save temporarily to UserDefaults
     private func saveBodyDataAndProceed() {
         // 2. SAVE LOGIC:
-        // Do NOT save to modelContext yet. Save to UserDefaults.
         if let h = tempHeight {
             UserDefaults.standard.setValue(h, forKey: "temp_user_height")
         }
@@ -126,8 +119,14 @@ struct CameraFlowContainerView: View {
         
         print("✅ Height & Weight stored in UserDefaults: \(tempHeight ?? 0), \(tempWeight ?? 0)")
         
-        // Proceed to capture flow
-        path.append(FlowStep.capture)
+        // Check Camera Permission
+        checkCameraPermission { granted in
+            if granted {
+                path.append(FlowStep.capture)
+            } else {
+                path.append(FlowStep.permissionDenied)
+            }
+        }
     }
 
     private func checkCameraPermission(completion: @escaping (Bool) -> Void) {
