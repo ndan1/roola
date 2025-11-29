@@ -34,11 +34,23 @@ struct RecommendationView: View {
     @State private var showTimeoutModal = false
     @State private var isVisualLoading = false
     
+    @State private var showReadyScreen = false
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 mainContent
-                loadingOverlay
+                if showReadyScreen {
+                    RecommendationReadyView()
+                        .transition(.identity) // Tidak ada animasi transisi (langsung muncul)
+                        .zIndex(2)
+                }
+                
+                // 2. Tampilkan Loading Overlay jika sedang visual loading
+                if isVisualLoading {
+                    loadingOverlay
+                        .zIndex(3) // Loading paling atas sebelum ready screen muncul
+                }
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -62,8 +74,8 @@ struct RecommendationView: View {
                     }
                 }
             }
-            .toolbar(isVisualLoading ? .hidden : .visible, for: .navigationBar)
-            .toolbar(isVisualLoading ? .hidden : .visible, for: .tabBar)
+            .toolbar(isVisualLoading || showReadyScreen ? .hidden : .visible, for: .navigationBar)
+            .toolbar(isVisualLoading || showReadyScreen ? .hidden : .visible, for: .tabBar)
             .fullScreenCover(isPresented: $showNoInternetPage) {
                 NoInternetPage(onRetry: {
                     showNoInternetPage = false
@@ -185,22 +197,19 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var loadingOverlay: some View {
-        if isVisualLoading {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .transition(.opacity)
-            
-            ProgressLoading(
-                title: "Hang Tight...",
-                subtitle: "We're tailoring this for you.",
-                duration: 4.0,
-                onFinish: {
-                    handleAnimationFinished()
-                }
-            )
-            .zIndex(1)
-            .transition(.scale.combined(with: .opacity))
-        }
+        Color.black.opacity(0.5)
+            .ignoresSafeArea()
+            .transition(.opacity)
+        
+        ProgressLoading(
+            title: "Hang Tight...",
+            subtitle: "We're tailoring this for you.",
+            duration: 4.0,
+            onFinish: {
+                handleAnimationFinished()
+            }
+        )
+        .transition(.scale.combined(with: .opacity))
     }
     
     // MARK: - Results & Fit Guide Views
@@ -461,8 +470,18 @@ struct RecommendationView: View {
     private func checkAndShowResults() {
         if viewModel.serverResponse != nil && isAnimationFinished {
             timeoutTask?.cancel()
-            isVisualLoading = false
-            showResults = true
+            withAnimation(.none) {
+                isVisualLoading = false // Overlay hilang
+                showReadyScreen = true  // Ready screen muncul
+            }
+            Task {
+                try? await Task.sleep(nanoseconds: 6 * 1_000_000_000)
+                
+                await MainActor.run {
+                    showReadyScreen = false
+                    showResults = true
+                }
+            }
         }
     }
     
@@ -474,7 +493,7 @@ struct RecommendationView: View {
             
             if !Task.isCancelled {
                 await MainActor.run {
-                    if !showResults {
+                    if !showResults && !showReadyScreen { // Tambahkan check showReadyScreen
                         handleTimeout()
                     }
                 }
@@ -487,6 +506,7 @@ struct RecommendationView: View {
 //        resetProcessingState()
         viewModel.resetAllStates()
         isVisualLoading = false
+        showReadyScreen = false
         isAnimationFinished = false
         showTimeoutModal = true
     }
@@ -519,6 +539,7 @@ struct RecommendationView: View {
             timeoutTask = nil
             
             isVisualLoading = false
+            showReadyScreen = false
             
             showNoInternetPage = true
         }
@@ -590,6 +611,7 @@ struct RecommendationView: View {
         selectedPhoto = nil
         viewModel.clothingType = ""
         fitPreference = ""
+        showReadyScreen = false
         viewModel.resetAllStates()
     }
 }

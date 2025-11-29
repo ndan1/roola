@@ -24,6 +24,10 @@ extension Font {
         .custom("HelveticaNeue-Medium", size: 24, relativeTo: .largeTitle)
     }
     
+    static var heading22Medium: Font {
+        .custom("HelveticaNeue-Medium", size: 22, relativeTo: .largeTitle)
+    }
+    
     // MARK: Titles
     static var title1_22Medium: Font {
         .custom("HelveticaNeue-Medium", size: 22, relativeTo: .title2)
