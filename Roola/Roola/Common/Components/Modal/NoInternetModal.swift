@@ -6,17 +6,19 @@
 //
 
 import SwiftUI
+import Lottie
 
 struct NoInternetModal: View {
     @Binding var isPresented: Bool
     var onRetry: (() -> Void)?
+    @State private var animationTrigger = false
     
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
             
-            VStack {
+            VStack (spacing: 4){
                 HStack {
                     Spacer()
                     Button (action: {
@@ -26,12 +28,17 @@ struct NoInternetModal: View {
                             .symbolRenderingMode(.palette)
                             .foregroundStyle(Color.white, Color.gray.opacity(0.4))
                             .font(.system(size: 32))
-                            .padding(.vertical, 8)
                     }
                 }
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.system(size: 82))
-                    .foregroundStyle(AppColors.primaryPurple)
+                LottieView {
+                    try await DotLottieFile.named("no-internet")
+                }
+                .configure({ lottieAnimationView in
+                    lottieAnimationView.contentMode = .scaleAspectFill
+                    lottieAnimationView.shouldRasterizeWhenIdle = true
+                })
+                .playbackMode(.playing(.toProgress(1, loopMode: .playOnce)))
+                .id(animationTrigger)
                 Text("Oops, you're offline!")
                     .font(.heading24Medium)
                     .foregroundStyle(Color.red)
