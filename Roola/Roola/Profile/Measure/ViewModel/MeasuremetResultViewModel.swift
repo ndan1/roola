@@ -36,13 +36,13 @@ class MeasurementResultViewModel: ObservableObject {
         self.onInfo = onInfo
         
         if let data = data {
-            self.chest = Int(data.chestCircumference)
-            self.waist = Int(data.waistCircumference)
-            self.armLength = Int(data.armsLength)
-            self.torsoLength = Int(data.torsoLength)
+            self.chest = Int(data.chestCircumference.rounded())
+            self.waist = Int(data.waistCircumference.rounded())
+            self.armLength = Int(data.armsLength.rounded())
+            self.torsoLength = Int(data.torsoLength.rounded())
             
             // NEW: Initialize Height from data
-            self.height = Int(data.height)
+            self.height = Int(data.height.rounded())
             
             // NEW: Initialize Weight from Temp Storage (UserDefaults)
             // We read the same key used in CameraFlowContainerView
