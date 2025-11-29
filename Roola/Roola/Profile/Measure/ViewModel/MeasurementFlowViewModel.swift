@@ -14,6 +14,15 @@ class MeasurementFlowViewModel: ObservableObject {
     
     // MARK: - State
     @Published var flowState: FlowState = .capturing
+//    @Published var flowState: FlowState = .success(
+//        data: MeasurementData(
+//            armsLength: 49.21,
+//            chestCircumference: 92,
+//            height: 169,
+//            torsoLength: 54,
+//            waistCircumference: 82
+//        )
+//    )
     
     enum FlowState: Equatable {
         case capturing
@@ -139,24 +148,46 @@ class MeasurementFlowViewModel: ObservableObject {
     
     private func saveOrUpdateUser(with data: MeasurementData, in context: ModelContext) {
         let descriptor = FetchDescriptor<User>()
+        
+        // Retrieve temporary data
+        let tempWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
+        let tempHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
+        
         do {
             if let userToUpdate = try context.fetch(descriptor).first {
+                // Update Measurements
                 userToUpdate.bust = Int(data.chestCircumference.rounded())
                 userToUpdate.waist = Int(data.waistCircumference.rounded())
                 userToUpdate.torso = Int(data.torsoLength.rounded())
                 userToUpdate.arms_length = Int(data.armsLength.rounded())
+                
+                // Update Body Size from Temp if available
+                if tempWeight > 0 { userToUpdate.weight = tempWeight }
+                if tempHeight > 0 { userToUpdate.height = tempHeight }
+                
             } else {
-                // Fallback creation (shouldn't happen if flow is correct)
+                // Create New User
                 let newUser = User(
                     bust: Int(data.chestCircumference.rounded()),
                     waist: Int(data.waistCircumference.rounded()),
                     torso: Int(data.torsoLength.rounded()),
                     arms_length: Int(data.armsLength.rounded())
                 )
-                newUser.height = Int(data.height)
+                
+                // Use temp data, fallback to API return data for height, default 0 for weight
+                newUser.height = tempHeight > 0 ? tempHeight : Int(data.height)
+                newUser.weight = tempWeight > 0 ? tempWeight : 0
+                
                 context.insert(newUser)
             }
+            
             try context.save()
+            print("💾 Final Save Complete: Weight \(tempWeight), Height \(tempHeight)")
+            
+            // Optional: Clear UserDefaults after successful save
+            UserDefaults.standard.removeObject(forKey: "temp_user_height")
+            UserDefaults.standard.removeObject(forKey: "temp_user_weight")
+            
         } catch {
             print("Failed to save user: \(error)")
         }

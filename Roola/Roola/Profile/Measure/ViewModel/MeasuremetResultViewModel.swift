@@ -11,22 +11,22 @@ import SwiftUI
 class MeasurementResultViewModel: ObservableObject {
     
     // MARK: - Published State
-    // The View will bind to these properties.
     @Published var chest: Int?
     @Published var waist: Int?
     @Published var armLength: Int?
     @Published var torsoLength: Int?
     
-    // This is private(set) because only the VM should change it,
-    // but the View can read it.
+    // NEW: Add Height and Weight
+    @Published var height: Int?
+    @Published var weight: Int?
+    
     @Published private(set) var hasAttemptedSave: Bool = false
     
     // MARK: - Stored Properties
-    // Keep the original data and navigation closures
     let data: MeasurementData?
     private let onDone: () -> Void
     private let onBack: () -> Void
-    let onInfo: () -> Void // Public so the View's Header can use it
+    let onInfo: () -> Void
     
     // MARK: - Initializer
     init(data: MeasurementData?, onDone: @escaping () -> Void, onBack: @escaping () -> Void, onInfo: @escaping () -> Void) {
@@ -35,68 +35,73 @@ class MeasurementResultViewModel: ObservableObject {
         self.onBack = onBack
         self.onInfo = onInfo
         
-        // This logic is moved from the View's .onAppear
-        // It only runs if data is non-nil, initializing the fields.
         if let data = data {
             self.chest = Int(data.chestCircumference)
             self.waist = Int(data.waistCircumference)
             self.armLength = Int(data.armsLength)
             self.torsoLength = Int(data.torsoLength)
+            
+            // NEW: Initialize Height from data
+            self.height = Int(data.height)
+            
+            // NEW: Initialize Weight from Temp Storage (UserDefaults)
+            // We read the same key used in CameraFlowContainerView
+            let storedWeight = UserDefaults.standard.integer(forKey: "temp_user_weight")
+            self.weight = storedWeight > 0 ? storedWeight : nil
         }
     }
     
-    // MARK: - Computed Properties (Validation Logic)
-    // All the error-checking logic is moved here from the View.
+    // MARK: - Validation Logic
     
-    var isChestError: Bool {
-        hasAttemptedSave && ((chest ?? 0) > 250 || chest == nil)
+    private func isInvalid(_ value: Int?) -> Bool {
+        hasAttemptedSave && (value == nil || (value ?? 0) > 250 || (value ?? 0) <= 0)
     }
     
-    var isWaistError: Bool {
-        hasAttemptedSave && ((waist ?? 0) > 250 || waist == nil)
-    }
+    var isChestError: Bool { isInvalid(chest) }
+    var isWaistError: Bool { isInvalid(waist) }
+    var isArmLengthError: Bool { isInvalid(armLength) }
+    var isTorsoLengthError: Bool { isInvalid(torsoLength) }
     
-    var isArmLengthError: Bool {
-        hasAttemptedSave && ((armLength ?? 0) > 250 || armLength == nil)
-    }
-    
-    var isTorsoLengthError: Bool {
-        hasAttemptedSave && ((torsoLength ?? 0) > 250 || torsoLength == nil)
-    }
+    // NEW: Height/Weight Validation
+    var isHeightError: Bool { isInvalid(height) }
+    var isWeightError: Bool { isInvalid(weight) } // Weight can technically be > 250, but let's keep consistency or adjust logic if needed
     
     var hasError: Bool {
-        isChestError || isWaistError || isArmLengthError || isTorsoLengthError
-    }
-    
-    var isOver250Error: Bool {
-        hasAttemptedSave && (
-            (chest ?? 0) > 250 ||
-            (waist ?? 0) > 250 ||
-            (armLength ?? 0) > 250 ||
-            (torsoLength ?? 0) > 250
-        )
+        isChestError || isWaistError || isArmLengthError || isTorsoLengthError || isHeightError || isWeightError
     }
     
     var hasEmptyError: Bool {
         hasAttemptedSave && (
-            chest == nil ||
-            waist == nil ||
-            armLength == nil ||
-            torsoLength == nil
+            chest == nil || waist == nil || armLength == nil || torsoLength == nil || height == nil || weight == nil
         )
     }
     
-    // MARK: - Public Functions (User Intents)
-    // These functions are called by the View's buttons.
+    var isOver250Error: Bool {
+        hasAttemptedSave && (
+            (chest ?? 0) > 250 || (waist ?? 0) > 250 ||
+            (armLength ?? 0) > 250 || (torsoLength ?? 0) > 250 ||
+            (height ?? 0) > 250 || (weight ?? 0) > 250
+        )
+    }
+    
+    // MARK: - User Intents
     
     func saveTapped() {
-        hasAttemptedSave = true // Mark that we've tried to save
+        hasAttemptedSave = true
         
-        // If there are no errors, call the onDone closure
         if !hasError {
-            // Optional: You could update the `data` model here
-            // with the new values from chest, waist, etc.
-            // before calling onDone.
+            // CRITICAL: Update the UserDefaults with the FINAL edited values.
+            // This ensures MeasurementFlowViewModel picks up any changes made here.
+            if let h = height {
+                UserDefaults.standard.setValue(h, forKey: "temp_user_height")
+            }
+            if let w = weight {
+                UserDefaults.standard.setValue(w, forKey: "temp_user_weight")
+            }
+            
+            // Note: Ideally, you should also pass updated Chest/Waist back,
+            // but based on current architecture, we are syncing Height/Weight for the save.
+            
             onDone()
         }
     }

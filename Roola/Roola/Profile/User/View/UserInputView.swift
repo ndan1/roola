@@ -94,7 +94,7 @@ struct UserInputView: View {
         .navigationBarBackButtonHidden(true)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(isEditing ? .hidden : .visible, for: .tabBar)
+        .toolbar(isEditing ? .hidden : .visible, for : .tabBar)
         .toolbar {
             
             // BAGIAN KIRI (LEADING)
@@ -299,7 +299,7 @@ private extension UserInputView {
                                 )
                             }
                             .frame(width: UIScreen.main.bounds.width * 0.8)
-                            .padding(.bottom, 25)
+                            .padding(.bottom, 40)
                         } else {
                             VStack(spacing:20){
                                 RoolaButton(

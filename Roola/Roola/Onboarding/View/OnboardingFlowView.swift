@@ -76,7 +76,14 @@ struct OnboardingFlowView: View {
                         onSwitchToManual: {
                             path.removeLast(path.count)
                             path.append(OnboardingStep.manual)
-                        })
+                        },
+                        onRetake: {
+                            // Logic: Pop the current view (Capture) to return to previous step
+                            if !path.isEmpty {
+                                path.removeLast()
+                            }
+                        }
+                    )
                     .navigationBarHidden(true)
                     
                 case .permissionDenied:
