@@ -32,7 +32,7 @@ struct MeasurementResultView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             RoolaHeader(
-                title: "Your measurement",
+                title: "Your measurements",
                 onInfo: {
                     showMeasureGuide.toggle()
                 },
@@ -146,6 +146,29 @@ struct MeasurementResultView: View {
             MeasureGuideModal()
                 .presentationDetents([.fraction(0.75)])
                 .presentationDragIndicator(.visible)
+        }
+        .navigationBarBackButtonHidden(true)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // BAGIAN KIRI (LEADING)
+            ToolbarItem(placement: .topBarLeading) {
+                Text("Your measurements")
+                    .font(.heading28Medium)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.leading, 4)
+            }
+                
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showMeasureGuide.toggle() }) {
+                    Image(systemName: "info.circle")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(AppColors.primaryPurple)
+                        .padding(.trailing, 8)
+                }
+            }
         }
     }
 }

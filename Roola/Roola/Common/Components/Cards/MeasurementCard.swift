@@ -167,7 +167,7 @@ struct BodySizeCard: View {
             
             BottomMeasurementRow(
                 label: "Weight",
-                unit: "cm",
+                unit: "kg",
                 value: $weight,
                 isError: isWeightError,
                 isEditing: isEditing
