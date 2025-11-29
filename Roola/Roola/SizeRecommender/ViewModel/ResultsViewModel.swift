@@ -331,7 +331,7 @@ class ResultsViewModel: ObservableObject {
                         message: "\(partName) area will be slightly tight",
                         icon: "exclamationmark.circle.fill",
                         iconForeground: .white,
-                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                        iconBackground: Color(hex: "F2A90F")
                     ))
                 } else if distance >= 2 {
                     issues.append(StatusIssue(
@@ -349,7 +349,7 @@ class ResultsViewModel: ObservableObject {
                         message: "\(partName) will be slightly loose",
                         icon: "exclamationmark.circle.fill",
                         iconForeground: .white,
-                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                        iconBackground: Color(hex: "F2A90F")
                     ))
                 } else if distance >= 2 {
                     issues.append(StatusIssue(
