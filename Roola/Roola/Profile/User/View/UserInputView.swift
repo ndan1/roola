@@ -44,6 +44,11 @@ struct UserInputView: View {
                 }
             }
             .onAppear(perform: loadExistingUserData)
+            .onChange(of: isShowingAIMeasurement) { oldValue, newValue in
+                if newValue == false {
+                    loadExistingUserData()
+                }
+            }
             
             // MARK: - Success Popup Overlay
             if viewModel.showSuccessPopup {
