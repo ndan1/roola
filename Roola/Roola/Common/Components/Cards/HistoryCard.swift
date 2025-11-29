@@ -92,8 +92,8 @@ struct HistoryCard: View {
         switch type {
         case "t_shirt": return "T-Shirt"
         case "blouse": return "Blouse"
-        case "long_sleeved_shirt": return "Long Sleeve"
-        case "short_sleeved_shirt": return "Short Sleeve"
+        case "long_sleeved_shirt": return "Long sleeve"
+        case "short_sleeved_shirt": return "Short sleeve"
         default: return type.capitalized
         }
     }
@@ -102,8 +102,8 @@ struct HistoryCard: View {
         switch preference {
             case "loose": return "Loose"
             case "regular": return "Regular"
-            case "slightly-loose": return "Slightly Loose"
-            case "slightly-tight": return "Slightly Tight"
+            case "slightly-loose": return "Slightly loose"
+            case "slightly-tight": return "Slightly tight"
             case "tight": return "Tight"
             default: return preference.capitalized
         }
