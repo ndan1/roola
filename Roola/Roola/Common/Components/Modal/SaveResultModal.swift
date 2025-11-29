@@ -27,10 +27,22 @@ struct SaveResultModal: View {
     // Cek Kepanjangan
     private var isProductTooLong: Bool { productName.count > charLimit }
     private var isBrandTooLong: Bool { brandName.count > charLimit }
+    
+    private func isValidUrl(_ url: String) -> Bool {
+        let regex = "^(https?://)?(?:www\\.)?([-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6})\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)$"
+        let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
+        return predicate.evaluate(with: url)
+    }
+    
+    private var isLinkInvalid: Bool {
+        let trimmedLink = productLink.trimmingCharacters(in: .whitespaces)
+        if trimmedLink.isEmpty { return false }
+        return !isValidUrl(trimmedLink)
+    }
         
     // Validasi Gabungan (Untuk tombol Save)
     private var isFormValid: Bool {
-        !isProductEmpty && !isBrandEmpty && !isProductTooLong && !isBrandTooLong
+        !isProductEmpty && !isBrandEmpty && !isProductTooLong && !isBrandTooLong && !isLinkInvalid
     }
         
     // 3. Logic Error Message Dinamis
@@ -40,7 +52,15 @@ struct SaveResultModal: View {
         } else if isBrandTooLong {
             return "Brand name max \(charLimit) characters"
         } else {
-            return "Please fill in this field"
+            return "Please fill out this field"
+        }
+    }
+    
+    private var linkErrorMessage: String {
+        if isLinkInvalid {
+           return "Please enter a valid link"
+        } else {
+            return ""
         }
     }
         
@@ -48,6 +68,10 @@ struct SaveResultModal: View {
     // Muncul jika: (Tombol save ditekan DAN ada yang kosong) ATAU (Ada yang kepanjangan)
     private var shouldShowError: Bool {
         (showValidationError && (isProductEmpty || isBrandEmpty)) || (isProductTooLong || isBrandTooLong)
+    }
+    
+    private var shouldShowLinkInvalidError: Bool {
+        showValidationError && isLinkInvalid
     }
     
     var body: some View {
@@ -95,7 +119,7 @@ struct SaveResultModal: View {
                         placeholder: "Product name",
                         isError: (showValidationError && isProductEmpty) || isProductTooLong
                     )
-                    .zIndex(2)
+                    .zIndex((showValidationError && isProductEmpty) || isProductTooLong ? 1 : 0)
                     
                     MiddleSaveInputRow(
                         label: "Brand Name",
@@ -103,28 +127,22 @@ struct SaveResultModal: View {
                         placeholder: "Brand name",
                         isError: (showValidationError && isBrandEmpty) || isBrandTooLong
                     )
-                    .zIndex(1)
+                    .zIndex((showValidationError && isBrandEmpty) || isBrandTooLong ? 1 : 0)
                     
                     BottomSaveInputRow(
                         label: "Item Link",
                         value: $productLink,
-                        placeholder: "Optional"
+                        placeholder: "Optional",
+                        isError: (showValidationError && isLinkInvalid)
                     )
                     
-                    if shouldShowError {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundColor(AppColors.errorRed)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 8)
-                            .padding(.leading, 16)
-                            .transition(.opacity)
-                    }
+                    validationError
+                    
                 }
                 
                 // Buttons
                 RoolaButton(
-                    buttonTitle: "Save",
+                    buttonTitle: "Done",
                     buttonColor: AppColors.primaryPurple,
                     action: {
                         showValidationError = true
@@ -150,19 +168,27 @@ struct BottomSaveInputRow: View {
     let label: String
     @Binding var value: String
     let placeholder: String
+    var isError: Bool = false
     
     var body: some View {
         HStack {
-            Text(label)
-                .font(.body)
-                .frame(width: 120, alignment: .leading)
+            HStack (spacing: 4){
+                Text(label)
+                    .font(.body)
+                if isError {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
+                }
+            }
+            .frame(width: 140, alignment: .leading)
             
             Spacer()
             
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 180)
+                .frame(width: 160)
         }
         .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
@@ -170,7 +196,7 @@ struct BottomSaveInputRow: View {
         .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
         .overlay(
             RoundedCorner(radius: 12, corners: [.bottomLeft, .bottomRight])
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                .stroke(isError ? AppColors.errorRed : Color.gray.opacity(0.2), lineWidth: 1)
         )
     }
 }
@@ -183,16 +209,23 @@ struct TopSaveInputRow: View {
     
     var body: some View {
         HStack {
-            Text(label)
-                .font(.body)
-                .frame(width: 120, alignment: .leading)
+            HStack (spacing: 4){
+                Text(label)
+                    .font(.body)
+                if isError {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
+                }
+            }
+            .frame(width: 140, alignment: .leading)
             
             Spacer()
             
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 180)
+                .frame(width: 160)
         }
         .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
@@ -213,16 +246,23 @@ struct MiddleSaveInputRow: View {
     
     var body: some View {
         HStack {
-            Text(label)
-                .font(.body)
-                .frame(width: 120, alignment: .leading)
+            HStack (spacing: 4){
+                Text(label)
+                    .font(.body)
+                if isError {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.body16Regular)
+                        .foregroundColor(AppColors.errorRed)
+                }
+            }
+            .frame(width: 140, alignment: .leading)
             
             Spacer()
             
             TextField(placeholder, text: $value)
                 .font(.body)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 180)
+                .frame(width: 160)
         }
         .frame(maxWidth: UIScreen.main.bounds.width * 0.75)
         .padding()
@@ -231,6 +271,32 @@ struct MiddleSaveInputRow: View {
             Rectangle()
                 .stroke(isError ? AppColors.errorRed : Color.gray.opacity(0.2), lineWidth: 1)
         )
+    }
+}
+
+private extension SaveResultModal {
+    var validationError: some View {
+        VStack (alignment: .leading, spacing: 0) {
+            if shouldShowError {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(AppColors.errorRed)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+                    .transition(.opacity)
+            }
+            
+            if shouldShowLinkInvalidError {
+                Text(linkErrorMessage)
+                    .font(.caption)
+                    .foregroundColor(AppColors.errorRed)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+                    .transition(.opacity)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 32, alignment: .top)
     }
 }
 
