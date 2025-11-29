@@ -50,6 +50,7 @@ struct CameraTutorialView: View {
                                             .stroke(AppColors.primaryPurple, lineWidth: 1)
                                     )
                             )
+                            .padding(.leading, 6)
                     }
                     Text("Instructions")
                         .font(.heading28Medium)
@@ -87,7 +88,7 @@ struct CameraTutorialView: View {
                     }
                 }
             }
-//            .padding(.top, 10)
+            .padding(.top, 5)
         }
         .sheet(isPresented: $isShowPolicy) {
             CameraTermsView(onContinue: onContinue, isShowPolicy: $isShowPolicy)
@@ -121,6 +122,7 @@ struct CameraTutorialView: View {
                                             .stroke(AppColors.primaryPurple, lineWidth: 1)
                                     )
                             )
+                            .padding(.leading, 6)
                     }
                     
                     // Teks Judul (Disamping Chevron)
