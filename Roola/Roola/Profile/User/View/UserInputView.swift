@@ -47,6 +47,23 @@ struct UserInputView: View {
             .onChange(of: isShowingAIMeasurement) { oldValue, newValue in
                 if newValue == false {
                     loadExistingUserData()
+                    
+                    if let onFinish = onFinish,
+                        let user = existingUsers.first,
+                        user.bust > 0 {
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation {
+                                onFinish()
+                            }
+                        }
+                    }
+                }
+            }
+            
+            .onChange(of: existingUsers) { oldValue, newValue in
+                if !isEditing, let user = newValue.first {
+                    viewModel.loadData(from: user)
                 }
             }
             
