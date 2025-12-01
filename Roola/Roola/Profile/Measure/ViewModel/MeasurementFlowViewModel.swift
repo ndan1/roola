@@ -142,8 +142,8 @@ class MeasurementFlowViewModel: ObservableObject {
 
     func measurementDidFinish(data: MeasurementData, modelContext: ModelContext) async {
         saveOrUpdateUser(with: data, in: modelContext)
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        self.flowState = .capturing
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+//        self.flowState = .capturing
     }
     
     private func saveOrUpdateUser(with data: MeasurementData, in context: ModelContext) {
