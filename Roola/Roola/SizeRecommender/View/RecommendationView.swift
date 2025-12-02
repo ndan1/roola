@@ -5,25 +5,6 @@
 //  Created by Lin Dan Christiano on 04/11/25.
 //
 
-/*
- 
- STRUCTURE OF RecommendationView
- 
- body
- ├── mainContent (VStack)
- │   ├── headerSection
- │   ├── formSection
- │   │   ├── formInputs
- │   │   └── formValidationErrors
- │   ├── uploadSection
- │   │   ├── uploadContent
- │   │   └── uploadValidationError
- │   └── bottomButton
- ├── loadingOverlay
- └── errorModals
- 
-*/
-
 import SwiftUI
 import Vision
 import PhotosUI
@@ -50,24 +31,36 @@ struct RecommendationView: View {
     
     @State private var isAnimationFinished = false
     @State private var timeoutTask: Task<Void, Never>? = nil
-    @State private var showTimeoutAlert = false
+    @State private var showTimeoutModal = false
     @State private var isVisualLoading = false
+    
+    @State private var showReadyScreen = false
     
     var body: some View {
         NavigationStack {
             ZStack {
                 mainContent
-                loadingOverlay
-                errorModals
+                if showReadyScreen {
+                    RecommendationReadyView()
+                        .transition(.identity) // Tidak ada animasi transisi (langsung muncul)
+                        .zIndex(2)
+                }
+                
+                // 2. Tampilkan Loading Overlay jika sedang visual loading
+                if isVisualLoading {
+                    loadingOverlay
+                        .zIndex(3) // Loading paling atas sebelum ready screen muncul
+                }
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // 2. Buat Custom Title di Kiri (Leading)
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Find Your Fit")
+                    Text("Find your fit")
                         .font(.heading28Medium)
                         .foregroundStyle(.primary)
+                        .padding(.leading, 6)
                 }
                 
                 // 3. Tombol Info tetap di Kanan (Trailing)
@@ -77,18 +70,12 @@ struct RecommendationView: View {
                             .resizable()
                             .frame(width: 24, height: 24)
                             .foregroundColor(AppColors.primaryPurple)
+                            .padding(.trailing, 8)
                     }
                 }
             }
-            .toolbar(isVisualLoading ? .hidden : .visible, for: .navigationBar)
-            .toolbar(isVisualLoading ? .hidden : .visible, for: .tabBar)
-            .alert("Request Timeout", isPresented: $showTimeoutAlert) {
-                Button("OK") {
-                    resetProcessingState()
-                }
-            } message: {
-                Text("The request took too long to process. Please try again.")
-            }
+            .toolbar(isVisualLoading || showReadyScreen ? .hidden : .visible, for: .navigationBar)
+            .toolbar(isVisualLoading || showReadyScreen ? .hidden : .visible, for: .tabBar)
             .fullScreenCover(isPresented: $showNoInternetPage) {
                 NoInternetPage(onRetry: {
                     showNoInternetPage = false
@@ -97,6 +84,47 @@ struct RecommendationView: View {
             }
             .animation(.spring(), value: viewModel.isProcessing)
             .animation(.spring(), value: viewModel.showErrorAlert)
+            .fullScreenCover(isPresented: $viewModel.showErrorAlert) {
+                if let error = viewModel.currentError {
+                    OCRErrorModal(
+                        error: error,
+                        onRetry: {
+                            viewModel.resetAllStates()
+                            selectedPhoto = nil
+                            viewModel.selectedImage = nil
+                            isVisualLoading = false
+                            timeoutTask?.cancel()
+                            viewModel.showErrorAlert = false
+                        },
+                        isPresented: $viewModel.showErrorAlert
+                    )
+                    .presentationBackground(.clear)
+                }
+            }
+            
+            .fullScreenCover(isPresented: $showTimeoutModal) {
+                OCRErrorModal(
+                    error: .timeout,
+                    onRetry: {
+                        showTimeoutModal = false
+                        resetProcessingState()
+                    },
+                    isPresented: $showTimeoutModal
+                )
+                .presentationBackground(.clear)
+            }
+            
+            .fullScreenCover(isPresented: $showNoInternetModal) {
+                NoInternetModal(
+                    isPresented: $showNoInternetModal,
+                    onRetry: {
+                        showNoInternetModal = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
+                .presentationBackground(.clear)
+            }
         }
     }
     
@@ -106,12 +134,11 @@ struct RecommendationView: View {
         VStack(spacing: 0) {
 //            headerSection
             Text("Fill your product details to get your best match")
-                .font(.body)
+                .font(.body16Medium)
                 .foregroundColor(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
-                .padding(.top, 10)
             formSection
             uploadSection
             Spacer()
@@ -150,6 +177,12 @@ struct RecommendationView: View {
         .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
             handleNetworkChange(oldValue: oldValue, newValue: newValue)
         }
+        .onChange(of: showResults) { oldValue, newValue in
+            // Ketika user kembali dari ResultsView (showResults berubah dari true ke false)
+            if oldValue == true && newValue == false {
+                resetAllFields()
+            }
+        }
         .fullScreenCover(isPresented: $showResults) {
             NavigationStack {
                 resultsView
@@ -164,56 +197,19 @@ struct RecommendationView: View {
     
     @ViewBuilder
     private var loadingOverlay: some View {
-        if isVisualLoading {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .transition(.opacity)
-            
-            ProgressLoading(
-                title: "Hang Tight...",
-                subtitle: "We're tailoring this for you.",
-                duration: 4.0,
-                onFinish: {
-                    handleAnimationFinished()
-                }
-            )
-            .zIndex(1)
-            .transition(.scale.combined(with: .opacity))
-        }
-    }
-    
-    // MARK: - Error Modals
-    
-    @ViewBuilder
-    private var errorModals: some View {
-        Group {
-            if viewModel.showErrorAlert, let error = viewModel.currentError {
-                OCRErrorModal(
-                    error: error,
-                    onRetry: {
-                        viewModel.resetAllStates()
-                        selectedPhoto = nil
-                        viewModel.selectedImage = nil
-                        isVisualLoading = false
-                        timeoutTask?.cancel()
-                    },
-                    isPresented: $viewModel.showErrorAlert
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showErrorAlert)
+        Color.black.opacity(0.5)
+            .ignoresSafeArea()
+            .transition(.opacity)
+        
+        ProgressLoading(
+            title: "Hang Tight...",
+            subtitle: "We're tailoring this for you.",
+            duration: 4.0,
+            onFinish: {
+                handleAnimationFinished()
             }
-            
-            if showNoInternetModal {
-                NoInternetModal(
-                    isPresented: $showNoInternetModal,
-                    onRetry: {
-                        showNoInternetModal = false
-                    }
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showNoInternetModal)
-            }
-        }
+        )
+        .transition(.scale.combined(with: .opacity))
     }
     
     // MARK: - Results & Fit Guide Views
@@ -248,33 +244,36 @@ struct RecommendationView: View {
     
     private var formInputs: some View {
         VStack(spacing: 0) {
+            // Clothing Type Row dengan border individual
             clothingTypeRow
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12, corners: [.topLeft, .topRight])
+                .overlay(
+                    RoundedCorner(radius: 12, corners: [.topLeft, .topRight])
+                        .stroke(showClothingTypeError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
             
-            Rectangle()
-                .fill(AppColors.grayScale400.opacity(0.36))
-                .frame(height: 0.5)
-            
+            // Fit Preference Row dengan border individual
             fitPreferenceRow
+                .background(AppColors.primaryWhite.opacity(0.5))
+                .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
+                .overlay(
+                    RoundedCorner(radius: 12, corners: [.bottomLeft, .bottomRight])
+                        .stroke(showFitPreferenceError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                )
         }
-        .background(AppColors.primaryWhite.opacity(0.5))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
-        )
     }
     
     @ViewBuilder
     private var formValidationErrors: some View {
         if showClothingTypeError || showFitPreferenceError {
             HStack {
-                Text("• Please fill in this field")
-                    .font(.body14Regular)
-                    .foregroundColor(.red)
+                Text("Please fill out this field")
+                    .font(.caption)
+                    .foregroundColor(AppColors.errorRed)
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
     
@@ -286,10 +285,10 @@ struct RecommendationView: View {
             Spacer()
             
             Menu {
-                Button("T-Shirt") { viewModel.clothingType = "t_shirt" }
                 Button("Blouse") { viewModel.clothingType = "blouse" }
-                Button("Long Sleeved Shirt") { viewModel.clothingType = "long_sleeved_shirt" }
-                Button("Short Sleeved Shirt") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("T-shirt") { viewModel.clothingType = "t_shirt" }
+                Button("Short sleeve") { viewModel.clothingType = "short_sleeved_shirt" }
+                Button("Long sleeve") { viewModel.clothingType = "long_sleeved_shirt" }
             } label: {
                 HStack(spacing: 4) {
                     Text(displayClothingType)
@@ -313,9 +312,7 @@ struct RecommendationView: View {
             
             Menu {
                 Button("Tight") { fitPreference = "tight" }
-                Button("Slim") { fitPreference = "slim" }
                 Button("Standard") { fitPreference = "standard" }
-                Button("Relaxed") { fitPreference = "relaxed" }
                 Button("Loose") { fitPreference = "loose" }
             } label: {
                 HStack(spacing: 4) {
@@ -335,16 +332,29 @@ struct RecommendationView: View {
     
     private var uploadSection: some View {
         VStack(spacing: 0) {
+            VStack (alignment: .leading) {
+                HStack(spacing: 0) {
+                    Text("*")
+                        .font(.caption14Italic)
+                        .foregroundStyle(Color.red)
+                    Text("Currently only available for woman’s top")
+                        .font(.caption14Italic)
+                        .foregroundStyle(AppColors.grayScale300)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 4)
             uploadContent
             uploadValidationError
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
+       
     }
     
     private var uploadContent: some View {
         VStack(spacing: 16) {
-            Text("Upload size chart screenshot")
+            Text("Upload product's size chart screenshot")
                 .font(.body)
                 .foregroundColor(AppColors.grayScale400)
             
@@ -358,12 +368,11 @@ struct RecommendationView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .padding(.horizontal, 24)
         .background(AppColors.primaryWhite.opacity(0.5))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(AppColors.grayScale400.opacity(0.36), lineWidth: 1)
+                .stroke(showImageError ? AppColors.errorRed : AppColors.grayScale400.opacity(0.36), lineWidth: 1)
         )
     }
     
@@ -371,13 +380,12 @@ struct RecommendationView: View {
     private var uploadValidationError: some View {
         if showImageError {
             HStack {
-                Text("• Please fill in this field")
+                Text("Please fill out this field")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(AppColors.errorRed)
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
     
@@ -399,7 +407,7 @@ struct RecommendationView: View {
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)
-                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+                    .stroke(AppColors.grayScale300, lineWidth: 1)
             )
         }
         .onChange(of: selectedPhoto) { oldValue, newValue in
@@ -420,12 +428,11 @@ struct RecommendationView: View {
                 viewModel.selectedImage = nil
                 selectedPhoto = nil
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(AppColors.primaryWhite)
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                    .font(.system(size: 32))
                     .padding(10)
-                    .background(AppColors.grayScale400.opacity(0.6))
-                    .clipShape(Circle())
             }
             .padding(6)
         }
@@ -442,7 +449,8 @@ struct RecommendationView: View {
             }
         )
         .disabled(viewModel.isProcessing || viewModel.isCallingAPI)
-        .padding(.horizontal, 24)
+//        .padding(.horizontal, 24)
+        .frame(width: UIScreen.main.bounds.width * 0.8)
         .padding(.bottom, 110)
     }
     
@@ -462,8 +470,18 @@ struct RecommendationView: View {
     private func checkAndShowResults() {
         if viewModel.serverResponse != nil && isAnimationFinished {
             timeoutTask?.cancel()
-            isVisualLoading = false
-            showResults = true
+            withAnimation(.none) {
+                isVisualLoading = false // Overlay hilang
+                showReadyScreen = true  // Ready screen muncul
+            }
+            Task {
+                try? await Task.sleep(nanoseconds: 6 * 1_000_000_000)
+                
+                await MainActor.run {
+                    showReadyScreen = false
+                    showResults = true
+                }
+            }
         }
     }
     
@@ -471,11 +489,11 @@ struct RecommendationView: View {
         timeoutTask?.cancel()
         
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 7 * 1_000_000_000)
             
             if !Task.isCancelled {
                 await MainActor.run {
-                    if !showResults {
+                    if !showResults && !showReadyScreen { // Tambahkan check showReadyScreen
                         handleTimeout()
                     }
                 }
@@ -488,8 +506,9 @@ struct RecommendationView: View {
 //        resetProcessingState()
         viewModel.resetAllStates()
         isVisualLoading = false
+        showReadyScreen = false
         isAnimationFinished = false
-        showTimeoutAlert = true
+        showTimeoutModal = true
     }
     
     private func resetProcessingState() {
@@ -515,6 +534,13 @@ struct RecommendationView: View {
     
     private func handleNetworkChange(oldValue: Bool, newValue: Bool) {
         if !newValue && (viewModel.isProcessing || viewModel.isCallingAPI) {
+            
+            timeoutTask?.cancel()
+            timeoutTask = nil
+            
+            isVisualLoading = false
+            showReadyScreen = false
+            
             showNoInternetPage = true
         }
     }
@@ -563,8 +589,8 @@ struct RecommendationView: View {
         switch viewModel.clothingType {
         case "t_shirt": return "T-Shirt"
         case "blouse": return "Blouse"
-        case "long_sleeved_shirt": return "Long Sleeved Shirt"
-        case "short_sleeved_shirt": return "Short Sleeved Shirt"
+        case "long_sleeved_shirt": return "Long sleeve"
+        case "short_sleeved_shirt": return "Short sleeve"
         default: return "Select clothing type"
         }
     }
@@ -585,6 +611,7 @@ struct RecommendationView: View {
         selectedPhoto = nil
         viewModel.clothingType = ""
         fitPreference = ""
+        showReadyScreen = false
         viewModel.resetAllStates()
     }
 }

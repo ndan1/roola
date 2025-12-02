@@ -6,18 +6,27 @@
 //
 
 import SwiftUI
+import Lottie
 
 struct NoInternetPage: View {
     var onRetry: (() -> Void)?
+    @State private var animationTrigger = false
+    
     var body: some View {
         ZStack {
             FirstGradientBackground()
             
             VStack {
                 Spacer()
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.system(size: 96))
-                    .foregroundStyle(AppColors.primaryPurple)
+                LottieView {
+                    try await DotLottieFile.named("no-internet")
+                }
+                .configure({ lottieAnimationView in
+                    lottieAnimationView.contentMode = .scaleAspectFill
+                    lottieAnimationView.shouldRasterizeWhenIdle = true
+                })
+                .playbackMode(.playing(.toProgress(1, loopMode: .playOnce)))
+                .id(animationTrigger)
                 Text("No Internet")
                     .font(.heading28Medium)
                     .foregroundStyle(Color.red)

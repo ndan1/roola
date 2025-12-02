@@ -12,6 +12,7 @@ struct MeasurementField: View {
     var unit: String
     @Binding var value: Int?
     var isError: Bool = false
+    var isEditing: Bool = true
     
     @FocusState private var isFocused: Bool
     
@@ -20,7 +21,8 @@ struct MeasurementField: View {
             // LEFT SECTION
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.body16Regular)
+                    .font(.body16Medium)
+                    .foregroundColor(AppColors.primaryBlack)
                 
                 if isError {
                     Image(systemName: "exclamationmark.circle")
@@ -33,12 +35,22 @@ struct MeasurementField: View {
             
             // RIGHT SECTION (tappable)
             HStack(spacing: 4) {
-                TextField("", value: $value, format: .number)
-                    .font(.body16Regular)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .focused($isFocused)
-                    .fontWeight(.medium)
+                if isEditing {
+                    TextField("", value: $value, format: .number)
+                        .font(.body16Regular)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .focused($isFocused)
+                        .fontWeight(.medium)
+                        .frame(height: 20)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("\(value ?? 0)")
+                        .font(.body16Regular)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.primaryBlack)
+                        .frame(height: 20)
+                }
 
                 Text(unit)
                     .font(.body16Regular)
@@ -46,13 +58,17 @@ struct MeasurementField: View {
                     .fontWeight(.medium)
             }
             .frame(width: 120, alignment: .trailing)
-            .contentShape(Rectangle())      // Enlarges tappable area
+            .contentShape(Rectangle())
             .onTapGesture {
-                isFocused = true            // Makes tapping “cm” focus the TextField
+                if isEditing {
+                    isFocused = true
+                }
             }
         }
-        .padding()
-        .background(AppColors.primaryWhite.opacity(0.8))
+        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+        .background(isEditing ? AppColors.primaryWhite.opacity(0.8) : AppColors.primaryPurple.opacity(0.1))
     }
 }
 
@@ -62,11 +78,12 @@ struct MeasurementRow: View {
     var unit: String
     @Binding var value: Int?
     var isError: Bool = false
+    var isEditing: Bool = true
 
     var body: some View {
-        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError, isEditing: isEditing)
             .overlay(
-                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+                Rectangle().stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 0.5)
             )
     }
 }
@@ -77,14 +94,15 @@ struct TopMeasurementRow: View {
     var unit: String
     @Binding var value: Int?
     var isError: Bool = false
+    var isEditing: Bool = true
     var cornerRadius: CGFloat = 12
 
     var body: some View {
-        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError, isEditing: isEditing)
             .cornerRadius(cornerRadius, corners: [.topLeft, .topRight])
             .overlay(
                 RoundedCorner(radius: cornerRadius, corners: [.topLeft, .topRight])
-                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 0.5)
             )
     }
 }
@@ -111,14 +129,15 @@ struct BottomMeasurementRow: View {
     var unit: String
     @Binding var value: Int?
     var isError: Bool = false
+    var isEditing: Bool = true
     var cornerRadius: CGFloat = 12
 
     var body: some View {
-        MeasurementField(label: label, unit: unit, value: $value, isError: isError)
+        MeasurementField(label: label, unit: unit, value: $value, isError: isError, isEditing: isEditing)
             .cornerRadius(cornerRadius, corners: [.bottomLeft, .bottomRight])
             .overlay(
                 RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight])
-                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 1)
+                    .stroke(isError ? AppColors.errorRed : AppColors.grayScale300, lineWidth: 0.5)
             )
     }
 }
@@ -137,24 +156,39 @@ struct BottomMeasurementRow: View {
         @State private var botErrValue: Int? = 40
         
         var body: some View {
-            VStack(spacing: 30) {
-                
-                VStack(spacing: 0) {
-                    TopMeasurementRow(label: "Chest", unit: "cm" ,value: $topValue)
-                    Divider()
-                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
-                    Divider()
-                    MeasurementRow(label: "Waist", unit: "cm" ,value: $midValue)
-                    Divider()
-                    BottomMeasurementRow(label: "Arm Length", unit: "cm" ,value: $botValue)
+            ScrollView {
+                VStack(spacing: 30) {
+                    
+                    // Editing Mode
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Editing Mode (Background Putih)")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        
+                        VStack(spacing: 0) {
+                            TopMeasurementRow(label: "Chest", unit: "cm", value: $topValue, isEditing: true)
+                            MeasurementRow(label: "Waist", unit: "cm", value: $midValue, isEditing: true)
+                            MeasurementRow(label: "Arm Length", unit: "cm", value: $midValue, isEditing: true)
+                            BottomMeasurementRow(label: "Torso", unit: "cm", value: $botValue, isEditing: true)
+                        }
+                    }
+                    
+                    // Non-Editing Mode
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Non-Editing Mode (Background Ungu)")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        
+                        VStack(spacing: 0) {
+                            TopMeasurementRow(label: "Chest", unit: "cm", value: $topValue, isEditing: false)
+                            MeasurementRow(label: "Waist", unit: "cm", value: $midValue, isEditing: false)
+                            MeasurementRow(label: "Arm Length", unit: "cm", value: $midValue, isEditing: false)
+                            BottomMeasurementRow(label: "Torso", unit: "cm", value: $botValue, isEditing: false)
+                        }
+                    }
                 }
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(AppColors.grayScale300, lineWidth: 1)
-                )
+                .padding()
             }
-            .padding()
         }
     }
     

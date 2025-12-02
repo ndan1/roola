@@ -24,9 +24,10 @@ struct FitGuideView: View {
                 Button(action: {
                     showFitGuide = false
                 }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.gray)
-                        .font(.body16Regular)
+                    Image(systemName: "xmark.circle.fill")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(Color.gray.opacity(0.8), Color.gray.opacity(0.1))
+                        .font(.system(size: 32))
                 }
                 .padding(.trailing, 20),
                 alignment: .trailing

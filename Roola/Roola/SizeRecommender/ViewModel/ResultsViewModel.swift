@@ -15,7 +15,8 @@ class ResultsViewModel: ObservableObject {
     @Published var showSaveModal = false
     @Published var showSuccessModal = false
     @Published var productName = ""
-    @Published var shopName = ""
+    @Published var brandName = ""
+    @Published var productLink = ""
     
     // MARK: - Dependencies
     private var modelContext: ModelContext?
@@ -100,12 +101,15 @@ class ResultsViewModel: ObservableObject {
             return
         }
         
+        let linkToSave = productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : productLink
+        
         // Create history entry
         let history = MeasurementHistory(
             productName: productName,
-            shopName: shopName,
+            brandName: brandName,
+            productLink: linkToSave,
             clothingType: recommendationViewModel.clothingType,
-            selectedFitPreference: initialFitPreference,
+            selectedFitPreference: currentFitPreference,
             recommendationsJSON: recommendationsJSON,
             userBust: userMeasurements.bust,
             userWaist: userMeasurements.waist,
@@ -141,7 +145,8 @@ class ResultsViewModel: ObservableObject {
     
     func resetForm() {
         productName = ""
-        shopName = ""
+        brandName = ""
+        productLink = ""
     }
     
     // MARK: - Body Part Visualization Logic
@@ -325,14 +330,14 @@ class ResultsViewModel: ObservableObject {
                         part: "\(partName.lowercased())-tight-1",
                         message: "\(partName) area will be slightly tight",
                         icon: "exclamationmark.circle.fill",
-                        iconForeground: .black,
-                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                        iconForeground: .white,
+                        iconBackground: Color(hex: "F2A90F")
                     ))
                 } else if distance >= 2 {
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-tight-2",
                         message: "\(partName) area will be too tight",
-                        icon: "xmark.circle.fill",
+                        icon: "x.circle.fill",
                         iconForeground: .white,
                         iconBackground: Color.red
                     ))
@@ -343,15 +348,15 @@ class ResultsViewModel: ObservableObject {
                         part: "\(partName.lowercased())-loose-1",
                         message: "\(partName) will be slightly loose",
                         icon: "exclamationmark.circle.fill",
-                        iconForeground: .black,
-                        iconBackground: Color(hex: "FEC901").opacity(0.5)
+                        iconForeground: .white,
+                        iconBackground: Color(hex: "F2A90F")
                     ))
                 } else if distance >= 2 {
                     issues.append(StatusIssue(
                         part: "\(partName.lowercased())-loose-2",
                         message: "\(partName) area will be very loose",
                         icon: "arrow.left.arrow.right.circle.fill",
-                        iconForeground: .black,
+                        iconForeground: .white,
                         iconBackground: Color(hex: "A7DCFF")
                     ))
                 }

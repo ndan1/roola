@@ -39,9 +39,11 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .ai:
                     ZStack {
-                        CameraTutorialView {
-                            showBodySizeModal = true
-                        }
+                        CameraTutorialView (
+                            // NEW FLOW: Check camera permission FIRST
+                            onContinue: { showBodySizeModal = true },
+                            showBodySizeModal: $showBodySizeModal
+                        )
                         
                         if showBodySizeModal {
                             SaveBodySizeModal(
@@ -55,10 +57,14 @@ struct OnboardingFlowView: View {
                             .zIndex(1)
                         }
                     }
-                    // Tidak perlu navigationBarHidden(true) jika ingin navbar muncul di tutorial
+                    .toolbar(showBodySizeModal ? .hidden : .visible, for: .navigationBar)
                     
                 case .manual:
-                    UserInputView()
+                    UserInputView(onFinish: {
+                        withAnimation {
+                            isOnboardingComplete = true
+                        }
+                    })
                 }
             }
             .navigationDestination(for: FlowStep.self) { step in
@@ -66,15 +72,21 @@ struct OnboardingFlowView: View {
                 case .capture:
                     MeasurementFlowView(
                         onFlowDidFinish: {
-                            // Tidak perlu melakukan apa-apa disini secara manual,
-                            // Karena begitu MeasurementFlowView menyimpan data (bust/waist),
-                            // ContentView akan otomatis mendeteksi user.isOnboardingFinished = true
-                            // dan mengganti halaman.
+                            withAnimation {
+                                isOnboardingComplete = true
+                            }
                         },
                         onSwitchToManual: {
                             path.removeLast(path.count)
                             path.append(OnboardingStep.manual)
-                        })
+                        },
+                        onRetake: {
+                            // Logic: Pop the current view (Capture) to return to previous step
+                            if !path.isEmpty {
+                                path.removeLast()
+                            }
+                        }
+                    )
                     .navigationBarHidden(true)
                     
                 case .permissionDenied:
@@ -88,15 +100,27 @@ struct OnboardingFlowView: View {
                 }
             }
         }
+        // Reset temp data ketika modal ditutup
+        .onChange(of: showBodySizeModal) { oldValue, newValue in
+            if !newValue {
+                resetTempData()
+            }
+        }
     }
+    
+    // MARK: - Helper Functions
+    
+    // Reset temporary data
+    private func resetTempData() {
+        tempHeight = nil
+        tempWeight = nil
+    }
+    
     // MARK: - Helper Save untuk Onboarding
     private func saveBodyDataAndProceed() {
         let user = users.first ?? User(waist: 0)
         user.height = tempHeight ?? 0
         user.weight = tempWeight ?? 0
-        
-        // Saat ini disimpan, 'user.isOnboardingFinished' MASIH FALSE (karena bust/waist 0).
-        // Jadi ContentView TIDAK AKAN pindah halaman. Aman.
         
         if users.isEmpty {
             modelContext.insert(user)
@@ -104,10 +128,18 @@ struct OnboardingFlowView: View {
         
         try? modelContext.save()
         
+        if let w = tempWeight { UserDefaults.standard.setValue(w, forKey: "temp_user_weight") }
+        if let h = tempHeight { UserDefaults.standard.setValue(h, forKey: "temp_user_height") }
+        
+        print("✅ Temp Data Saved: Weight \(tempWeight ?? 0), Height \(tempHeight ?? 0)")
+        
+        // 2. Setelah simpan, baru cek Permission Kamera
         checkCameraPermission { granted in
             if granted {
+                // Izin diberikan -> Lanjut ke Capture
                 path.append(FlowStep.capture)
             } else {
+                // Izin ditolak -> Ke halaman Denied
                 path.append(FlowStep.permissionDenied)
             }
         }

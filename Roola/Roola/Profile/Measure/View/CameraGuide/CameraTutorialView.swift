@@ -9,6 +9,8 @@ import SwiftUI
 
 struct CameraTutorialView: View {
     let onContinue: () -> Void
+    @Binding var showBodySizeModal: Bool
+    @State private var canProceed = false
     @State var isShowPolicy: Bool = false
     @Environment(\.dismiss) private var dismiss
 
@@ -31,56 +33,62 @@ struct CameraTutorialView: View {
         let width = UIScreen.main.bounds.width
 
         VStack(alignment: .center, spacing: 0) {
-            
-                VStack (alignment: .center, spacing: width * 0.01) {
-                    ScrollView {
-                    ForEach(tutorialSteps) { step in
-                        VStack(alignment:.leading, spacing: 5) {
-                            Text(step.title)
-                                .font(.body16Regular)
-                            
-                            HStack(spacing: width * 0.125) {
-                                Image(step.image1)
-                                    .resizable()
-                                    .frame(width: 112, height: 133)
-                                
-                                Image(step.image2)
-                                    .resizable()
-                                    .frame(width: 112, height: 133)
-                            }
-                        }
-                        .padding(.bottom, 20)
+            if showBodySizeModal {
+                HStack(spacing: 20) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 32)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                    .fill(AppColors.primaryPurple)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
+                            )
+                            .padding(.leading, 6)
                     }
-                    
-                    HStack {
-                        Image(systemName: "speaker.wave.2.fill")
-                            .foregroundStyle(Color(AppColors.primaryPurple))
-                        Text("Turn your volume on for better experience")
-                            .font(.subheadline)
-                    }
+                    Text("Instructions")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
                     
                     Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 5)
+            }
+            VStack (alignment: .center, spacing: width * 0.01) {
+                ScrollView {
+                    CarouselGuideView(isLastPageReached: $canProceed)
+                        .frame(height: 600)
                     
                     Button {
                         isShowPolicy = true
                     } label: {
                         Text("Learn more about data policy")
                             .underline()
-                            .font(.footnote)
+                            .font(.body16Regular)
                             .foregroundStyle(Color(AppColors.primaryPurple))
                     }
                     .padding(.bottom, 8)
                     
                     VStack{
-                        RoolaButton(buttonTitle: "Continue",
-                                    buttonColor: AppColors.primaryButton,
-                                    action: onContinue)
-                        .frame(width: UIScreen.main.bounds.width * 0.8)
-                        .padding(.bottom, 15)
+                        if canProceed{
+                            RoolaButton(buttonTitle: "Continue",
+                                        buttonColor: AppColors.primaryButton,
+                                        action: onContinue)
+                            .frame(width: UIScreen.main.bounds.width * 0.8)
+                            .padding(.bottom, 15)
+                        }
                     }
                 }
             }
-                .padding(.top, 10)
+            .padding(.top, 5)
         }
         .sheet(isPresented: $isShowPolicy) {
             CameraTermsView(onContinue: onContinue, isShowPolicy: $isShowPolicy)
@@ -91,8 +99,8 @@ struct CameraTutorialView: View {
                 
         // MARK: - SETUP NAVIGATION BAR
         .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline) // Agar font besar seperti RoolaHeader
-        .navigationBarBackButtonHidden(true)   // Sembunyikan back button biru default
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 // 2. Gabungkan Tombol Back & Judul dalam HStack
@@ -103,13 +111,18 @@ struct CameraTutorialView: View {
                         Image(systemName: "chevron.left.circle.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 24)
+                            .frame(height: 32)
                             .foregroundColor(AppColors.primaryWhite)
                             .background(
                                 Circle()
                                     .fill(AppColors.primaryPurple)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
                             )
+                            .padding(.leading, 6)
                     }
                     
                     // Teks Judul (Disamping Chevron)
@@ -126,5 +139,5 @@ struct CameraTutorialView: View {
 }
 
 #Preview {
-    CameraTutorialView(onContinue: {})
+    CameraTutorialView(onContinue: {}, showBodySizeModal: .constant(false))
 }

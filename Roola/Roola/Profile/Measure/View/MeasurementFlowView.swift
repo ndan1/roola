@@ -6,33 +6,34 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct MeasurementFlowView: View {
-    // 1. Create and observe the ViewModel
     @StateObject private var viewModel = MeasurementFlowViewModel()
+    
+    // 1. Access Model Context and Query User
     @Environment(\.modelContext) private var modelContext
+    @Query private var users: [User]
     
     @State private var showSuccessPopup = false
 
-    // --- ADD THIS CALLBACK ---
     var onFlowDidFinish: () -> Void
-    
-    // --- THIS CALLBACK IS FROM OUR PREVIOUS CHANGE ---
     var onSwitchToManual: () -> Void
+    // New closure to handle navigation pop
+    var onRetake: () -> Void
 
     var body: some View {
         ZStack {
-            // 2. Switch on the ViewModel's published state
             switch viewModel.flowState {
             case .capturing:
-                BodyPoseCaptureView { videoURL, measurements in
-                    // 3. Call the ViewModel method instead of setting state
-                    viewModel.didCaptureVideo(videoURL: videoURL)
+                BodyPoseCaptureView { image, measurements in
+                    viewModel.didCaptureImage(image)
                 }
                 .ignoresSafeArea()
                 
-            case .loading(let videoURL):
-                loadingView(videoURL: videoURL)
+            case .loading(let image):
+                // 2. Pass image AND height to loading view
+                loadingView(image: image)
                 
             case .success(let data):
                 successResultView(data: data)
@@ -48,24 +49,34 @@ struct MeasurementFlowView: View {
         }
     }
     
-    /// The loading view shown after capture. It automatically starts the API call.
-    private func loadingView(videoURL: URL) -> some View {
-        VStack(spacing: 20) {
-            GradientCircularLoader()
-            
-            Text("Getting your measurements...")
-                .font(.body18Medium)
-                .bold()
-                .padding(.top, 10)
+    private func loadingView(image: UIImage) -> some View {
+            VStack(spacing: 20) {
+                GradientCircularLoader()
+                
+                Text("Getting your measurements..")
+                    .font(.heading22Medium)
+                    .bold()
+                    .padding(.top, 10)
+            }
+            .padding()
+            .task {
+                // UPDATED LOGIC:
+                // 1. Try to get height from UserDefaults (Temp)
+                // 2. If 0/nil, Fallback to SwiftData User
+                // 3. If missing, default to 170
+                
+                let tempHeight = UserDefaults.standard.integer(forKey: "temp_user_height")
+                let existingHeight = users.first?.height ?? 0
+                
+                let userHeight = Double(tempHeight > 0 ? tempHeight : (existingHeight > 0 ? existingHeight : 170))
+                
+                print("📏 Using Height for API: \(userHeight)")
+
+                // 4. Call VM with both image and height
+                await viewModel.startMeasurementTask(image: image, userHeight: userHeight)
+            }
         }
-        .padding()
-        .task {
-            // 3. Call the ViewModel's async task
-            await viewModel.startMeasurementTask(url: videoURL)
-        }
-    }
     
-    /// The view to show if the API call fails
     private func errorView(message: String) -> some View {
         ZStack(alignment: .bottom) {
             VStack {
@@ -79,7 +90,8 @@ struct MeasurementFlowView: View {
                     buttonTitle: "Retake",
                     buttonColor: AppColors.primaryPurple,
                     action: {
-                        // 3. Call the ViewModel method
+                        // Note: You can also use onRetake() here if you want
+                        // error retries to pop back to container as well.
                         viewModel.retryMeasurement()
                     }
                 )
@@ -89,8 +101,6 @@ struct MeasurementFlowView: View {
                     buttonTitle: "Input Manually",
                     buttonColor: AppColors.primaryWhite,
                     action: {
-                        // --- NOW CALLS THE CALLBACK ---
-                        // In this new flow, this will just dismiss the modal.
                         onSwitchToManual()
                     }
                 )
@@ -102,7 +112,6 @@ struct MeasurementFlowView: View {
         .background(Color(.systemBackground))
     }
     
-    /// The success animation view
     private func successAnimationView() -> some View {
         VStack(spacing: 20) {
             SuccesState(label: "Your measurement result is ready")
@@ -110,37 +119,40 @@ struct MeasurementFlowView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
         .task {
-            // 3. Call the ViewModel method
             await viewModel.successAnimationDidFinish()
         }
     }
     
-    
     private func successResultView(data: MeasurementData) -> some View {
-        MeasurementResultView(
+        let currentUserWeight = users.first?.weight ?? UserDefaults.standard.integer(forKey: "temp_user_weight")
+        
+        return MeasurementResultView(
             data: data,
+            userWeight: currentUserWeight,
             onDone: { withAnimation { showSuccessPopup = true } },
-            onBack: { viewModel.retryMeasurement() },
+            // UPDATED: Call the external onRetake closure to pop the view
+            onBack: { onRetake() },
             onInfo: { print("info")}
         )
         .overlay {
             if showSuccessPopup {
-                SuccessPopupView {
-                    // called after the 2‑second delay
-                    withAnimation { showSuccessPopup = false }
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    SuccessPopupView(onDismiss: {})
                 }
+                .transition(.opacity)
+                .zIndex(1)
                 .task {
-                    // 1. Save immediately
+                    // MARK: - LOGIC FIX
+                    
+                    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 Detik
+                    
                     await viewModel.measurementDidFinish(data: data, modelContext: modelContext)
                     
-                    // 2. Wait 2 seconds → then auto‑dismiss
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
                     await MainActor.run {
                         withAnimation { showSuccessPopup = false }
-                        
-                        // --- CALL THE NEW CALLBACK HERE ---
-                        // This will tell the parent (CameraFlowContainerView)
-                        // to dismiss itself.
                         onFlowDidFinish()
                     }
                 }
@@ -151,9 +163,9 @@ struct MeasurementFlowView: View {
 
 #Preview {
     MeasurementFlowView(
-        // --- UPDATE PREVIEW ---
         onFlowDidFinish: { print("Flow Finished") },
-        onSwitchToManual: { print("Switch to Manual") }
+        onSwitchToManual: { print("Switch to Manual") },
+        onRetake: { print("Pop Navigation") }
     )
     .modelContainer(for: User.self, inMemory: true)
 }

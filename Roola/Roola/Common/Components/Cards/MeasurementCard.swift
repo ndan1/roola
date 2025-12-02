@@ -143,9 +143,6 @@ struct YourMeasurementView: View {
     }
 }
 
-// ... Your MeasurementsCard, MeasurementRow, TopMeasurementRow,
-// ... and BottomMeasurementRow structs would be here ...
-
 struct BodySizeCard: View {
     
     @Binding var height: Int?
@@ -154,13 +151,27 @@ struct BodySizeCard: View {
     var isHeightError: Bool
     var isWeightError: Bool
     var hasAnyError: Bool
+    var isEditing: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
             
-            TopMeasurementRow(label: "Height", unit: "cm", value: $height, isError: isHeightError)
-                .zIndex(isHeightError ? 1 : 0)
-            BottomMeasurementRow(label: "Weight", unit: "cm", value: $weight, isError: isWeightError)
+            TopMeasurementRow(
+                label: "Height",
+                unit: "cm",
+                value: $height,
+                isError: isHeightError,
+                isEditing: isEditing
+            )
+            .zIndex(isHeightError ? 1 : 0)
+            
+            BottomMeasurementRow(
+                label: "Weight",
+                unit: "kg",
+                value: $weight,
+                isError: isWeightError,
+                isEditing: isEditing
+            )
         }
     }
 }
@@ -178,24 +189,45 @@ struct MeasurementsCard: View {
     var isArmLengthError: Bool
     var isTorsoLengthError: Bool
     var hasAnyError: Bool
+    var isEditing: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
             
-            TopMeasurementRow(label: "Chest", unit:"cm", value: $chest, isError: isChestError)
-                .zIndex(isChestError ? 1 : 0)
+            TopMeasurementRow(
+                label: "Chest",
+                unit:"cm",
+                value: $chest,
+                isError: isChestError,
+                isEditing: isEditing
+            )
+            .zIndex(isChestError ? 1 : 0)
             
+            MeasurementRow(
+                label: "Waist",
+                unit:"cm",
+                value: $waist,
+                isError: isWaistError,
+                isEditing: isEditing
+            )
+            .zIndex(isWaistError ? 1 : 0)
             
+            MeasurementRow(
+                label: "Arm length",
+                unit:"cm",
+                value: $armLength,
+                isError: isArmLengthError,
+                isEditing: isEditing
+            )
+            .zIndex(isArmLengthError ? 1 : 0)
             
-            MeasurementRow(label: "Waist", unit:"cm", value: $waist, isError: isWaistError)
-                .zIndex(isWaistError ? 1 : 0)
-            
-            
-            MeasurementRow(label: "Arm length", unit:"cm", value: $armLength, isError: isArmLengthError)
-                .zIndex(isArmLengthError ? 1 : 0)
-            
-            
-            BottomMeasurementRow(label: "Torso length", unit:"cm", value: $torsoLength, isError: isTorsoLengthError)
+            BottomMeasurementRow(
+                label: "Torso length",
+                unit:"cm",
+                value: $torsoLength,
+                isError: isTorsoLengthError,
+                isEditing: isEditing
+            )
         }
     }
 }

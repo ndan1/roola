@@ -117,6 +117,11 @@ class RecommendationViewModel: ObservableObject {
                 await MainActor.run {
                     handleError(error)
                 }
+            } catch let urlError as URLError where urlError.code == .timedOut {
+                await MainActor.run {
+                    handleError(OCRError.timeout)
+                    print("❌ Request timeout error")
+                }
             } catch {
                 await MainActor.run {
                     handleError(OCRError.recognitionFailed)

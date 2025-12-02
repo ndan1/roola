@@ -28,7 +28,7 @@ struct EmptyHistoryView: View {
                 .playbackMode(.playing(.toProgress(1, loopMode: .playOnce)))
                 .id(animationTrigger)
                 
-                .padding(.top, -92)
+                .padding(.top, -200)
             
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
@@ -47,7 +47,7 @@ struct EmptyHistoryView: View {
                     
                     Spacer()
                 }
-                .padding(.top, -192)
+                .padding(.top, -200)
             }
         }
         .onAppear {

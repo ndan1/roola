@@ -11,94 +11,153 @@ import SwiftData
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
     
+    @State private var path = NavigationPath()
+    
     @Query(sort: \MeasurementHistory.createdAt, order: .reverse) private var allHistories: [MeasurementHistory]
     
     @State private var showSortSheet = false
     @State private var selectedSort = "Last 7 days"
+    @State private var showFilterSheet = false
+    @State private var searchText = ""
+    
+    // FILTER STATES
+    @State private var selectedTimeRange = "All Time"
+    @State private var selectedClothesTypes: Set<String> = []
     
     private var filteredHistories: [MeasurementHistory] {
         let now = Date()
         let calendar = Calendar.current
         
-        switch selectedSort {
-        case "Newest":
-            return allHistories
+        // 1. Filter by Time Range
+        var timeFiltered: [MeasurementHistory]
+        
+        switch selectedTimeRange {
         case "Last 7 days":
-            guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else {
-                return allHistories
-            }
-            return allHistories.filter { $0.createdAt >= sevenDaysAgo }
+            if let date = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
         case "Last 30 days":
-            guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) else {
-                return allHistories
+            if let date = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
+        case "Last 90 days":
+            if let date = calendar.date(byAdding: .day, value: -90, to: calendar.startOfDay(for: now)) {
+                timeFiltered = allHistories.filter { $0.createdAt >= date }
+            } else { timeFiltered = allHistories }
+            
+        case "This month":
+            let currentMonth = calendar.component(.month, from: now)
+            let currentYear = calendar.component(.year, from: now)
+            timeFiltered = allHistories.filter {
+                let month = calendar.component(.month, from: $0.createdAt)
+                let year = calendar.component(.year, from: $0.createdAt)
+                return month == currentMonth && year == currentYear
             }
-            return allHistories.filter { $0.createdAt >= thirtyDaysAgo }
-        default:
-            return allHistories
+            
+        default: // "All Time"
+            timeFiltered = allHistories
         }
+        
+        // 2. Filter by Clothes Type
+        var typeFiltered: [MeasurementHistory]
+        if selectedClothesTypes.isEmpty { typeFiltered = timeFiltered }
+        else { typeFiltered = timeFiltered.filter { selectedClothesTypes.contains($0.clothingType) } }
+                
+        if searchText.isEmpty { return typeFiltered }
+        else { return typeFiltered.filter { $0.productName.localizedCaseInsensitiveContains(searchText) } }
     }
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                if allHistories.isEmpty {
-                    EmptyHistoryView()
-                } else {
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            ForEach(filteredHistories) { history in
-                                NavigationLink(destination: HistoryDetailView(history: history)) {
-                                    HistoryCard(history: history)
+            // 2. Bind path ke NavigationStack
+            NavigationStack(path: $path) {
+                VStack(spacing: 0) {
+                    if !allHistories.isEmpty {
+                        HStack {
+                            HStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass").foregroundColor(.gray)
+                                TextField("Search", text: $searchText).font(.body).submitLabel(.search)
+                                Button(action: { showFilterSheet = true }) {
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(systemName: "slider.horizontal.3")
+                                            .resizable().frame(width: 22, height: 22)
+                                            .foregroundColor(AppColors.primaryPurple)
+                                        if isFilterActive {
+                                            Circle().fill(.red).frame(width: 8, height: 8).offset(x: 2, y: -2)
+                                        }
+                                    }
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .background(Color.white).cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
+                    }
+                    
+                    // MARK: - Content List
+                    if filteredHistories.isEmpty {
+                        Spacer()
+                        if searchText.isEmpty && allHistories.isEmpty {
+                             EmptyHistoryView()
+                        } else {
+                            VStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass").font(.system(size: 40)).foregroundColor(.gray).padding(.bottom, 8)
+                                Text("No history found").font(.headline).foregroundColor(.gray)
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 24)
-                    }
-                    .clipped()
-                }
-            }
-            .background(FirstGradientBackground().ignoresSafeArea())
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("History")
-                        .font(.heading28Medium)
-                        .foregroundStyle(.primary)
-                }
-            }
-            .toolbar {
-                if !allHistories.isEmpty {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: { showSortSheet = true }) {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(AppColors.primaryPurple)
+                        Spacer()
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(filteredHistories) { history in
+                                    
+                                    // 3. Panggil SwipeableCard dengan onTap
+                                    SwipeableCard {
+                                        HistoryCard(history: history)
+                                    } onTap: {
+                                        path.append(history)
+                                    } onDelete: {
+                                        deleteHistory(history)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                                }
+                            }
+                            .padding(.vertical, 10)
                         }
+                        .scrollContentBackground(.hidden)
                     }
                 }
+                .background(FirstGradientBackground().ignoresSafeArea())
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Text("History")
+                            .font(.heading28Medium)
+                            .foregroundStyle(.primary)
+                            .padding(.leading, 6)
+                    }
+                }
+                // 4. Daftarkan Destinasi Navigasi
+                // Ini akan menangani perpindahan saat path.append(history) dipanggil
+                .navigationDestination(for: MeasurementHistory.self) { history in
+                    HistoryDetailView(history: history)
+                }
+            }
+            .sheet(isPresented: $showFilterSheet) {
+                FilterSheet(activeTimeRange: $selectedTimeRange, activeClothesTypes: $selectedClothesTypes)
+                    .presentationDetents([.fraction(0.95)])
             }
         }
-        .sheet(isPresented: $showSortSheet) {
-            SortSheet(selectedSort: $selectedSort)
-                .presentationDetents([.height(350)])
-        }
-    }
     
+    private var isFilterActive: Bool { return selectedTimeRange != "All Time" || !selectedClothesTypes.isEmpty }
     private func deleteHistory(_ history: MeasurementHistory) {
         modelContext.delete(history)
-        do {
-            try modelContext.save()
-            print("✅ History deleted successfully")
-        } catch {
-            print("❌ Failed to delete history: \(error)")
-        }
-    }
-}
-
+        try? modelContext.save()
+    }}
 
 #Preview {
     HistoryView()
@@ -124,7 +183,7 @@ struct HistoryView: View {
             
             let history1 = MeasurementHistory(
                 productName: "Classic T-Shirt",
-                shopName: "The Cotton Co.",
+                brandName: "The Cotton Co.",
                 clothingType: "t_shirt",
                 selectedFitPreference: "standard",
                 recommendationsJSON: mockRecommendations,
@@ -138,7 +197,7 @@ struct HistoryView: View {
             
             let history2 = MeasurementHistory(
                 productName: "Silk Blouse",
-                shopName: "Elegant Wears",
+                brandName: "Elegant Wears",
                 clothingType: "blouse",
                 selectedFitPreference: "slim",
                 recommendationsJSON: mockRecommendations,
@@ -151,7 +210,7 @@ struct HistoryView: View {
             
             let history3 = MeasurementHistory(
                 productName: "Long Sleeve",
-                shopName: "Urban Store",
+                brandName: "Urban Store",
                 clothingType: "long_sleeved_shirt",
                 selectedFitPreference: "relaxed",
                 recommendationsJSON: mockRecommendations,

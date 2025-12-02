@@ -13,6 +13,7 @@ struct ResultsView: View {
     var isFromHistory: Bool = false
     
     var historyProductName: String? = nil
+    var historyProductLink: String? = nil
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -23,17 +24,26 @@ struct ResultsView: View {
         initialFitPreference: String = "standard",
         isFromHistory: Bool = false,
         historyProductName: String? = nil,
+        historyProductLink: String? = nil,
         onTryAgain: (() -> Void)? = nil
     ) {
         self._showResults = showResults
         self.isFromHistory = isFromHistory
         
         self.historyProductName = historyProductName
+        self.historyProductLink = historyProductLink
+        print("🔍 INIT ResultsView - Link diterima: '\(historyProductLink ?? "NIL")'")
         
         let vm = ResultsViewModel(
             recommendationViewModel: recommendationViewModel,
             initialFitPreference: initialFitPreference
         )
+        if let link = historyProductLink {
+            vm.productLink = link
+            print("✅ ViewModel Link set to: \(vm.productLink)")
+        } else {
+            print("⚠️ historyProductLink is NIL")
+        }
         vm.onTryAgain = onTryAgain
         vm.onClose = {
             showResults.wrappedValue = false
@@ -43,9 +53,7 @@ struct ResultsView: View {
     }
     
     var body: some View {
-        ZStack {
-            FirstGradientBackground().ignoresSafeArea()
-            
+        VStack(spacing: 0) {
             if viewModel.recommendationViewModel.isCallingAPI {
                 ProgressView("Calculating Recommendations...")
                     .frame(maxWidth: .infinity)
@@ -53,35 +61,99 @@ struct ResultsView: View {
             } else if let apiError = viewModel.recommendationViewModel.apiError {
                 errorView(message: apiError)
             } else if let recommendation = viewModel.currentRecommendation {
-                resultContent(recommendation: recommendation)
+                ZStack {
+                    resultContent(recommendation: recommendation)
+                    
+                    if !isFromHistory {
+                        actionButtons
+                    } else {
+                        VStack {
+                            Spacer()
+                            
+                            if !viewModel.productLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                
+                                let urlString = viewModel.productLink
+                                let urlToOpen = URL(string: urlString.lowercased().hasPrefix("http") ? urlString : "https://\(urlString)")
+                                
+                                if let url = urlToOpen {
+                                    RoolaButton(
+                                        buttonTitle: "Shop Now",
+                                        buttonColor: AppColors.primaryPurple,
+                                        action: {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    )
+                                    .frame(width: UIScreen.main.bounds.width * 0.8)
+                                    .padding(.bottom, UIScreen.main.bounds.height * 0.08)
+                                }
+                            }
+                        }
+                        .padding(.bottom, 40)
+                        .ignoresSafeArea(.all, edges: .bottom)
+                    }
+                }
+                .clipped()
             }
         }
+        .background(FirstGradientBackground().ignoresSafeArea())
         .navigationTitle("")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(isFromHistory ? .hidden : .visible, for: .tabBar)
+        .toolbar(viewModel.showSaveModal || viewModel.showSuccessModal ? .hidden : .visible, for: .navigationBar)
         .toolbar {
-            // 2. Buat Custom Title di Kiri (Leading)
             ToolbarItem(placement: .topBarLeading) {
-                if isFromHistory {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left.circle.fill")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(AppColors.primaryWhite)
-                            .background(
+                Button(action: {
+                    showResults = false
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left.circle.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 32)
+                        .foregroundColor(AppColors.primaryWhite)
+                        .background(
+                            Circle()
+                            .fill(AppColors.primaryPurple)
+                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                            .overlay(
                                 Circle()
-                                .fill(AppColors.primaryPurple)
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                    )}
+                                    .stroke(AppColors.primaryPurple, lineWidth: 1)
+                            )
+                        )
+                        .padding(.leading, 8)
                 }
             }
             ToolbarItem(placement: .principal) {
-                Text("Recommended Size")
+                Text("Recommended size")
                     .font(.heading28Medium)
                     .foregroundStyle(.primary)
             }
         }
+        .overlay(
+            Group {
+                if viewModel.showSaveModal {
+                    SaveResultModal(
+                        isPresented: $viewModel.showSaveModal,
+                        productName: $viewModel.productName,
+                        brandName: $viewModel.brandName,
+                        productLink: $viewModel.productLink,
+                        onSave: {
+                            viewModel.saveToHistory()
+                        }
+                    )
+                    .transition(.opacity)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
+//                    .padding(.horizontal)
+                }
+                
+                if viewModel.showSuccessModal {
+                    SaveSuccessModal()
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSuccessModal)
+                }
+            }
+        )
         .onAppear {
             viewModel.setModelContext(modelContext)
             viewModel.setInitialSliderPosition()
@@ -116,39 +188,53 @@ struct ResultsView: View {
     
     @ViewBuilder
     private func resultContent(recommendation: FitRecommendation) -> some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 16) {
-                recommendationSection(recommendation: recommendation)
-                    .padding(.top, isFromHistory ? 86 : 64)
-            }
-            .padding(.horizontal, 16)
-            
-            if !isFromHistory {
-                actionButtons
-                    .padding(.bottom, 48)
-            }
-            
-            if viewModel.showSaveModal {
-                SaveResultModal(
-                    isPresented: $viewModel.showSaveModal,
-                    productName: $viewModel.productName,
-                    shopName: $viewModel.shopName,
-                    onSave: {
-                        viewModel.saveToHistory()
+        VStack(spacing: 0) {
+            if viewModel.showSaveModal || viewModel.showSuccessModal {
+                HStack(spacing: 14) {
+                    Button(action: {
+                        showResults = false
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 32)
+                            .foregroundColor(AppColors.primaryWhite)
+                            .background(
+                                Circle()
+                                    .fill(AppColors.primaryPurple)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.primaryPurple, lineWidth: 1)
+                                    )
+                            )
+//                            .padding(.leading, 6)
                     }
-                )
-                .transition(.opacity)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSaveModal)
+                    Text("Recommended size")
+                        .font(.heading28Medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: true, vertical: false)
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 5)
             }
-            
-            if viewModel.showSuccessModal {
-                SaveSuccessModal()
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showSuccessModal)
+            if isFromHistory {
+                recommendationSection(recommendation: recommendation)
+                    .padding(.top, 80)
+//                    .padding(.bottom, 120)
+            } else {
+//                ScrollView {
+                    recommendationSection(recommendation: recommendation)
+                        .padding(.top, 24)
+                        .padding(.bottom, 120)
+//                }
+//                .scrollIndicators(.hidden)
             }
         }
+        .padding(.horizontal, 24)
     }
-    
     // MARK: - Recommendation Section
     
     @ViewBuilder
@@ -168,7 +254,7 @@ struct ResultsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                Text("Fit Preference")
+                Text("Fit preference")
                     .font(.body16Regular)
                 
                 SliderWithLabels(sliderValue: $viewModel.sliderValue)
@@ -184,11 +270,15 @@ struct ResultsView: View {
             }
             .padding(8)
             .padding(.top, 38)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 16)
             .background(Color.white)
             .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 5)
+//            .padding(.horizontal, 4)
             
             noteText
+                .padding(.horizontal)
             Spacer()
         }
     }
@@ -306,24 +396,21 @@ struct ResultsView: View {
             
             VStack(spacing: 12) {
                 RoolaButton(
-                    buttonTitle: "Save Result",
+                    buttonTitle: "Save",
                     buttonColor: AppColors.primaryPurple,
                     action: {
                         viewModel.showSaveModal = true
                     }
                 )
-                RoolaButton(
-                    buttonTitle: "Try Again",
-                    buttonColor: AppColors.primaryWhite,
-                    action: {
-                        viewModel.onTryAgain?()
-                        showResults = false
-                    }
-                )
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, UIScreen.main.bounds.height * 0.05)
+            .frame(width: UIScreen.main.bounds.width * 0.8)
+//            .padding(.horizontal, 16)
+            
         }
+        .padding(.bottom, 80)
+        .ignoresSafeArea(.all, edges: .bottom)
+        .animation(nil, value: viewModel.showSaveModal)
+        
     }
 }
 
@@ -360,7 +447,7 @@ struct SliderWithLabels: View {
                 ForEach(0..<labels.count, id: \.self) { index in
                     let isSelected = (Int(round(sliderValue)) == index)
                     
-                    VStack(spacing: 4) {
+                    VStack(spacing: 0) {
                         Text("•")
                             .font(.system(size: 16))
                             .foregroundColor(.black)
