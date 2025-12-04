@@ -25,13 +25,17 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
-        .modelContainer(for: [User.self, MeasurementHistory.self])
+        // CHANGE 2: The .modelContainer(...) modifier was removed from here.
+        // It is already provided by RoolaApp. Removing it ensures we use
+        // the in-memory container we created in the App file.
         .onAppear {
             checkUserStatus()
         }
     }
     
     private func checkUserStatus() {
+        // Since data is wiped on kill, this will always fail on a fresh launch,
+        // triggering the Onboarding flow every time.
         if let user = users.first, user.isOnboardingFinished {
             showMainApp = true
         } else {

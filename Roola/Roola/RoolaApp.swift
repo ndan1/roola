@@ -1,8 +1,9 @@
 //
-//RoolaApp.swift
-//Roola
+//  RoolaApp.swift
+//  Roola
 //
 //  Created by Georgius Kenny Gunawan on 17/10/25.
+//
 
 import SwiftUI
 import SwiftData
@@ -10,10 +11,16 @@ import SwiftData
 @main
 struct RoolaApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Clothes.self, User.self, MeasurementHistory.self])
+        let schema = Schema([
+            Clothes.self,
+            User.self,
+            MeasurementHistory.self
+        ])
+        
+        // CHANGE 1: Set this to true so data is not saved to disk
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false
+            isStoredInMemoryOnly: true
         )
         
         do {
@@ -21,9 +28,6 @@ struct RoolaApp: App {
                 for: schema,
                 configurations: [modelConfiguration]
             )
-            
-            let context = container.mainContext
-            
             return container
         } catch {
             fatalError("Failed to create ModelContainer: \(error.localizedDescription)")
@@ -33,6 +37,7 @@ struct RoolaApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // This injects the in-memory container into the whole app
                 .modelContainer(sharedModelContainer)
                 .preferredColorScheme(.light)
         }
