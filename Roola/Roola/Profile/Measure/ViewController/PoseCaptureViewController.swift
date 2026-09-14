@@ -98,6 +98,17 @@ class PoseCaptureViewController: UIViewController {
     private let speechSynthesizer = AVSpeechSynthesizer()
     private var cachedVoice: AVSpeechSynthesisVoice?
     
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var rotationObservation: NSKeyValueObservation?
+    
+    // MARK: - Orientation
+    // The stencil, the pose thresholds in `analyzePose` and the skeleton
+    // overlay all assume a tall viewport, so the capture screen stays portrait
+    // even if the rest of the app is ever allowed to rotate.
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
+    override var preferredInterfaceOrientationForPresentation: UIInterfaceOrientation { .portrait }
+    override var shouldAutorotate: Bool { false }
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -105,6 +116,21 @@ class PoseCaptureViewController: UIViewController {
         setupAudioSession()
         configureVoice()
         setupCamera()
+    }
+    
+    deinit {
+        rotationObservation?.invalidate()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // The preview layer is not managed by Auto Layout, so it has to follow
+        // the view's bounds by hand. Setting it once in setupCamera() leaves it
+        // at whatever size the view had before SwiftUI laid this controller out.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        previewLayer?.frame = view.bounds
+        CATransaction.commit()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -149,7 +175,7 @@ class PoseCaptureViewController: UIViewController {
         captureSession = AVCaptureSession()
         captureSession.sessionPreset = .photo
         
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else { return }
+        guard let camera = frontCamera() else { return }
         
         do {
             let input = try AVCaptureDeviceInput(device: camera)
@@ -167,9 +193,9 @@ class PoseCaptureViewController: UIViewController {
             previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
             previewLayer.frame = view.bounds
             previewLayer.videoGravity = .resizeAspectFill
-            previewLayer.connection?.videoRotationAngle = 90
             view.layer.insertSublayer(previewLayer, at: 0)
-            
+            constrainToPortraitAspectRatio(camera)
+            setupRotationCoordinator(for: camera)
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.captureSession.startRunning()
             }
@@ -249,7 +275,14 @@ class PoseCaptureViewController: UIViewController {
     
     private func takePhoto() {
         guard let connection = photoOutput.connection(with: .video) else { return }
-        connection.videoRotationAngle = 90
+        
+        // AVCapturePhotoOutput compensates for the sensor mount on its own, so
+        // it still hands back a landscape-left frame on the Center Stage camera.
+        // The screen is locked to portrait, so 90 stays correct here - unlike
+        // the preview, which sees the real mount and needs the coordinator.
+        if connection.isVideoRotationAngleSupported(90) {
+            connection.videoRotationAngle = 90
+        }
         
         let settings = AVCapturePhotoSettings()
         photoOutput.capturePhoto(with: settings, delegate: self)
@@ -260,6 +293,74 @@ class PoseCaptureViewController: UIViewController {
         let deltaY = wrist.y - shoulder.y
         return atan2(deltaY, deltaX) * 180 / .pi
     }
+    
+    private func frontCamera() -> AVCaptureDevice? {
+        // iPhone 17, iPhone Air and iPhone 17 Pro expose the Center Stage front
+        // camera as an ultra wide device; every earlier iPhone only has a wide
+        // angle one. Keep the wide angle camera first so the field of view the
+        // pose thresholds were tuned against is preferred where it exists.
+        if let wide = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) {
+            return wide
+        }
+        return AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInUltraWideCamera],
+            mediaType: .video,
+            position: .front
+        ).devices.first
+    }
+    
+    /// The Center Stage front camera has a square sensor with a 95 degree field
+    /// of view. Left alone it fills the portrait preview with a far wider frame
+    /// than `analyzePose` is calibrated for, so ask for the 3:4 portrait crop
+    /// the older front cameras produced. A no-op on every other camera.
+    private func constrainToPortraitAspectRatio(_ device: AVCaptureDevice) {
+        guard #available(iOS 26.0, *),
+              device.activeFormat.supportedDynamicAspectRatios.contains(.ratio3x4) else { return }
+        
+        Task {
+            do {
+                try device.lockForConfiguration()
+                defer { device.unlockForConfiguration() }
+                _ = try await device.setDynamicAspectRatio(.ratio3x4)
+            } catch {
+                print("Dynamic aspect ratio error: \(error)")
+            }
+        }
+    }
+    
+    private func setupRotationCoordinator(for device: AVCaptureDevice) {
+        let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: previewLayer)
+        rotationCoordinator = coordinator
+        
+        applyPreviewRotation(coordinator.videoRotationAngleForHorizonLevelPreview)
+        
+        rotationObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelPreview, options: .new) { [weak self] _, change in
+            guard let newAngle = change.newValue else { return }
+            DispatchQueue.main.async { self?.applyPreviewRotation(newAngle) }
+        }
+    }
+    
+    /// The old code hardcoded 90, which assumed the front sensor is mounted
+    /// landscape-left. The Center Stage sensor is mounted portrait, so that
+    /// assumption turned the preview on its side. The coordinator knows the
+    /// real mount and, because it was handed the preview layer, it reports the
+    /// angle for the layer's own (portrait-locked) interface orientation.
+    ///
+    /// The same angle drives the video data output so the buffers Vision reads
+    /// match what the user sees - the skeleton overlay is drawn in preview
+    /// space, and `captureOutput` treats the buffers as already upright.
+    private func applyPreviewRotation(_ angle: CGFloat) {
+        if let connection = previewLayer.connection,
+           connection.isVideoRotationAngleSupported(angle) {
+            connection.videoRotationAngle = angle
+        }
+        
+        if let videoConnection = videoDataOutput.connection(with: .video),
+           videoConnection.isVideoRotationAngleSupported(angle) {
+            videoConnection.videoRotationAngle = angle
+        }
+    }
+    
 }
 
 // MARK: - Vision Processing
@@ -293,7 +394,7 @@ extension PoseCaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegat
             }
         }
         
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .leftMirrored, options: [:])
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .upMirrored, options: [:])
         try? handler.perform([request])
     }
     
